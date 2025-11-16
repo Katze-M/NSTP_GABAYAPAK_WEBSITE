@@ -203,7 +203,7 @@ class ProjectController extends Controller
                     // Create budget for this activity if provided
                     if (isset($validatedData['budget_activity'][$i]) && !empty($validatedData['budget_activity'][$i])) {
                         $budget = new Budget([
-                            'Activity' => $validatedData['budget_activity'][$i],
+                            'Specific_Activity' => $validatedData['budget_activity'][$i],
                             'Resources_Needed' => $validatedData['budget_resources'][$i] ?? '',
                             'Partner_Agencies' => $validatedData['budget_partners'][$i] ?? '',
                             'Amount' => $validatedData['budget_amount'][$i] ?? '',
@@ -452,7 +452,7 @@ class ProjectController extends Controller
                     // Create budget for this activity if provided
                     if (isset($validatedData['budget_activity'][$i]) && !empty($validatedData['budget_activity'][$i])) {
                         $activity->budget()->create([
-                            'Activity' => $validatedData['budget_activity'][$i],
+                            'Specific_Activity' => $validatedData['budget_activity'][$i],
                             'Resources_Needed' => $validatedData['budget_resources'][$i] ?? '',
                             'Partner_Agencies' => $validatedData['budget_partners'][$i] ?? '',
                             'Amount' => $validatedData['budget_amount'][$i] ?? '',

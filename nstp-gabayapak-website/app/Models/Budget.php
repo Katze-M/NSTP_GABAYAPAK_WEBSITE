@@ -17,7 +17,7 @@ class Budget extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'Activity',
+        'Specific_Activity',
         'Resources_Needed',
         'Partner_Agencies',
         'Amount',

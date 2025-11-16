@@ -38,7 +38,14 @@
         </div>
         <div>
           <label class="block text-lg font-medium">Team Logo<span class="text-red-500">*</span></label>
-          <input type="file" name="Project_Logo" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" required>
+          @if($project->Project_Logo)
+            <div class="mb-2">
+              <p class="text-sm text-gray-600">Current Logo:</p>
+              <img src="{{ asset('storage/' . $project->Project_Logo) }}" alt="Current Logo" class="w-32 h-32 object-contain rounded-lg border border-gray-200 p-2">
+            </div>
+            <p class="text-sm text-gray-600 mb-2">Upload a new logo to replace the current one (optional if logo exists)</p>
+          @endif
+          <input type="file" name="Project_Logo" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" {{ $project->Project_Logo ? '' : 'required' }}>
         </div>
         <!-- Component Dropdown -->
         <div class="relative">

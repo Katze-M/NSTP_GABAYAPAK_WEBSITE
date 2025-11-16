@@ -51,7 +51,7 @@ class ProjectController extends Controller
         $rules = [
             'Project_Name' => 'required|string|max:255',
             'Project_Team_Name' => 'required|string|max:255',
-            'Project_Logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'Project_Logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             // Budget data - not required in either case
             'budget_activity' => 'nullable|array',
             'budget_activity.*' => 'nullable|string',
@@ -279,7 +279,7 @@ class ProjectController extends Controller
         $rules = [
             'Project_Name' => 'required|string|max:255',
             'Project_Team_Name' => 'required|string|max:255',
-            'Project_Logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'Project_Logo' => $project->Project_Logo ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048' : 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             // Budget data - not required in either case
             'budget_activity' => 'nullable|array',
             'budget_activity.*' => 'nullable|string',

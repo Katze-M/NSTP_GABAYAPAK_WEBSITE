@@ -962,8 +962,21 @@
     const memberList = document.getElementById('memberList');
     memberList.innerHTML = '<p class="text-center text-gray-500">Loading members...</p>';
    
-    // Fetch students from the same section and component
-    fetch('{{ route("projects.students.same-section") }}')
+    // Get existing member emails to exclude them from the list
+    const existingMemberEmails = [];
+    document.querySelectorAll('input[name="member_email[]"]').forEach(input => {
+      if (input.value) {
+        existingMemberEmails.push(input.value);
+      }
+    });
+   
+    // Fetch students from the same section and component, excluding existing members
+    const url = new URL('{{ route("projects.students.same-section") }}', window.location.origin);
+    existingMemberEmails.forEach(email => {
+      url.searchParams.append('existing_members[]', email);
+    });
+   
+    fetch(url)
       .then(response => response.json())
       .then(students => {
         if (students.length === 0) {

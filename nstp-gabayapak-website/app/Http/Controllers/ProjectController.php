@@ -583,9 +583,10 @@ class ProjectController extends Controller
     /**
      * Get students from the same section and component as the authenticated user.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getStudentsBySectionAndComponent()
+    public function getStudentsBySectionAndComponent(Request $request)
     {
         // Only students can access this
         if (Auth::user()->isStaff()) {
@@ -597,10 +598,16 @@ class ProjectController extends Controller
         $section = $student->student_section;
         $component = $student->student_component;
         
-        // Get all students from the same section and component (excluding the current user)
+        // Get existing member emails from the request to exclude them
+        $existingMemberEmails = $request->input('existing_members', []);
+        
+        // Get all students from the same section and component (excluding the current user and existing members)
         $students = Student::where('student_section', $section)
             ->where('student_component', $component)
             ->where('user_id', '!=', $student->user_id)
+            ->whereDoesntHave('user', function ($query) use ($existingMemberEmails) {
+                $query->whereIn('user_Email', $existingMemberEmails);
+            })
             ->with('user')
             ->get()
             ->map(function ($student) {

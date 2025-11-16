@@ -90,21 +90,25 @@
                 <!-- Team Members -->
                 <div class="mb-8">
                     <h2 class="text-2xl font-bold mb-4">Team Members</h2>
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 flex items-center justify-center">
-                                    <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
-                                    </svg>
+                    <div class="space-y-4">
+                        @foreach($project->teamMembers() as $member)
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 flex items-center justify-center">
+                                            <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="text-lg font-semibold">{{ $member->user->user_Name }}</h3>
+                                        <p class="text-gray-600">{{ $member->user->user_Email }}</p>
+                                        <p class="text-gray-600">{{ $member->student_contact_number }}</p>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="ml-4">
-                                <h3 class="text-lg font-semibold">{{ $project->student->user->user_Name }}</h3>
-                                <p class="text-gray-600">{{ $project->student->user->user_Email }}</p>
-                                <p class="text-gray-600">{{ $project->student->student_contact_number }}</p>
-                            </div>
-                        </div>
+                        @endforeach
                     </div>
                 </div>
 

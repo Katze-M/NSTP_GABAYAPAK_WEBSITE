@@ -39,7 +39,7 @@ class Project extends Model
         'Project_Status',
         'Project_Section',
         'student_id',
-        'member_data',
+        'student_ids',
     ];
 
     /**
@@ -64,6 +64,21 @@ class Project extends Model
     public function budgets()
     {
         return $this->hasManyThrough(Budget::class, Activity::class, 'project_id', 'activity_id', 'Project_ID', 'Activity_ID');
+    }
+    
+    /**
+     * Get the team members for the project.
+     */
+    public function teamMembers()
+    {
+        if ($this->student_ids) {
+            $studentIds = json_decode($this->student_ids, true);
+            if (is_array($studentIds) && !empty($studentIds)) {
+                return Student::whereIn('id', $studentIds)->get();
+            }
+        }
+        // If no student_ids are stored, return only the project owner
+        return Student::where('id', $this->student_id)->get();
     }
 
     /**

@@ -107,7 +107,7 @@ class ProjectController extends Controller
                 'Project_Target_Community' => 'nullable|string',
                 'Project_Expected_Outcomes' => 'nullable|string',
                 'Project_Problems' => 'nullable|string',
-                // Member data - make member fields optional since we're not storing them
+                // Member data - arrays required with minimum count, but individual fields can be empty
                 'member_name' => 'nullable|array',
                 'member_name.*' => 'nullable|string|max:255',
                 'member_role' => 'nullable|array',
@@ -141,6 +141,25 @@ class ProjectController extends Controller
         // Add student_id to the validated data
         $validatedData['student_id'] = Auth::user()->student->id;
         
+        // Process student IDs from member data
+        $studentIds = [$validatedData['student_id']]; // Always include the project owner
+        if (isset($validatedData['member_email']) && is_array($validatedData['member_email'])) {
+            // Get student IDs for the member emails
+            $memberEmails = array_filter($validatedData['member_email']);
+            if (!empty($memberEmails)) {
+                $students = \App\Models\Student::whereHas('user', function($query) use ($memberEmails) {
+                    $query->whereIn('user_Email', $memberEmails);
+                })->get();
+                
+                foreach ($students as $student) {
+                    if (!in_array($student->id, $studentIds)) {
+                        $studentIds[] = $student->id;
+                    }
+                }
+            }
+        }
+        $validatedData['student_ids'] = json_encode($studentIds);
+        
         // Set status based on submission type
         $validatedData['Project_Status'] = $request->input('submit_project') ? 'submitted' : 'draft';
         $validatedData['Project_Section'] = $request->input('nstp_section');
@@ -158,6 +177,7 @@ class ProjectController extends Controller
             'Project_Problems' => $validatedData['Project_Problems'] ?? '',
             'Project_Status' => $validatedData['Project_Status'],
             'student_id' => $validatedData['student_id'],
+            'student_ids' => $validatedData['student_ids'],
             'Project_Section' => $validatedData['Project_Section'] ?? '',
         ]);
         
@@ -335,7 +355,7 @@ class ProjectController extends Controller
                 'Project_Target_Community' => 'nullable|string',
                 'Project_Expected_Outcomes' => 'nullable|string',
                 'Project_Problems' => 'nullable|string',
-                // Member data - make member fields optional since we're not storing them
+                // Member data - arrays required with minimum count, but individual fields can be empty
                 'member_name' => 'nullable|array',
                 'member_name.*' => 'nullable|string|max:255',
                 'member_role' => 'nullable|array',
@@ -369,6 +389,25 @@ class ProjectController extends Controller
         // Set status based on submission type
         $projectStatus = $request->input('submit_project') ? 'submitted' : 'draft';
         
+        // Process student IDs from member data
+        $studentIds = [$project->student_id]; // Always include the project owner
+        if (isset($validatedData['member_email']) && is_array($validatedData['member_email'])) {
+            // Get student IDs for the member emails
+            $memberEmails = array_filter($validatedData['member_email']);
+            if (!empty($memberEmails)) {
+                $students = \App\Models\Student::whereHas('user', function($query) use ($memberEmails) {
+                    $query->whereIn('user_Email', $memberEmails);
+                })->get();
+                
+                foreach ($students as $student) {
+                    if (!in_array($student->id, $studentIds)) {
+                        $studentIds[] = $student->id;
+                    }
+                }
+            }
+        }
+        $studentIdsJson = json_encode($studentIds);
+        
         // Update the project
         $project->update([
             'Project_Name' => $validatedData['Project_Name'],
@@ -382,6 +421,7 @@ class ProjectController extends Controller
             'Project_Problems' => $validatedData['Project_Problems'] ?? $project->Project_Problems,
             'Project_Status' => $projectStatus,
             'Project_Section' => $request->input('nstp_section') ?? $project->Project_Section,
+            'student_ids' => $studentIdsJson,
         ]);
                 
         // Note: Member data is collected in the form but not stored in a separate table

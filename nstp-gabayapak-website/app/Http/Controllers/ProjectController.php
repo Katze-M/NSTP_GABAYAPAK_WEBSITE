@@ -107,14 +107,14 @@ class ProjectController extends Controller
                 'Project_Target_Community' => 'nullable|string',
                 'Project_Expected_Outcomes' => 'nullable|string',
                 'Project_Problems' => 'nullable|string',
-                // Member data - arrays required with minimum count, but individual fields can be empty
-                'member_name' => 'required|array|min:1',
+                // Member data - make member fields optional since we're not storing them
+                'member_name' => 'nullable|array',
                 'member_name.*' => 'nullable|string|max:255',
-                'member_role' => 'required|array|min:1',
+                'member_role' => 'nullable|array',
                 'member_role.*' => 'nullable|string|max:255',
-                'member_email' => 'required|array|min:1',
+                'member_email' => 'nullable|array',
                 'member_email.*' => 'nullable|email|max:255',
-                'member_contact' => 'required|array|min:1',
+                'member_contact' => 'nullable|array',
                 'member_contact.*' => 'nullable|string|max:20',
                 // Activity data - arrays required with minimum count, but individual fields can be empty
                 'stage' => 'required|array|min:1',
@@ -335,14 +335,14 @@ class ProjectController extends Controller
                 'Project_Target_Community' => 'nullable|string',
                 'Project_Expected_Outcomes' => 'nullable|string',
                 'Project_Problems' => 'nullable|string',
-                // Member data - arrays required with minimum count, but individual fields can be empty
-                'member_name' => 'required|array|min:1',
+                // Member data - make member fields optional since we're not storing them
+                'member_name' => 'nullable|array',
                 'member_name.*' => 'nullable|string|max:255',
-                'member_role' => 'required|array|min:1',
+                'member_role' => 'nullable|array',
                 'member_role.*' => 'nullable|string|max:255',
-                'member_email' => 'required|array|min:1',
+                'member_email' => 'nullable|array',
                 'member_email.*' => 'nullable|email|max:255',
-                'member_contact' => 'required|array|min:1',
+                'member_contact' => 'nullable|array',
                 'member_contact.*' => 'nullable|string|max:20',
                 // Activity data - arrays required with minimum count, but individual fields can be empty
                 'stage' => 'required|array|min:1',
@@ -383,6 +383,10 @@ class ProjectController extends Controller
             'Project_Status' => $projectStatus,
             'Project_Section' => $request->input('nstp_section') ?? $project->Project_Section,
         ]);
+                
+        // Note: Member data is collected in the form but not stored in a separate table
+        // The member information is displayed in the form but not persisted separately
+        // This is because we're using the students table directly as referenced in your earlier message
         
         // Update or create activities
         if (isset($validatedData['stage'])) {

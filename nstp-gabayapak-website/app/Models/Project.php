@@ -39,6 +39,7 @@ class Project extends Model
         'Project_Status',
         'Project_Section',
         'student_id',
+        'member_data',
     ];
 
     /**

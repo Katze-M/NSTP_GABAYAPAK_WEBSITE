@@ -9,9 +9,11 @@
 <section id="upload-project" class="space-y-6 md:space-y-8">
   <!-- Main Heading -->
   <div class="flex items-center justify-between">
-    <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6 flex items-center gap-2">Edit Project Proposal</h1>
-    <!-- Back Button -->
-    <x-back-button />
+    <div class="flex items-center gap-4">
+      <!-- Back Button -->
+      <x-back-button />
+      <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6 flex items-center gap-2">Edit Project Proposal</h1>
+    </div>
   </div>
  
   <form id="projectForm" action="{{ route('projects.update', $project) }}" method="POST" enctype="multipart/form-data" class="space-y-6 md:space-y-8">
@@ -974,10 +976,11 @@
           html += `
             <div class="flex items-center justify-between p-2 border border-gray-200 rounded">
               <div class="flex items-center">
-                <input type="checkbox" id="member${student.id}" name="available_members[]" value="${student.id}" class="mr-2" data-name="${student.name}" data-email="${student.email}">
+                <input type="checkbox" id="member${student.id}" name="available_members[]" value="${student.id}" class="mr-2" data-name="${student.name}" data-email="${student.email}" data-contact="${student.contact_number}">
                 <label for="member${student.id}" class="text-sm">
                   <span class="font-medium">${student.name}</span> -
                   <span class="text-gray-600">${student.email}</span>
+                  <span class="text-gray-500 text-xs block">${student.contact_number}</span>
                 </label>
               </div>
               <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Same Section</span>
@@ -1002,6 +1005,7 @@
       const memberId = checkbox.value;
       const memberName = checkbox.dataset.name;
       const memberEmail = checkbox.dataset.email;
+      const memberContact = checkbox.dataset.contact;
      
       // Add to desktop table
       const desktopTable = document.querySelector('#memberTable tbody');
@@ -1019,7 +1023,7 @@
             <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
           </td>
           <td class="px-6 py-4">
-            <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" required>
+            <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required>
           </td>
           <td class="px-6 py-4 text-center">
             <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
@@ -1050,7 +1054,7 @@
           </div>
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
-            <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" required>
+            <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required>
           </div>
           <div class="flex justify-end">
             <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Remove</button>

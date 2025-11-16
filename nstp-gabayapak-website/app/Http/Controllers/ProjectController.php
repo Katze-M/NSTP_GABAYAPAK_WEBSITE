@@ -608,6 +608,7 @@ class ProjectController extends Controller
                     'id' => $student->user_id,
                     'name' => $student->user->user_Name,
                     'email' => $student->user->user_Email,
+                    'contact_number' => $student->student_contact_number,
                 ];
             });
         

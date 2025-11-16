@@ -53,7 +53,7 @@ class ActivityController extends Controller
         // Validate the request
         $validatedData = $request->validate([
             'status' => 'required|string|in:planned,ongoing,completed',
-            'proof_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'proof_picture' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
         
         // Handle file upload

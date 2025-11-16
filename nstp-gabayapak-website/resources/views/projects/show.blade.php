@@ -176,7 +176,7 @@
                                                 <p class="text-gray-700">₱{{ number_format($activity->budget->Amount ?? 0, 2) }}</p>
                                             </div>
                                         </div>
-                                        
+
                                         <!-- Proof Picture (if exists) -->
                                         @if($activity->budget->proof_picture)
                                             <div class="mt-3">

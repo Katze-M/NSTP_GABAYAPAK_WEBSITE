@@ -60,7 +60,7 @@ class ProjectController extends Controller
             'budget_partners' => 'nullable|array',
             'budget_partners.*' => 'nullable|string',
             'budget_amount' => 'nullable|array',
-            'budget_amount.*' => 'nullable|string',
+            'budget_amount.*' => 'nullable|numeric|min:0',
         ];
         
         // For submissions, require all fields
@@ -212,14 +212,12 @@ class ProjectController extends Controller
                     
                     // Create budget for this activity if provided
                     if (isset($validatedData['budget_activity'][$i]) && !empty($validatedData['budget_activity'][$i])) {
-                        $budget = new Budget([
+                        $activity->budget()->create([
                             'Specific_Activity' => $validatedData['budget_activity'][$i],
                             'Resources_Needed' => $validatedData['budget_resources'][$i] ?? '',
                             'Partner_Agencies' => $validatedData['budget_partners'][$i] ?? '',
-                            'Amount' => $validatedData['budget_amount'][$i] ?? '',
-                            'activity_id' => $activity->Activity_ID,
+                            'Amount' => !empty($validatedData['budget_amount'][$i]) ? $validatedData['budget_amount'][$i] : 0,
                         ]);
-                        $budget->save();
                     }
                 }
             }
@@ -321,7 +319,7 @@ class ProjectController extends Controller
             'budget_partners' => 'nullable|array',
             'budget_partners.*' => 'nullable|string',
             'budget_amount' => 'nullable|array',
-            'budget_amount.*' => 'nullable|string',
+            'budget_amount.*' => 'nullable|numeric|min:0',
         ];
         
         // For submissions, require all fields
@@ -478,7 +476,7 @@ class ProjectController extends Controller
                             'Specific_Activity' => $validatedData['budget_activity'][$i],
                             'Resources_Needed' => $validatedData['budget_resources'][$i] ?? '',
                             'Partner_Agencies' => $validatedData['budget_partners'][$i] ?? '',
-                            'Amount' => $validatedData['budget_amount'][$i] ?? '',
+                            'Amount' => !empty($validatedData['budget_amount'][$i]) ? $validatedData['budget_amount'][$i] : 0,
                         ]);
                     }
                 }

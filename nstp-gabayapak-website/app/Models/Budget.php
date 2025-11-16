@@ -12,6 +12,15 @@ class Budget extends Model
     protected $primaryKey = 'Budget_ID';
 
     /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'Amount' => 'decimal:2',
+    ];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>

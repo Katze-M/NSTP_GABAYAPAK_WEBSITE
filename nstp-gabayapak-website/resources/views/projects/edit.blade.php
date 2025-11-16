@@ -475,7 +475,6 @@
       desktopContainer.appendChild(newRow);
     }
 
-
     // Mobile card view
     const mobileContainer = document.getElementById('activitiesContainerMobile');
     if (mobileContainer) {
@@ -515,7 +514,6 @@
     attachRemoveButtons();
   });
 
-
   // Add Row for Budget
   document.getElementById('addBudgetRow').addEventListener('click', () => {
     // Desktop table view
@@ -534,7 +532,6 @@
       `;
       desktopContainer.appendChild(newRow);
     }
-
 
     // Mobile card view
     const mobileContainer = document.getElementById('budgetContainerMobile');
@@ -568,6 +565,126 @@
     attachRemoveButtons();
   });
 
+  // Function to add an activity row with existing data
+  function addActivityRow(stage, specificActivity, timeframe, pointPerson, status) {
+    // Desktop table view
+    const desktopContainer = document.getElementById('activitiesContainer');
+    if (desktopContainer) {
+      const newRow = document.createElement('div');
+      newRow.className = 'activity-row hover:bg-gray-50 transition-colors px-6 py-4';
+      newRow.innerHTML = `
+        <div class="grid grid-cols-[1fr_2fr_2fr_2fr_1fr_auto] gap-4 items-start">
+          <input name="stage[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Planning" value="${stage || ''}" required>
+          <textarea name="activities[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe specific activities..." required>${specificActivity || ''}</textarea>
+          <input name="timeframe[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Week 1-2" value="${timeframe || ''}" required>
+          <textarea name="point_person[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Responsible person/s" required>${pointPerson || ''}</textarea>
+          <select name="status[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm">
+            <option ${status === 'Planned' ? 'selected' : ''}>Planned</option>
+            <option ${status === 'Ongoing' ? 'selected' : ''}>Ongoing</option>
+            <option ${status === 'Completed' ? 'selected' : ''}>Completed</option>
+          </select>
+          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
+        </div>
+      `;
+      desktopContainer.appendChild(newRow);
+    }
+
+    // Mobile card view
+    const mobileContainer = document.getElementById('activitiesContainerMobile');
+    if (mobileContainer) {
+      const newCard = document.createElement('div');
+      newCard.className = 'activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
+      newCard.innerHTML = `
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
+          <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Stage" value="${stage || ''}" required>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
+          <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Specific Activities" required>${specificActivity || ''}</textarea>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
+          <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Time Frame" value="${timeframe || ''}" required>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
+          <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Point Person/s" required>${pointPerson || ''}</textarea>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="space-y-1 flex-1">
+            <label class="block text-xs font-medium text-gray-600">Status</label>
+            <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors">
+              <option ${status === 'Planned' ? 'selected' : ''}>Planned</option>
+              <option ${status === 'Ongoing' ? 'selected' : ''}>Ongoing</option>
+              <option ${status === 'Completed' ? 'selected' : ''}>Completed</option>
+            </select>
+          </div>
+          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
+        </div>
+      `;
+      mobileContainer.appendChild(newCard);
+    }
+  }
+
+  // Function to add a blank activity row
+  function addBlankActivityRow() {
+    addActivityRow('', '', '', '', 'Planned');
+  }
+
+  // Function to add a budget row with existing data
+  function addBudgetRow(activity, resources, partners, amount) {
+    // Desktop table view
+    const desktopContainer = document.getElementById('budgetContainer');
+    if (desktopContainer) {
+      const newRow = document.createElement('div');
+      newRow.className = 'budget-row hover:bg-gray-50 transition-colors px-6 py-4';
+      newRow.innerHTML = `
+        <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start">
+          <textarea name="budget_activity[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe the activity...">${activity || ''}</textarea>
+          <textarea name="budget_resources[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="List resources needed...">${resources || ''}</textarea>
+          <textarea name="budget_partners[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Partner organizations...">${partners || ''}</textarea>
+          <input type="text" name="budget_amount[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="₱ 0.00" value="${amount || ''}">
+          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
+        </div>
+      `;
+      desktopContainer.appendChild(newRow);
+    }
+
+    // Mobile card view
+    const mobileContainer = document.getElementById('budgetContainerMobile');
+    if (mobileContainer) {
+      const newCard = document.createElement('div');
+      newCard.className = 'budget-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
+      newCard.innerHTML = `
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Activity</label>
+          <textarea name="budget_activity[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Activity">${activity || ''}</textarea>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Resources Needed</label>
+          <textarea name="budget_resources[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Resources Needed">${resources || ''}</textarea>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Partner Agencies</label>
+          <textarea name="budget_partners[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Partner Agencies">${partners || ''}</textarea>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="space-y-1 flex-1">
+            <label class="block text-xs font-medium text-gray-600">Amount</label>
+            <input type="text" name="budget_amount[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="₱ 0.00" value="${amount || ''}">
+          </div>
+          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
+        </div>
+      `;
+      mobileContainer.appendChild(newCard);
+    }
+  }
+
+  // Function to add a blank budget row
+  function addBlankBudgetRow() {
+    addBudgetRow('', '', '', '');
+  }
 
   // Auto-expand textarea
   document.addEventListener("input", function (e) {
@@ -1031,10 +1148,11 @@
       const desktopTable = document.querySelector('#memberTable tbody');
       if (desktopTable) {
         const newRow = document.createElement('tr');
-        newRow.className = 'hover:bg-gray-50 transition-colors';
+        newRow.className = 'hover:bg-gray-50 transition-colors member-row';
         newRow.innerHTML = `
           <td class="px-6 py-4">
             <input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberName}" readonly>
+            <input type="hidden" name="member_student_id[]" value="${memberId}">
           </td>
           <td class="px-6 py-4">
             <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Member" required>
@@ -1058,11 +1176,12 @@
       const mobileContainer = document.getElementById('memberContainer');
       if (mobileContainer) {
         const newCard = document.createElement('div');
-        newCard.className = 'member-card bg-white p-3 rounded-lg border-2 border-gray-400 shadow-sm space-y-3';
+        newCard.className = 'member-card bg-white p-3 rounded-lg border-2 border-gray-400 shadow-sm space-y-3 member-row';
         newCard.innerHTML = `
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
             <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberName}" readonly>
+            <input type="hidden" name="member_student_id[]" value="${memberId}">
           </div>
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
@@ -1112,7 +1231,7 @@
     @if(isset($project->activities))
       @foreach($project->activities as $activity)
         @if($activity->budget)
-          addBudgetRow('{{ addslashes($activity->budget->Activity) }}', '{{ addslashes($activity->budget->Resources_Needed) }}', '{{ addslashes($activity->budget->Partner_Agencies) }}', '{{ addslashes($activity->budget->Amount) }}');
+          addBudgetRow('{{ addslashes($activity->budget->Specific_Activity) }}', '{{ addslashes($activity->budget->Resources_Needed) }}', '{{ addslashes($activity->budget->Partner_Agencies) }}', '{{ addslashes($activity->budget->Amount) }}');
         @endif
       @endforeach
     @else
@@ -1120,8 +1239,169 @@
       addBlankBudgetRow();
     @endif
     
+    // Populate existing team members
+    @if(isset($project->student_ids) && $project->student_ids)
+      const studentIds = @json(json_decode($project->student_ids, true));
+      if (Array.isArray(studentIds) && studentIds.length > 0) {
+        // Remove the default owner row since we'll add all members including the owner
+        const memberTable = document.querySelector('#memberTable tbody');
+        const memberContainer = document.getElementById('memberContainer');
+        
+        // Clear existing rows
+        if (memberTable) {
+          memberTable.innerHTML = '';
+        }
+        if (memberContainer) {
+          memberContainer.innerHTML = '';
+        }
+        
+        // Add all members
+        studentIds.forEach((studentId, index) => {
+          // We'll need to fetch member details via AJAX or have them pre-loaded
+          // For now, we'll add placeholder rows that can be populated later
+          addMemberRowPlaceholder(studentId, index === 0); // First member is owner (readonly)
+        });
+      }
+    @endif
+    
     // Reattach remove button handlers
     attachRemoveButtons();
+    
+    // Populate member details after a small delay
+    setTimeout(populateMemberDetails, 100);
+  });
+
+  // Function to add a member row placeholder
+  function addMemberRowPlaceholder(studentId, isOwner = false) {
+    // Desktop table view
+    const desktopTable = document.querySelector('#memberTable tbody');
+    if (desktopTable) {
+      const newRow = document.createElement('tr');
+      newRow.className = 'hover:bg-gray-50 transition-colors member-row';
+      newRow.innerHTML = `
+        <td class="px-6 py-4">
+          <input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
+          <input type="hidden" name="member_student_id[]" value="${studentId}">
+        </td>
+        <td class="px-6 py-4">
+          <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" ${isOwner ? 'required' : ''}>
+        </td>
+        <td class="px-6 py-4">
+          <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
+        </td>
+        <td class="px-6 py-4">
+          <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
+        </td>
+        <td class="px-6 py-4 text-center">
+          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm" ${isOwner ? 'disabled' : ''}>
+            Remove
+          </button>
+        </td>
+      `;
+      desktopTable.appendChild(newRow);
+    }
+
+    // Mobile card view
+    const mobileContainer = document.getElementById('memberContainer');
+    if (mobileContainer) {
+      const newCard = document.createElement('div');
+      newCard.className = 'member-card bg-white p-3 rounded-lg border-2 border-gray-400 shadow-sm space-y-3 member-row';
+      newCard.innerHTML = `
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
+          <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
+          <input type="hidden" name="member_student_id[]" value="${studentId}">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
+          <input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" ${isOwner ? 'required' : ''}>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
+          <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
+          <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
+        </div>
+        <div class="flex justify-end">
+          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs" ${isOwner ? 'disabled' : ''}>Remove</button>
+        </div>
+      `;
+      mobileContainer.appendChild(newCard);
+    }
+  }
+
+  // Function to populate member details after loading
+  function populateMemberDetails() {
+    // Get all member rows
+    const memberRows = document.querySelectorAll('.member-row');
+    
+    // Get student IDs from hidden inputs
+    const studentIds = [];
+    document.querySelectorAll('input[name="member_student_id[]"]').forEach(input => {
+      studentIds.push(input.value);
+    });
+    
+    if (studentIds.length > 0) {
+      // Make AJAX request to get member details
+      fetch('/api/students/details', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ student_ids: studentIds })
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Populate member details
+        memberRows.forEach((row, index) => {
+          if (data[index]) {
+            const member = data[index];
+            const isDesktop = row.querySelector('td');
+            
+            if (isDesktop) {
+              // Desktop view
+              row.querySelector('input[name="member_name[]"]').value = member.name;
+              row.querySelector('input[name="member_email[]"]').value = member.email;
+              row.querySelector('input[name="member_contact[]"]').value = member.contact_number || '';
+            } else {
+              // Mobile view
+              const inputs = row.querySelectorAll('input');
+              inputs[0].value = member.name; // name input
+              inputs[2].value = member.email; // email input
+              inputs[3].value = member.contact_number || ''; // contact input
+            }
+          }
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching member details:', error);
+        // Fallback: populate with "Unknown" values
+        memberRows.forEach(row => {
+          const isDesktop = row.querySelector('td');
+          
+          if (isDesktop) {
+            // Desktop view
+            row.querySelector('input[name="member_name[]"]').value = 'Unknown Member';
+            row.querySelector('input[name="member_email[]"]').value = 'unknown@example.com';
+            row.querySelector('input[name="member_contact[]"]').value = '';
+          } else {
+            // Mobile view
+            const inputs = row.querySelectorAll('input');
+            inputs[0].value = 'Unknown Member'; // name input
+            inputs[2].value = 'unknown@example.com'; // email input
+            inputs[3].value = ''; // contact input
+          }
+        });
+      });
+    }
+  }
+
+  // Call populateMemberDetails after DOM is loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(populateMemberDetails, 100); // Small delay to ensure rows are created
   });
 
   // Validate minimum requirements for form submission

@@ -159,6 +159,9 @@
                                 @if($activity->budget)
                                     <div class="mt-3 p-3 bg-white rounded-lg border border-gray-300">
                                         <h4 class="font-medium text-gray-900">Budget</h4>
+                                        @if($activity->budget->Specific_Activity)
+                                            <p class="text-sm text-gray-600 mt-1">Activity: {{ $activity->budget->Specific_Activity }}</p>
+                                        @endif
                                         <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
                                             <div>
                                                 <p class="text-sm text-gray-500">Resources Needed</p>

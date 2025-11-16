@@ -129,7 +129,11 @@ Route::middleware('auth')->group(function () {
     // Get students by section and component (Student only)
     Route::get('/projects/students/same-section', [ProjectController::class, 'getStudentsBySectionAndComponent'])->name('projects.students.same-section')->middleware('student');
     
+    // Get student details by IDs (Student only)
+    Route::post('/api/students/details', [ProjectController::class, 'getStudentDetails'])->name('api.students.details')->middleware('student');
+    
     // Activity routes
     Route::get('/activities/{activity}/edit', [ActivityController::class, 'edit'])->name('activities.edit');
     Route::put('/activities/{activity}', [ActivityController::class, 'update'])->name('activities.update');
+
 });

@@ -158,8 +158,18 @@ class ProjectController extends Controller
                 }
             }
         }
-        $validatedData['student_ids'] = json_encode($studentIds);
         
+        // Also check for member_student_id (from edit form)
+        if (isset($validatedData['member_student_id']) && is_array($validatedData['member_student_id'])) {
+            foreach ($validatedData['member_student_id'] as $studentId) {
+                if (!in_array($studentId, $studentIds) && is_numeric($studentId)) {
+                    $studentIds[] = $studentId;
+                }
+            }
+        }
+        
+        $validatedData['student_ids'] = json_encode($studentIds);
+
         // Set status based on submission type
         $validatedData['Project_Status'] = $request->input('submit_project') ? 'submitted' : 'draft';
         $validatedData['Project_Section'] = $request->input('nstp_section');
@@ -235,6 +245,9 @@ class ProjectController extends Controller
         if (Auth::user()->isStudent() && Auth::user()->student->id !== $project->student_id) {
             abort(403, 'Unauthorized action.');
         }
+        
+        // Load the project with its relationships
+        $project->load(['activities.budget']);
         
         return view('projects.show', compact('project'));
     }
@@ -406,6 +419,16 @@ class ProjectController extends Controller
                 }
             }
         }
+        
+        // Also check for member_student_id (from edit form)
+        if (isset($validatedData['member_student_id']) && is_array($validatedData['member_student_id'])) {
+            foreach ($validatedData['member_student_id'] as $studentId) {
+                if (!in_array($studentId, $studentIds) && is_numeric($studentId)) {
+                    $studentIds[] = $studentId;
+                }
+            }
+        }
+        
         $studentIdsJson = json_encode($studentIds);
         
         // Update the project
@@ -617,6 +640,7 @@ class ProjectController extends Controller
         // Get the project for the authenticated student
         $project = Project::where('Project_ID', $id)
             ->where('student_id', Auth::user()->student->id)
+            ->with(['activities.budget']) // Load activities and their budgets
             ->firstOrFail();
         
         return view('projects.show', compact('project'));
@@ -670,6 +694,35 @@ class ProjectController extends Controller
                     'name' => $student->user->user_Name,
                     'email' => $student->user->user_Email,
                     'contact_number' => $student->student_contact_number,
+                ];
+            });
+        
+        return response()->json($students);
+    }
+
+    /**
+     * Get student details by IDs.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getStudentDetails(Request $request)
+    {
+        $studentIds = $request->input('student_ids', []);
+        
+        if (empty($studentIds)) {
+            return response()->json([]);
+        }
+        
+        $students = Student::whereIn('id', $studentIds)
+            ->with('user')
+            ->get()
+            ->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'name' => $student->user->user_Name ?? '',
+                    'email' => $student->user->user_Email ?? '',
+                    'contact_number' => $student->student_contact_number ?? '',
                 ];
             });
         

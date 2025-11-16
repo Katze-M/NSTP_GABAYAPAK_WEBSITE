@@ -199,10 +199,10 @@
                 <!-- Edit and Submit Buttons -->
                 <div class="flex flex-wrap justify-center gap-2 mt-6">
                     @if(Auth::user()->student->id === $project->student_id)
-                        <a href="{{ route('projects.edit', $project) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
-                            Edit Project
-                        </a>
                         @if($project->Project_Status === 'draft')
+                            <a href="{{ route('projects.edit', $project) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                                Edit Project
+                            </a>
                             <form action="{{ route('projects.update', $project) }}" method="POST" class="inline-block" id="submitForm">
                                 @csrf
                                 @method('PUT')

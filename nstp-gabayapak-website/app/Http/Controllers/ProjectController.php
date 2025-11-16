@@ -232,6 +232,11 @@ class ProjectController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
+        // Prevent editing of submitted projects
+        if ($project->Project_Status === 'submitted') {
+            return redirect()->route('projects.show', $project)->with('error', 'Submitted projects cannot be edited. You can only update activity status and upload proof for submitted projects.');
+        }
+        
         // Load the project with its relationships
         $project->load(['activities.budget']);
         
@@ -260,6 +265,11 @@ class ProjectController extends Controller
         // Debug: Check if project is loaded correctly
         if (!$project || !$project->Project_ID) {
             abort(404, 'Project not found.');
+        }
+        
+        // Prevent updating submitted projects
+        if ($project->Project_Status === 'submitted') {
+            return redirect()->route('projects.show', $project)->with('error', 'Submitted projects cannot be edited. You can only update activity status and upload proof for submitted projects.');
         }
         
         // Determine if this is a draft or submission

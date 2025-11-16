@@ -23,6 +23,11 @@ class ActivityController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
+        // Only allow editing activities for submitted projects
+        if ($activity->project->Project_Status !== 'submitted') {
+            return redirect()->route('projects.show', $activity->project)->with('error', 'Activity status and proof can only be updated for submitted projects.');
+        }
+        
         return view('activities.edit', compact('activity'));
     }
 
@@ -38,6 +43,11 @@ class ActivityController extends Controller
         // Check if the authenticated user owns the project this activity belongs to
         if (Auth::user()->student->id !== $activity->project->student_id) {
             abort(403, 'Unauthorized action.');
+        }
+        
+        // Only allow updating activities for submitted projects
+        if ($activity->project->Project_Status !== 'submitted') {
+            return redirect()->route('projects.show', $activity->project)->with('error', 'Activity status and proof can only be updated for submitted projects.');
         }
         
         // Validate the request

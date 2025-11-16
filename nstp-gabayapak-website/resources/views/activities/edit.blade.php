@@ -38,7 +38,7 @@
                     
                     <!-- Proof Picture Upload -->
                     <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Proof Picture <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Proof Picture (Optional)</label>
                         <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                             <div class="space-y-1 text-center">
                                 <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
@@ -47,16 +47,13 @@
                                 <div class="flex text-sm text-gray-600">
                                     <label for="proof_picture" class="relative cursor-pointer bg-white rounded-md font-medium text-red-600 hover:text-red-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-red-500">
                                         <span>Upload a file</span>
-                                        <input id="proof_picture" name="proof_picture" type="file" class="sr-only" accept="image/*" required>
+                                        <input id="proof_picture" name="proof_picture" type="file" class="sr-only" accept="image/*">
                                     </label>
                                     <p class="pl-1">or drag and drop</p>
                                 </div>
-                                <p class="text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
+                                <p class="text-xs text-gray-500">PNG, JPG, GIF up to 2MB (Optional)</p>
                             </div>
                         </div>
-                        @error('proof_picture')
-                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
                     </div>
                     
                     <!-- Current Proof Picture (if exists) -->

@@ -294,7 +294,9 @@ class ProjectController extends Controller
                          !empty($validatedData['budget_partners'][$i] ?? '') || 
                          !empty($validatedData['budget_amount'][$i] ?? ''))) {
                         
-                        $activity->budget()->create([
+                        // Create budget directly associated with the project instead of through activity
+                        Budget::create([
+                            'project_id' => $project->Project_ID,
                             'Specific_Activity' => $validatedData['budget_activity'][$i] ?? '',
                             'Resources_Needed' => $validatedData['budget_resources'][$i] ?? '',
                             'Partner_Agencies' => $validatedData['budget_partners'][$i] ?? '',
@@ -327,7 +329,7 @@ class ProjectController extends Controller
         }
         
         // Load the project with its relationships
-        $project->load(['activities.budget']);
+        $project->load(['activities', 'budgets']);
         
         return view('projects.show', compact('project'));
     }
@@ -356,7 +358,7 @@ class ProjectController extends Controller
         }
 
         // Load the project with its relationships
-        $project->load(['activities.budget']);
+        $project->load(['activities', 'budgets']);
 
         // Debug: Check if project is loaded correctly
         if (!$project || !$project->Project_ID) {
@@ -603,7 +605,9 @@ class ProjectController extends Controller
                          !empty($validatedData['budget_partners'][$i] ?? '') || 
                          !empty($validatedData['budget_amount'][$i] ?? ''))) {
                         
-                        $activity->budget()->create([
+                        // Create budget directly associated with the project instead of through activity
+                        Budget::create([
+                            'project_id' => $project->Project_ID,
                             'Specific_Activity' => $validatedData['budget_activity'][$i] ?? '',
                             'Resources_Needed' => $validatedData['budget_resources'][$i] ?? '',
                             'Partner_Agencies' => $validatedData['budget_partners'][$i] ?? '',
@@ -832,7 +836,7 @@ class ProjectController extends Controller
         // Get the project for the authenticated student
         $project = Project::where('Project_ID', $id)
             ->where('student_id', Auth::user()->student->id)
-            ->with(['activities.budget']) // Load activities and their budgets
+            ->with(['activities', 'budgets']) // Load activities and budgets directly
             ->firstOrFail();
         
         return view('projects.show', compact('project'));

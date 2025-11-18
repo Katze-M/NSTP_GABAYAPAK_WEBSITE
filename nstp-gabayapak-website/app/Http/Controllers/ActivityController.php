@@ -59,20 +59,23 @@ class ActivityController extends Controller
         // Handle file upload
         if ($request->hasFile('proof_picture')) {
             // Delete old proof picture if exists
-            if ($activity->budget && $activity->budget->proof_picture) {
-                Storage::disk('public')->delete($activity->budget->proof_picture);
+            // Note: We need to find the budget directly now since we removed the activity relationship
+            $budget = Budget::where('project_id', $activity->project_id)->first();
+            if ($budget && $budget->proof_picture) {
+                Storage::disk('public')->delete($budget->proof_picture);
             }
             
             // Store new proof picture
             $validatedData['proof_picture'] = $request->file('proof_picture')->store('proof_pictures', 'public');
             
             // Update the budget with the proof picture
-            if ($activity->budget) {
-                $activity->budget->update(['proof_picture' => $validatedData['proof_picture']]);
+            $budget = Budget::where('project_id', $activity->project_id)->first();
+            if ($budget) {
+                $budget->update(['proof_picture' => $validatedData['proof_picture']]);
             } else {
                 // Create a budget if it doesn't exist
                 Budget::create([
-                    'activity_id' => $activity->Activity_ID,
+                    'project_id' => $activity->project_id,
                     'proof_picture' => $validatedData['proof_picture'],
                 ]);
             }

@@ -60,10 +60,13 @@
                     </div>
                     
                     <!-- Current Proof Picture (if exists) -->
-                    @if($activity->budget && $activity->budget->proof_picture)
+                    @php
+                        $budget = $activity->project->budgets->first();
+                    @endphp
+                    @if($budget && $budget->proof_picture)
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Current Proof Picture</label>
-                        <img src="{{ asset('storage/' . $activity->budget->proof_picture) }}" alt="Proof" class="max-w-xs h-auto rounded-lg">
+                        <img src="{{ asset('storage/' . $budget->proof_picture) }}" alt="Proof" class="max-w-xs h-auto rounded-lg">
                     </div>
                     @endif
                     

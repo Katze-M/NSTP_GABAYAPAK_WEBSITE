@@ -1613,7 +1613,46 @@
       // Add one blank budget row
       addBlankBudgetRow();
     @endif
-
+    // Add existing budget items
+    @if(isset($project->activities))
+      @php
+        $budgetAdded = false;
+      @endphp
+      @foreach($project->activities as $activity)
+        @if($activity->budget)
+          @php
+            $budgetAdded = true;
+          @endphp
+          addBudgetRow('{{ addslashes($activity->budget->Specific_Activity) }}', '{{ addslashes($activity->budget->Resources_Needed) }}', '{{ addslashes($activity->budget->Partner_Agencies) }}', '{{ addslashes($activity->budget->Amount) }}');
+        @endif
+      @endforeach
+      @if(!$budgetAdded)
+        // For drafts, check if any activities have budget data even if not explicitly marked
+        @if($project->Project_Status === 'draft')
+          @php
+            $hasBudgetData = false;
+          @endphp
+          @foreach($project->activities as $activity)
+            @if($activity->budget && (!empty($activity->budget->Specific_Activity) || !empty($activity->budget->Resources_Needed) || !empty($activity->budget->Partner_Agencies) || !empty($activity->budget->Amount)))
+              @php
+                $hasBudgetData = true;
+              @endphp
+              addBudgetRow('{{ addslashes($activity->budget->Specific_Activity) }}', '{{ addslashes($activity->budget->Resources_Needed) }}', '{{ addslashes($activity->budget->Partner_Agencies) }}', '{{ addslashes($activity->budget->Amount) }}');
+            @endif
+          @endforeach
+          @if(!$hasBudgetData)
+            // Add one blank budget row if no budget items exist
+            addBlankBudgetRow();
+          @endif
+        @else
+          // Add one blank budget row if no budget items exist
+          addBlankBudgetRow();
+        @endif
+      @endif
+    @else
+      // Add one blank budget row
+      addBlankBudgetRow();
+    @endif
     
     // Populate existing team members
     @if(isset($project->student_ids) && $project->student_ids)

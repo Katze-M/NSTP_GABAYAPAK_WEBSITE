@@ -69,11 +69,11 @@ class Project extends Model
     }
 
     /**
-     * Get the budgets for the project through activities.
+     * Get the budgets for the project.
      */
     public function budgets()
     {
-        return $this->hasManyThrough(Budget::class, Activity::class, 'project_id', 'activity_id', 'Project_ID', 'Activity_ID');
+        return $this->hasMany(Budget::class, 'project_id', 'Project_ID');
     }
     
     /**

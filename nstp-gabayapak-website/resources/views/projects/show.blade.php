@@ -189,29 +189,29 @@
                 <div class="mb-8">
                     <h2 class="text-2xl font-bold mb-4">Budget Items</h2>
                     <div class="space-y-4">
-                        @forelse($project->activities->filter(function($activity) { return $activity->budget !== null; }) as $activity)
+                        @forelse($project->budgets as $budget)
                             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                <h3 class="text-lg font-semibold mb-2">{{ $activity->Stage ?? 'Unspecified Activity' }}</h3>
+                                <h3 class="text-lg font-semibold mb-2">{{ $budget->Specific_Activity ?? 'Unspecified Activity' }}</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                                     <div>
                                         <p class="text-sm text-gray-500">Resources Needed</p>
-                                        <p class="text-gray-700">{{ $activity->budget->Resources_Needed ?? 'N/A' }}</p>
+                                        <p class="text-gray-700">{{ $budget->Resources_Needed ?? 'N/A' }}</p>
                                     </div>
                                     <div>
                                         <p class="text-sm text-gray-500">Partner Agencies</p>
-                                        <p class="text-gray-700">{{ $activity->budget->Partner_Agencies ?? 'N/A' }}</p>
+                                        <p class="text-gray-700">{{ $budget->Partner_Agencies ?? 'N/A' }}</p>
                                     </div>
                                     <div>
                                         <p class="text-sm text-gray-500">Amount</p>
-                                        <p class="text-gray-700">₱{{ number_format($activity->budget->Amount ?? 0, 2) }}</p>
+                                        <p class="text-gray-700">₱{{ number_format($budget->Amount ?? 0, 2) }}</p>
                                     </div>
                                 </div>
 
                                 <!-- Proof Picture (if exists) - Only when project is submitted -->
-                                @if($project->Project_Status !== 'draft' && $activity->budget->proof_picture)
+                                @if($project->Project_Status !== 'draft' && $budget->proof_picture)
                                     <div class="mt-3">
                                         <p class="text-sm text-gray-500">Proof of Activity</p>
-                                        <img src="{{ asset('storage/' . $activity->budget->proof_picture) }}" alt="Proof" class="max-w-xs h-auto rounded-lg mt-2">
+                                        <img src="{{ asset('storage/' . $budget->proof_picture) }}" alt="Proof" class="max-w-xs h-auto rounded-lg mt-2">
                                     </div>
                                 @endif
                             </div>

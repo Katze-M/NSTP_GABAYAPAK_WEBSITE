@@ -30,14 +30,16 @@ class Budget extends Model
         'Resources_Needed',
         'Partner_Agencies',
         'Amount',
-        'activity_id',
+        'project_id',
     ];
 
     /**
-     * Get the activity that owns the budget.
+     * Get the project that owns the budget.
      */
-    public function activity()
+    public function project()
     {
-        return $this->belongsTo(Activity::class, 'activity_id', 'Activity_ID');
+        return $this->belongsTo(Project::class, 'project_id', 'Project_ID');
     }
+
+
 }

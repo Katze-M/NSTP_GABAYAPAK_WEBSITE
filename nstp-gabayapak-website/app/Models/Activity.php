@@ -33,11 +33,5 @@ class Activity extends Model
         return $this->belongsTo(Project::class, 'project_id', 'Project_ID');
     }
 
-    /**
-     * Get the budget for the activity.
-     */
-    public function budget()
-    {
-        return $this->hasOne(Budget::class, 'activity_id', 'Activity_ID');
-    }
+
 }

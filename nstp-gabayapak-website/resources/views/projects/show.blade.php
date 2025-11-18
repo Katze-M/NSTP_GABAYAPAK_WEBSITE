@@ -112,7 +112,7 @@
                 <div class="mb-8">
                     <h2 class="text-2xl font-bold mb-4">Team Members</h2>
                     <div class="space-y-4">
-                        @foreach($project->teamMembers() as $member)
+                        @foreach($project->members() as $member)
                             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                 <div class="flex items-center">
                                     <div class="shrink-0">
@@ -123,9 +123,12 @@
                                         </div>
                                     </div>
                                     <div class="ml-4">
-                                        <h3 class="text-lg font-semibold">{{ $member->user->user_Name }}</h3>
-                                        <p class="text-gray-600">{{ $member->user->user_Email }}</p>
-                                        <p class="text-gray-600">{{ $member->student_contact_number }}</p>
+                                        <h3 class="text-lg font-semibold">{{ $member['name'] }}</h3>
+                                        @if(!empty($member['role']))
+                                            <p class="text-gray-600 font-medium">{{ $member['role'] }}</p>
+                                        @endif
+                                        <p class="text-gray-600">{{ $member['email'] }}</p>
+                                        <p class="text-gray-600">{{ $member['contact'] }}</p>
                                     </div>
                                 </div>
                             </div>

@@ -129,6 +129,7 @@
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
             <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="{{ Auth::user()->user_Name }}" readonly>
+            <input type="hidden" name="member_student_id[]" value="{{ Auth::user()->student->id }}">
           </div>
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>

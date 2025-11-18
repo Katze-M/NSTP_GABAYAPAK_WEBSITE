@@ -40,6 +40,7 @@ class Project extends Model
         'Project_Section',
         'student_id',
         'student_ids',
+        'member_roles',
         'Project_Rejection_Reason',
         'Project_Rejected_By',
     ];
@@ -87,11 +88,17 @@ class Project extends Model
         // Map Student models to simple arrays expected by the form (name, role, email, contact)
         $students = $this->teamMembers();
         $members = [];
+        
+        // Get stored member roles if they exist
+        $memberRoles = $this->member_roles ? json_decode($this->member_roles, true) : [];
+        
         foreach ($students as $student) {
             $user = $student->user ?? null;
+            // Use stored role if it exists, otherwise use empty string
+            $role = $memberRoles[$student->id] ?? '';
             $members[] = [
                 'name' => $user->user_Name ?? '',
-                'role' => '', // role is not persisted separately; left empty for now
+                'role' => $role,
                 'email' => $user->user_Email ?? '',
                 'contact' => $student->student_contact_number ?? '',
                 'student_id' => $student->id ?? null,
@@ -102,9 +109,11 @@ class Project extends Model
         if (empty($members)) {
             $owner = $this->student()->with('user')->first();
             $user = $owner?->user ?? null;
+            // Use stored role for owner if it exists, otherwise use empty string
+            $ownerRole = $memberRoles[$owner->id] ?? '';
             $members[] = [
                 'name' => $user->user_Name ?? '',
-                'role' => '',
+                'role' => $ownerRole,
                 'email' => $user->user_Email ?? '',
                 'contact' => $owner->student_contact_number ?? '',
                 'student_id' => $owner->id ?? null,

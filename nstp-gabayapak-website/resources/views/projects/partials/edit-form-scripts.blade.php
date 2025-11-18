@@ -394,6 +394,7 @@
      
       addedMemberEmails.add(memberEmail);
      
+      // Add to desktop table view
       const desktopTable = document.querySelector('#memberTable tbody');
       if (desktopTable) {
         const newRow = document.createElement('tr');
@@ -420,12 +421,41 @@
         `;
         desktopTable.appendChild(newRow);
       }
+      
+      // Add to mobile card view
+      const mobileContainer = document.getElementById('memberContainer');
+      if (mobileContainer) {
+        const newCard = document.createElement('div');
+        newCard.className = 'member-card bg-white p-3 rounded-lg border-2 border-gray-400 shadow-sm space-y-3';
+        newCard.innerHTML = `
+          <div class="space-y-1">
+            <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
+            <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="${memberName}" readonly>
+            <input type="hidden" name="member_student_id[]" value="${memberId}">
+          </div>
+          <div class="space-y-1">
+            <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
+            <input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required>
+          </div>
+          <div class="space-y-1">
+            <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
+            <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="${memberEmail}" readonly>
+          </div>
+          <div class="space-y-1">
+            <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
+            <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="${memberContact}" readonly>
+          </div>
+          <div class="flex justify-end">
+            <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Remove</button>
+          </div>
+        `;
+        mobileContainer.appendChild(newCard);
+      }
     });
    
     attachRemoveButtons();
     document.getElementById('memberModal').classList.add('hidden');
   });
-
   // Utility functions
   function addBlankBudgetRow() {
     addBudgetRow('', '', '', '');

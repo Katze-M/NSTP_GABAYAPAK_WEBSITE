@@ -70,6 +70,9 @@
 						<tr class="hover:bg-gray-50 transition-colors">
 							<td class="px-6 py-4">
 								<input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" required value="{{ old('member_name.' . $i, $member['name']) }}">
+								@if(isset($member['student_id']))
+									<input type="hidden" name="member_student_id[]" value="{{ $member['student_id'] }}">
+								@endif
 							</td>
 							<td class="px-6 py-4">
 								<input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" required value="{{ old('member_role.' . $i, $member['role']) }}">
@@ -326,8 +329,9 @@
 <!-- SUBMIT and SAVE BUTTONS -->
 <div class="flex flex-col sm:flex-row gap-3 justify-end pt-6">
 	@if($isDraft)
-		<button type="button" id="saveDraftBtn" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors">Save as Draft</button>
-		<button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Submit Project</button>
+		<a href="{{ route('projects.show', $project) }}" class="rounded-lg bg-red-500 hover:bg-red-600 text-white px-6 py-2 text-sm md:text-base transition-colors flex items-center justify-center font-medium">Cancel Edit</a>
+		<button type="button" id="saveDraftBtn" class="rounded-lg bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 text-sm md:text-base transition-colors font-medium">Save as Draft</button>
+		<button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-sm md:text-base transition-colors font-medium">Submit Project</button>
 	@else
 		<button type="button" id="saveProjectBtn" data-current-status="{{ $project->Project_Status }}" class="rounded-lg bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Save Project</button>
 		<a href="{{ route('projects.show', $project) }}" class="rounded-lg bg-gray-300 hover:bg-gray-400 px-4 py-2 text-sm md:text-base text-gray-800 transition-colors flex items-center justify-center">Cancel Edit</a>

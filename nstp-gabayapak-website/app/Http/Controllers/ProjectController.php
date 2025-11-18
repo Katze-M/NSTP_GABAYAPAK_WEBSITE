@@ -215,19 +215,43 @@ class ProjectController extends Controller
         // Add student_id to the validated data
         $validatedData['student_id'] = Auth::user()->student->id;
         
-        // Process student IDs from member data
+        // Build member_roles mapping (maps student ID to role based on email order)
+        $memberRoles = [];
         $studentIds = [$validatedData['student_id']]; // Always include the project owner
+        
+        // Map member emails to their roles
+        $emailToRole = [];
+        if (isset($validatedData['member_email']) && is_array($validatedData['member_email'])) {
+            foreach ($validatedData['member_email'] as $i => $email) {
+                if (!empty($email) && isset($validatedData['member_role'][$i])) {
+                    $emailToRole[$email] = $validatedData['member_role'][$i];
+                }
+            }
+        }
+        
+        // Add the owner's role (first member in the form)
+        $ownerEmail = Auth::user()->user_Email ?? '';
+        if (isset($validatedData['member_email'][0]) && $validatedData['member_email'][0] === $ownerEmail) {
+            $memberRoles[$validatedData['student_id']] = $validatedData['member_role'][0] ?? '';
+        }
+        
+        // Process student IDs from member data
         if (isset($validatedData['member_email']) && is_array($validatedData['member_email'])) {
             // Get student IDs for the member emails
             $memberEmails = array_filter($validatedData['member_email']);
             if (!empty($memberEmails)) {
                 $students = \App\Models\Student::whereHas('user', function($query) use ($memberEmails) {
                     $query->whereIn('user_Email', $memberEmails);
-                })->get();
+                })->with('user')->get();
                 
                 foreach ($students as $student) {
                     if (!in_array($student->id, $studentIds)) {
                         $studentIds[] = $student->id;
+                    }
+                    // Map the role based on email
+                    $userEmail = $student->user->user_Email ?? '';
+                    if (isset($emailToRole[$userEmail])) {
+                        $memberRoles[$student->id] = $emailToRole[$userEmail];
                     }
                 }
             }
@@ -235,14 +259,19 @@ class ProjectController extends Controller
         
         // Also check for member_student_id (from edit form)
         if (isset($validatedData['member_student_id']) && is_array($validatedData['member_student_id'])) {
-            foreach ($validatedData['member_student_id'] as $studentId) {
+            foreach ($validatedData['member_student_id'] as $idx => $studentId) {
                 if (!in_array($studentId, $studentIds) && is_numeric($studentId)) {
                     $studentIds[] = $studentId;
+                    // Map role by index
+                    if (isset($validatedData['member_role'][$idx])) {
+                        $memberRoles[$studentId] = $validatedData['member_role'][$idx];
+                    }
                 }
             }
         }
         
         $validatedData['student_ids'] = json_encode($studentIds);
+        $memberRolesJson = json_encode($memberRoles);
 
         // Set status based on submission type
         $validatedData['Project_Status'] = $request->input('submit_project') ? 'submitted' : 'draft';
@@ -262,6 +291,7 @@ class ProjectController extends Controller
             'Project_Status' => $validatedData['Project_Status'],
             'student_id' => $validatedData['student_id'],
             'student_ids' => $validatedData['student_ids'],
+            'member_roles' => $memberRolesJson,
             'Project_Section' => $validatedData['Project_Section'] ?? '',
         ]);
         
@@ -525,19 +555,43 @@ class ProjectController extends Controller
         // Set status based on submission type
         $projectStatus = $request->input('submit_project') ? 'submitted' : 'draft';
         
-        // Process student IDs from member data
+        // Build member_roles mapping (maps student ID to role based on email order)
+        $memberRoles = [];
         $studentIds = [$project->student_id]; // Always include the project owner
+        
+        // Map member emails to their roles
+        $emailToRole = [];
+        if (isset($validatedData['member_email']) && is_array($validatedData['member_email'])) {
+            foreach ($validatedData['member_email'] as $i => $email) {
+                if (!empty($email) && isset($validatedData['member_role'][$i])) {
+                    $emailToRole[$email] = $validatedData['member_role'][$i];
+                }
+            }
+        }
+        
+        // Add the owner's role (first member in the form)
+        $ownerEmail = Auth::user()->user_Email ?? '';
+        if (isset($validatedData['member_email'][0]) && $validatedData['member_email'][0] === $ownerEmail) {
+            $memberRoles[$project->student_id] = $validatedData['member_role'][0] ?? '';
+        }
+        
+        // Process student IDs from member data
         if (isset($validatedData['member_email']) && is_array($validatedData['member_email'])) {
             // Get student IDs for the member emails
             $memberEmails = array_filter($validatedData['member_email']);
             if (!empty($memberEmails)) {
                 $students = \App\Models\Student::whereHas('user', function($query) use ($memberEmails) {
                     $query->whereIn('user_Email', $memberEmails);
-                })->get();
+                })->with('user')->get();
                 
                 foreach ($students as $student) {
                     if (!in_array($student->id, $studentIds)) {
                         $studentIds[] = $student->id;
+                    }
+                    // Map the role based on email
+                    $userEmail = $student->user->user_Email ?? '';
+                    if (isset($emailToRole[$userEmail])) {
+                        $memberRoles[$student->id] = $emailToRole[$userEmail];
                     }
                 }
             }
@@ -545,14 +599,19 @@ class ProjectController extends Controller
         
         // Also check for member_student_id (from edit form)
         if (isset($validatedData['member_student_id']) && is_array($validatedData['member_student_id'])) {
-            foreach ($validatedData['member_student_id'] as $studentId) {
+            foreach ($validatedData['member_student_id'] as $idx => $studentId) {
                 if (!in_array($studentId, $studentIds) && is_numeric($studentId)) {
                     $studentIds[] = $studentId;
+                    // Map role by index
+                    if (isset($validatedData['member_role'][$idx])) {
+                        $memberRoles[$studentId] = $validatedData['member_role'][$idx];
+                    }
                 }
             }
         }
         
         $studentIdsJson = json_encode($studentIds);
+        $memberRolesJson = json_encode($memberRoles);
         
         // Update the project
         $project->update([
@@ -568,6 +627,7 @@ class ProjectController extends Controller
             'Project_Status' => $projectStatus,
             'Project_Section' => $request->input('nstp_section') ?? $project->Project_Section,
             'student_ids' => $studentIdsJson,
+            'member_roles' => $memberRolesJson,
         ]);
                 
         // Note: Member data is collected in the form but not stored in a separate table
@@ -576,8 +636,9 @@ class ProjectController extends Controller
         
         // Update or create activities
         if (isset($validatedData['stage'])) {
-            // Delete existing activities and their budget
+            // Delete existing activities and budgets
             $project->activities()->delete();
+            $project->budgets()->delete();
             
             // Create new activities
             for ($i = 0; $i < count($validatedData['stage']); $i++) {

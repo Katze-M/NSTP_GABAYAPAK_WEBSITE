@@ -337,6 +337,28 @@ class ProjectController extends Controller
             }
         }
         
+        // Create remaining budgets (in case there are more budget rows than activities)
+        if (isset($validatedData['budget_activity']) && is_array($validatedData['budget_activity'])) {
+            $activityCount = isset($validatedData['stage']) ? count($validatedData['stage']) : 0;
+            
+            for ($i = $activityCount; $i < count($validatedData['budget_activity']); $i++) {
+                // Check if this budget row has any content
+                if (!empty($validatedData['budget_activity'][$i]) || 
+                    !empty($validatedData['budget_resources'][$i] ?? '') || 
+                    !empty($validatedData['budget_partners'][$i] ?? '') || 
+                    !empty($validatedData['budget_amount'][$i] ?? '')) {
+                    
+                    Budget::create([
+                        'project_id' => $project->Project_ID,
+                        'Specific_Activity' => $validatedData['budget_activity'][$i] ?? '',
+                        'Resources_Needed' => $validatedData['budget_resources'][$i] ?? '',
+                        'Partner_Agencies' => $validatedData['budget_partners'][$i] ?? '',
+                        'Amount' => !empty($validatedData['budget_amount'][$i]) ? $validatedData['budget_amount'][$i] : 0,
+                    ]);
+                }
+            }
+        }
+        
         // Redirect with appropriate message
         $message = $validatedData['Project_Status'] === 'submitted' 
             ? 'Project submitted successfully for review!' 
@@ -675,6 +697,28 @@ class ProjectController extends Controller
                             'Amount' => !empty($validatedData['budget_amount'][$i]) ? $validatedData['budget_amount'][$i] : 0,
                         ]);
                     }
+                }
+            }
+        }
+        
+        // Create remaining budgets (in case there are more budget rows than activities)
+        if (isset($validatedData['budget_activity']) && is_array($validatedData['budget_activity'])) {
+            $activityCount = isset($validatedData['stage']) ? count($validatedData['stage']) : 0;
+            
+            for ($i = $activityCount; $i < count($validatedData['budget_activity']); $i++) {
+                // Check if this budget row has any content
+                if (!empty($validatedData['budget_activity'][$i]) || 
+                    !empty($validatedData['budget_resources'][$i] ?? '') || 
+                    !empty($validatedData['budget_partners'][$i] ?? '') || 
+                    !empty($validatedData['budget_amount'][$i] ?? '')) {
+                    
+                    Budget::create([
+                        'project_id' => $project->Project_ID,
+                        'Specific_Activity' => $validatedData['budget_activity'][$i] ?? '',
+                        'Resources_Needed' => $validatedData['budget_resources'][$i] ?? '',
+                        'Partner_Agencies' => $validatedData['budget_partners'][$i] ?? '',
+                        'Amount' => !empty($validatedData['budget_amount'][$i]) ? $validatedData['budget_amount'][$i] : 0,
+                    ]);
                 }
             }
         }

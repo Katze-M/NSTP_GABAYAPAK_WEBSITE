@@ -180,6 +180,25 @@
     })
   });
 
+  // Handle Cancel Edit with confirmation
+  safeAddListener('cancelEditBtn', 'click', function() {
+    Swal.fire({
+      title: 'Cancel Editing?',
+      text: "Any unsaved changes will be lost. Are you sure you want to cancel?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, cancel editing'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Get the project ID from the current URL or form
+        const projectId = '{{ $project->Project_ID }}';
+        window.location.href = "{{ route('projects.show', $project) }}";
+      }
+    })
+  });
+
   // Handle Submit Project with confirmation
   safeAddListener('submitProjectBtn', 'click', function() {
     if (!validateFormRequirements()) return;

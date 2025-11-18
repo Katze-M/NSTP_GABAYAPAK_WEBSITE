@@ -329,7 +329,7 @@
 <!-- SUBMIT and SAVE BUTTONS -->
 <div class="flex flex-col sm:flex-row gap-3 justify-end pt-6">
 	@if($isDraft)
-		<a href="{{ route('projects.show', $project) }}" class="rounded-lg bg-red-500 hover:bg-red-600 text-white px-6 py-2 text-sm md:text-base transition-colors flex items-center justify-center font-medium">Cancel Edit</a>
+		<button type="button" id="cancelEditBtn" class="rounded-lg bg-red-500 hover:bg-red-600 text-white px-6 py-2 text-sm md:text-base transition-colors flex items-center justify-center font-medium">Cancel Edit</button>
 		<button type="button" id="saveDraftBtn" class="rounded-lg bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 text-sm md:text-base transition-colors font-medium">Save as Draft</button>
 		<button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-sm md:text-base transition-colors font-medium">Submit Project</button>
 	@else

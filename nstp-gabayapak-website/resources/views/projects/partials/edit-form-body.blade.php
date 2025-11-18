@@ -123,6 +123,35 @@
 	</div>
 </div>
 
+<!-- Member Selection Modal -->
+<div id="memberModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center hidden z-50">
+  <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-bold">Select Team Members</h3>
+      <button id="closeMemberModal" aria-label="Close member modal" title="Close member modal" class="text-gray-500 hover:text-gray-700">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="mb-4">
+      <p class="text-sm text-gray-600">Select students from your section and component:</p>
+      <p class="text-sm font-medium">{{ Auth::user()->student->student_component ?? 'N/A' }} - {{ Auth::user()->student->student_section ?? 'N/A' }}</p>
+    </div>
+    <div id="memberList" class="space-y-2 mb-4 max-h-60 overflow-y-auto">
+      <!-- Members will be loaded here dynamically -->
+    </div>
+    <div class="flex justify-end space-x-3">
+      <button id="cancelMemberSelection" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+        Cancel
+      </button>
+      <button id="addSelectedMembers" class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600">
+        Add Selected Members
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- PROJECT DETAILS -->
 <div class="rounded-2xl bg-gray-100 p-6 shadow-subtle space-y-4">
 	<h2 class="text-2xl font-bold flex items-center gap-2">

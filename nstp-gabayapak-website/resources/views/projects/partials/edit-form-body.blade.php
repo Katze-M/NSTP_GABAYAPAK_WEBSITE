@@ -124,7 +124,7 @@
 </div>
 
 <!-- Member Selection Modal -->
-<div id="memberModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center hidden z-50">
+<div id="memberModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
   <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-lg font-bold">Select Team Members</h3>

@@ -581,6 +581,8 @@
       if (result.isConfirmed) {
         document.getElementById('saveDraftInput').value = '1';
         document.getElementById('submitProjectInput').value = '0';
+        // Disable inputs that are hidden (desktop/mobile duplicates) so only visible ones are submitted
+        prepareFormForSubmit(document.getElementById('projectForm'));
         document.getElementById('projectForm').submit();
       }
     })
@@ -923,12 +925,38 @@
             // Set the submit flag and submit the form
             document.getElementById('saveDraftInput').value = '0';
             document.getElementById('submitProjectInput').value = '1';
-            form.submit();
+              // Disable inputs that are hidden so only visible ones are submitted
+              prepareFormForSubmit(form);
+              form.submit();
           }
         });
       }
     });
   }
+
+
+    // Disable inputs inside elements that are not displayed so duplicate hidden inputs don't get submitted
+    function prepareFormForSubmit(form) {
+      // Re-enable everything first (in case function run multiple times)
+      form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = false);
+
+      // Disable elements that are not visible (offsetParent === null typically means display:none)
+      // But DO NOT disable hidden inputs such as CSRF `_token` or `_method` — they are required by Laravel.
+      form.querySelectorAll('input, textarea, select').forEach(el => {
+        try {
+          const t = (el.type || '').toLowerCase();
+          // Keep server-required hidden inputs enabled
+          if (t === 'hidden') return;
+          if (el.name && (el.name === '_token' || el.name === '_method')) return;
+
+          if (el.offsetParent === null) {
+            el.disabled = true;
+          }
+        } catch (e) {
+          // ignore elements that throw
+        }
+      });
+    }
 
 
   // Member selection modal
@@ -1101,6 +1129,11 @@
 
     return true;
   }
+
+  // Ensure hidden inputs are disabled on any form submit (defensive)
+  document.getElementById('projectForm').addEventListener('submit', function(e) {
+    prepareFormForSubmit(this);
+  });
 </script>
 @endsection
 

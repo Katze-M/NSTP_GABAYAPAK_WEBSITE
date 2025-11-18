@@ -128,17 +128,17 @@
                         @endif
                         
                         @if($isStaff && $project->Project_Status === 'current')
-                            <a href="{{ route('projects.edit', $project) }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded transition-colors duration-200 view-btn" style="background-color:#4f46e5;color:#ffffff;">Edit</a>
+                            <a href="{{ route('projects.edit', $project) }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition-colors duration-200 view-btn" style="background-color:#4f46e5;color:#ffffff;">Edit</a>
 
                             <form action="{{ route('projects.archive', $project) }}" method="POST" class="inline-block archive-form">
                                 @csrf
-                                <button type="button" class="archive-btn bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition-colors duration-200" style="background-color:#f59e0b;color:#ffffff;">Archive</button>
+                                <button type="button" class="archive-btn bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded transition-colors duration-200" style="background-color:#f59e0b;color:#ffffff;">Archive</button>
                             </form>
 
                             <form action="{{ route('projects.destroy', $project) }}" method="POST" class="delete-form-staff inline-block">
                                 @csrf
                                 @method('DELETE')
-                                <button type="button" class="delete-btn-staff bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition-colors duration-200" style="background-color:#dc2626;color:#ffffff;">Delete</button>
+                                <button type="button" class="delete-btn-staff bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors duration-200" style="background-color:#dc2626;color:#ffffff;">Delete</button>
                             </form>
                         @endif
                     </div>
@@ -327,6 +327,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     .view-btn:active {
+        transform: translateY(0);
+        box-shadow: none;
+    }
+
+    /* Unified action button fallback (uniform height, padding, hover) */
+    .approve-btn, .reject-btn, .view-btn, .delete-btn, .archive-btn, .delete-btn-staff, .delete-btn-staff {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+        font-size: 0.95rem;
+        border-radius: 0.5rem;
+        cursor: pointer !important;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    }
+
+    .approve-btn:hover, .reject-btn:hover, .view-btn:hover, .delete-btn:hover, .archive-btn:hover, .delete-btn-staff:hover, .delete-btn-staff:hover {
+        transform: translateY(-3px);
+        opacity: 0.98;
+    }
+
+    .approve-btn:active, .reject-btn:active, .view-btn:active, .delete-btn:active, .archive-btn:active, .delete-btn-staff:active, .delete-btn-staff:active {
         transform: translateY(0);
         box-shadow: none;
     }

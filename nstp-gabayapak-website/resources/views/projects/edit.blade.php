@@ -57,165 +57,323 @@
             <option value="CWTS" {{ old('Project_Component', $project->Project_Component) === 'CWTS' ? 'selected' : '' }}>Civic Welfare Training Service (CWTS)</option>
             <option value="ROTC" {{ old('Project_Component', $project->Project_Component) === 'ROTC' ? 'selected' : '' }}>Reserve Officers' Training Corps (ROTC)</option>
           </select>
-        </div>
-        <!-- Section Dropdown -->
-        <div class="relative">
-          <label class="block text-lg font-medium">Section<span class="text-red-500">*</span></label>
-          <select name="nstp_section" required
-                  class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white text-black relative z-10 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors">
-            <option value="" disabled>Select Section</option>
-            @foreach (range('A', 'Z') as $letter):
-              @php $value = "Section $letter"; @endphp
-              <option value="{{ $value }}" {{ old('nstp_section', $project->Project_Section) === $value ? 'selected' : '' }}>{{ $value }}</option>
-            @endforeach
+        <!-- JavaScript consolidated below (kept only once near the member modal) -->
+  // Add Row for Budget
+  safeAddListener('addBudgetRow', 'click', function() {
+    // Add a blank budget row using the existing function that prevents duplicates
+    addBlankBudgetRow();
+    attachRemoveButtons();
+  });
+
+  // Function to add an activity row with existing data
+  function addActivityRow(stage, specificActivity, timeframe, pointPerson, status) {
+    // Check if this exact activity row already exists to prevent duplicates
+    const desktopContainer = document.getElementById('activitiesContainer');
+    const mobileContainer = document.getElementById('activitiesContainerMobile');
+    
+    // Check desktop container
+    if (desktopContainer) {
+      const existingRows = desktopContainer.querySelectorAll('.activity-row');
+      for (let row of existingRows) {
+        const stageInput = row.querySelector('input[name="stage[]"]');
+        const activityInput = row.querySelector('textarea[name="activities[]"]');
+        const timeframeInput = row.querySelector('input[name="timeframe[]"]');
+        const pointPersonInput = row.querySelector('textarea[name="point_person[]"]');
+        
+        if (stageInput && activityInput && timeframeInput && pointPersonInput) {
+          if (stageInput.value === (stage || '') && 
+              activityInput.value === (specificActivity || '') && 
+              timeframeInput.value === (timeframe || '') && 
+              pointPersonInput.value === (pointPerson || '')) {
+            // This exact row already exists, don't add it again
+            return;
+          }
+        }
+      }
+    }
+    
+    // Desktop table view
+    if (desktopContainer) {
+      const newRow = document.createElement('div');
+      newRow.className = 'activity-row hover:bg-gray-50 transition-colors px-6 py-4';
+      newRow.innerHTML = `
+        <div class="grid grid-cols-[1fr_2fr_2fr_2fr_1fr_auto] gap-4 items-start">
+          <input name="stage[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Planning" value="${stage || ''}" required>
+          <textarea name="activities[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe specific activities..." required>${specificActivity || ''}</textarea>
+          <input name="timeframe[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Week 1-2" value="${timeframe || ''}" required>
+          <textarea name="point_person[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Responsible person/s" required>${pointPerson || ''}</textarea>
+          <select name="status[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm">
+            <option ${status === 'Planned' ? 'selected' : ''}>Planned</option>
+            <option ${status === 'Ongoing' ? 'selected' : ''}>Ongoing</option>
+            <option ${status === 'Completed' ? 'selected' : ''}>Completed</option>
           </select>
+          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
         </div>
-      </div>
-    </div>
-
-
-    <!-- MEMBER PROFILE -->
-    <div class="rounded-2xl bg-gray-100 p-4 md:p-6 shadow-subtle">
-      <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2">
-        <span class="text-2xl md:text-3xl">👥</span> Member Profile
-      </h2>
-
-
-      <!-- Desktop Table View -->
-      <div class="hidden md:block mt-4">
-        <div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400">
-          <table id="memberTable" class="w-full text-left">
-            <thead class="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-gray-400">
-              <tr>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                  Name <span class="text-red-500">*</span>
-                </th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                  Role/s <span class="text-red-500">*</span>
-                </th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                  School Email <span class="text-red-500">*</span>
-                </th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                  Contact Number <span class="text-red-500">*</span>
-                </th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-wider text-center">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-400">
-              <tr class="hover:bg-gray-50 transition-colors">
-                <td class="px-6 py-4">
-                  <input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" required value="{{ Auth::user()->user_Name }}" readonly>
-                </td>
-                <td class="px-6 py-4">
-                  <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" required>
-                </td>
-                <td class="px-6 py-4">
-                  <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" required value="{{ Auth::user()->user_Email }}" readonly>
-                </td>
-                <td class="px-6 py-4">
-                  <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" required value="{{ Auth::user()->student->student_contact_number ?? '' }}" readonly>
-                </td>
-                <td class="px-6 py-4 text-center">
-                  <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm" disabled>
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      `;
+      desktopContainer.appendChild(newRow);
+    }
+    
+    // Mobile card view
+    if (mobileContainer) {
+      const newCard = document.createElement('div');
+      newCard.className = 'activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
+      newCard.innerHTML = `
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
+          <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Stage" value="${stage || ''}" required>
         </div>
-       
-        <!-- Add Member Button -->
-        <div class="mt-4">
-          <button type="button" id="openMemberModal" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
-            + Add Member from Same Section/Component
-          </button>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
+          <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Specific Activities" required>${specificActivity || ''}</textarea>
         </div>
-      </div>
-
-
-      <!-- Mobile Card View -->
-      <div id="memberContainer" class="md:hidden mt-4 space-y-3">
-        <div class="member-card bg-white p-3 rounded-lg border-2 border-gray-400 shadow-sm space-y-3">
-          <div class="space-y-1">
-            <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
-            <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="{{ Auth::user()->user_Name }}" readonly>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
+          <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Time Frame" value="${timeframe || ''}" required>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
+          <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Point Person/s" required>${pointPerson || ''}</textarea>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="space-y-1 flex-1">
+            <label class="block text-xs font-medium text-gray-600">Status</label>
+            <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors">
+              <option ${status === 'Planned' ? 'selected' : ''}>Planned</option>
+              <option ${status === 'Ongoing' ? 'selected' : ''}>Ongoing</option>
+              <option ${status === 'Completed' ? 'selected' : ''}>Completed</option>
+            </select>
           </div>
-          <div class="space-y-1">
-            <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
-            <input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required>
+          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
+        </div>
+      `;
+      mobileContainer.appendChild(newCard);
+    }
+  }
+
+  // Function to add a blank activity row
+  function addBlankActivityRow() {
+    addActivityRow('', '', '', '', 'Planned');
+  }
+
+  // Function to add a budget row with existing data
+  function addBudgetRow(activity, resources, partners, amount) {
+    // Check if this exact budget row already exists to prevent duplicates
+    const desktopContainer = document.getElementById('budgetContainer');
+    const mobileContainer = document.getElementById('budgetContainerMobile');
+    
+    // Check desktop container
+    if (desktopContainer) {
+      const existingRows = desktopContainer.querySelectorAll('.budget-row');
+      for (let row of existingRows) {
+        const activityInput = row.querySelector('textarea[name="budget_activity[]"]');
+        const resourcesInput = row.querySelector('textarea[name="budget_resources[]"]');
+        const partnersInput = row.querySelector('textarea[name="budget_partners[]"]');
+        const amountInput = row.querySelector('input[name="budget_amount[]"]');
+        
+        if (activityInput && resourcesInput && partnersInput && amountInput) {
+          // Format the amount for comparison
+          let displayAmount = '';
+          if (amount !== null && amount !== undefined && amount !== '') {
+            if (!isNaN(amount)) {
+              displayAmount = parseFloat(amount).toFixed(2);
+            } else {
+              displayAmount = amount;
+            }
+          }
+          
+          if (activityInput.value === (activity || '') && 
+              resourcesInput.value === (resources || '') && 
+              partnersInput.value === (partners || '') && 
+              amountInput.value === displayAmount) {
+            // This exact row already exists, don't add it again
+            return;
+          }
+        }
+      }
+    }
+    
+    // Format amount for display
+    let displayAmount = '';
+    if (amount !== null && amount !== undefined && amount !== '') {
+      // If amount is already a number, format it properly
+      if (!isNaN(amount)) {
+        displayAmount = parseFloat(amount).toFixed(2);
+      } else {
+        displayAmount = amount;
+      }
+    }
+    
+    // Desktop table view
+    if (desktopContainer) {
+      const newRow = document.createElement('div');
+      newRow.className = 'budget-row hover:bg-gray-50 transition-colors px-6 py-4';
+      newRow.innerHTML = `
+        <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start">
+          <textarea name="budget_activity[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe the activity...">${activity || ''}</textarea>
+          <textarea name="budget_resources[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="List resources needed...">${resources || ''}</textarea>
+          <textarea name="budget_partners[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Partner organizations...">${partners || ''}</textarea>
+          <input type="text" name="budget_amount[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="0.00" value="${displayAmount}">
+          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
+        </div>
+      `;
+      desktopContainer.appendChild(newRow);
+    }
+
+    // Mobile card view
+    if (mobileContainer) {
+      const newCard = document.createElement('div');
+      newCard.className = 'budget-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
+      newCard.innerHTML = `
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Activity</label>
+          <textarea name="budget_activity[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Activity">${activity || ''}</textarea>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Resources Needed</label>
+          <textarea name="budget_resources[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Resources Needed">${resources || ''}</textarea>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Partner Agencies</label>
+          <textarea name="budget_partners[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Partner Agencies">${partners || ''}</textarea>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="space-y-1 flex-1">
+            <label class="block text-xs font-medium text-gray-600">Amount</label>
+            <input type="text" name="budget_amount[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="0.00" value="${displayAmount}">
           </div>
-          <div class="space-y-1">
-            <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
-            <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" required value="{{ Auth::user()->user_Email }}" readonly>
+          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
+        </div>
+      `;
+      mobileContainer.appendChild(newCard);
+    }
+  }
+
+  // Function to add a blank budget row
+  function addBlankBudgetRow() {
+    addBudgetRow('', '', '', '');
+  }
+
+  // Auto-expand textarea
+  document.addEventListener("input", function (e) {
+    if (e.target.classList.contains("auto-expand")) {
+      e.target.style.height = "auto";
+      e.target.style.height = e.target.scrollHeight + "px";
+    }
+  });
+
+
+  // Handle Save as Draft
+  safeAddListener('saveDraftBtn', 'click', function() {
+    // For save as draft, we don't require all fields to be filled
+    // Just show a simple confirmation and save
+    Swal.fire({
+      title: 'Save as Draft?',
+      text: "Your project will be saved as a draft and can be edited later.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, save as draft!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const form = document.getElementById('projectForm');
+        // Relax required attributes for draft so partial data can be saved
+        relaxRequiredForDraft(form);
+        // Disable hidden duplicate inputs but preserve hidden server fields
+        prepareFormForSubmit(form);
+        document.getElementById('saveDraftInput').value = '1';
+        document.getElementById('submitProjectInput').value = '0';
+        form.submit();
+      }
+    })
+  });
+
+
+  // Handle Submit Project with confirmation
+  safeAddListener('submitProjectBtn', 'click', function() {
+    // Validate minimum requirements before submitting
+    if (!validateFormRequirements()) return;
+    
+    // Show confirmation modal with project summary
+    showConfirmationModal();
+  });
+
+
+  // Show confirmation modal with detailed project information
+  function showConfirmationModal() {
+    // Get form data
+    const form = document.getElementById('projectForm');
+    const formData = new FormData(form);
+    
+    // Team Information
+    const projectName = formData.get('Project_Name') || 'N/A';
+    const teamName = formData.get('Project_Team_Name') || 'N/A';
+    const component = formData.get('Project_Component') || 'N/A';
+    const section = formData.get('nstp_section') || 'N/A';
+    
+    // Get team logo file
+    const teamLogoFile = formData.get('Project_Logo');
+    let teamLogoHTML = '<div class="text-sm text-gray-600">No file uploaded</div>';
+    if (teamLogoFile && teamLogoFile.size > 0) {
+      teamLogoHTML = `<div class="text-sm text-gray-600">${teamLogoFile.name} (${(teamLogoFile.size / 1024).toFixed(2)} KB)</div>`;
+    }
+    
+    // Project Details
+    const problems = formData.get('Project_Problems') || 'N/A';
+    const goals = formData.get('Project_Goals') || 'N/A';
+    const targetCommunity = formData.get('Project_Target_Community') || 'N/A';
+    const solution = formData.get('Project_Solution') || 'N/A';
+    const outcomes = formData.get('Project_Expected_Outcomes') || 'N/A';
+    
+    // Members - Filter out empty entries and avoid desktop/mobile duplicates
+    const allMemberNames = formData.getAll('member_name[]');
+    const allMemberRoles = formData.getAll('member_role[]');
+    const allMemberEmails = formData.getAll('member_email[]');
+    const allMemberContacts = formData.getAll('member_contact[]');
+    
+    // Only collect unique members - desktop and mobile views have the same data
+    // We'll take only the first half to avoid duplicates
+    const uniqueMemberCount = Math.ceil(allMemberNames.length / 2);
+    
+    // Only get non-empty members from the first half (unique members)
+    const memberNames = [];
+    const memberRoles = [];
+    const memberEmails = [];
+    const memberContacts = [];
+    
+    for (let idx = 0; idx < uniqueMemberCount; idx++) {
+      const name = allMemberNames[idx];
+      if (name && name.trim() !== '') {
+        memberNames.push(name);
+        memberRoles.push(allMemberRoles[idx] || '');
+        memberEmails.push(allMemberEmails[idx] || '');
+        memberContacts.push(allMemberContacts[idx] || '');
+      }
+    }
+    
+    let membersHTML = '<div class="text-left max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">';
+    memberNames.forEach((name, idx) => {
+      membersHTML += `
+        <div class="mb-3 pb-3 ${idx < memberNames.length - 1 ? 'border-b border-gray-300' : ''}">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">${idx + 1}</span>
+            <strong class="text-gray-800">${name}</strong>
+            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">${memberRoles[idx] || 'N/A'}</span>
           </div>
-          <div class="space-y-1">
-            <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
-            <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="{{ Auth::user()->student->student_contact_number ?? '' }}" readonly>
+          <div class="ml-8 text-xs text-gray-600">
+            <div class="flex items-center gap-2 mt-1">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
+              ${memberEmails[idx] || 'N/A'}
+            </div>
+            <div class="flex items-center gap-2 mt-1">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
+              ${memberContacts[idx] || 'N/A'}
+            </div>
           </div>
-          <div class="flex justify-end">
-            <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs" disabled>Remove</button>
-          </div>
-        </div>
-       
-        <!-- Add Member Button -->
-        <div class="mt-4">
-          <button type="button" id="openMemberModalMobile" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors shadow-sm">
-            + Add Member from Same Section/Component
-          </button>
-        </div>
-      </div>
-    </div>
+        </div>`;
+    });
+    membersHTML += '</div>';
 
-
-    <!-- PROJECT DETAILS -->
-    <div class="rounded-2xl bg-gray-100 p-6 shadow-subtle space-y-4">
-      <h2 class="text-2xl font-bold flex items-center gap-2">
-        <span class="text-3xl">🎯</span> Project Details
-      </h2>
-
-
-      <div class="space-y-3">
-        <div>
-          <label class="block text-lg font-medium">Issues/Problem being addressed<span class="text-red-500">*</span></label>
-          <textarea name="Project_Problems" rows="4" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" required>{{ old('Project_Problems', $project->Project_Problems) }}</textarea>
-        </div>
-        <div>
-          <label class="block text-lg font-medium">Goal/Objectives<span class="text-red-500">*</span></label>
-          <textarea name="Project_Goals" rows="4" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" required>{{ old('Project_Goals', $project->Project_Goals) }}</textarea>
-        </div>
-        <div>
-          <label class="block text-lg font-medium">Target Community<span class="text-red-500">*</span></label>
-          <textarea name="Project_Target_Community" rows="2" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" required>{{ old('Project_Target_Community', $project->Project_Target_Community) }}</textarea>
-        </div>
-        <div>
-          <label class="block text-lg font-medium">Solutions/Activities to be implemented<span class="text-red-500">*</span></label>
-          <textarea name="Project_Solution" rows="4" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" required>{{ old('Project_Solution', $project->Project_Solution) }}</textarea>
-        </div>
-        <div>
-          <label class="block text-lg font-medium">Expected Outcomes<span class="text-red-500">*</span></label>
-          <textarea name="Project_Expected_Outcomes" rows="5" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" required>{{ old('Project_Expected_Outcomes', $project->Project_Expected_Outcomes) }}</textarea>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- PROJECT ACTIVITIES -->
-    <div class="rounded-2xl bg-gray-100 p-4 md:p-6 shadow-subtle">
-      <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2 mb-4">
-        <span class="text-2xl md:text-3xl">📅</span> Project Activities
-      </h2>
-
-
-      <!-- Desktop Table View -->
-      <div class="hidden md:block">
-        <div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400">
-          <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-gray-400 px-6 py-4">
-            <div class="grid grid-cols-[1fr_2fr_2fr_2fr_1fr_auto] gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">
-              <div>Stage <span class="text-red-500">*</span></div>
               <div>Specific Activities <span class="text-red-500">*</span></div>
               <div>Time Frame <span class="text-red-500">*</span></div>
               <div>Point Person/s <span class="text-red-500">*</span></div>
@@ -226,11 +384,11 @@
           <div id="activitiesContainer" class="divide-y divide-gray-400">
             <div class="activity-row hover:bg-gray-50 transition-colors px-6 py-4">
               <div class="grid grid-cols-[1fr_2fr_2fr_2fr_1fr_auto] gap-4 items-start">
-                <input name="stage[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Planning" required>
-                <textarea name="activities[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe specific activities..." required></textarea>
-                <input name="timeframe[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Week 1-2" required>
-                <textarea name="point_person[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Responsible person/s" required></textarea>
-                <select name="status[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm">
+                    <input name="stage[]" aria-label="Stage" title="Stage" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Planning" required>
+                    <textarea name="activities[]" aria-label="Specific Activities" title="Specific Activities" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe specific activities..." required></textarea>
+                    <input name="timeframe[]" aria-label="Time Frame" title="Time Frame" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Week 1-2" required>
+                    <textarea name="point_person[]" aria-label="Point Person/s" title="Point Person/s" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Responsible person/s" required></textarea>
+                    <select name="status[]" aria-label="Status" title="Status" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm">
                   <option>Planned</option>
                   <option>Ongoing</option>
                 </select>
@@ -248,19 +406,19 @@
           <div class="activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm">
             <div class="space-y-1">
               <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
-              <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Stage" required>
+              <input name="stage[]" aria-label="Stage" title="Stage" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Stage" required>
             </div>
             <div class="space-y-1">
               <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
-              <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Specific Activities" required></textarea>
+              <textarea name="activities[]" aria-label="Specific Activities" title="Specific Activities" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Specific Activities" required></textarea>
             </div>
             <div class="space-y-1">
               <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
-              <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Time Frame" required>
+              <input name="timeframe[]" aria-label="Time Frame" title="Time Frame" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Time Frame" required>
             </div>
             <div class="space-y-1">
               <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
-              <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Point Person/s" required></textarea>
+              <textarea name="point_person[]" aria-label="Point Person/s" title="Point Person/s" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Point Person/s" required></textarea>
             </div>
             <div class="flex flex-col sm:flex-row gap-2">
               <div class="space-y-1 flex-1">
@@ -291,7 +449,7 @@
       <!-- Desktop Table View -->
       <div class="hidden md:block">
         <div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400">
-          <div class="bg-gradient-to-r from-yellow-50 to-amber-50 border-b-2 border-gray-400 px-6 py-4">
+          <div class="bg-linear-to-r from-yellow-50 to-amber-50 border-b-2 border-gray-400 px-6 py-4">
             <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">
               <div>Activity</div>
               <div>Resources Needed</div>
@@ -302,11 +460,11 @@
           </div>
           <div id="budgetContainer" class="divide-y divide-gray-400">
             <div class="budget-row hover:bg-gray-50 transition-colors px-6 py-4">
-              <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start">
-                <textarea name="budget_activity[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe the activity..."></textarea>
-                <textarea name="budget_resources[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="List resources needed..."></textarea>
-                <textarea name="budget_partners[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Partner organizations..."></textarea>
-                <input type="text" name="budget_amount[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="₱ 0.00">
+                <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start">
+                <textarea name="budget_activity[]" aria-label="Budget Activity" title="Budget Activity" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe the activity..."></textarea>
+                <textarea name="budget_resources[]" aria-label="Resources Needed" title="Resources Needed" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="List resources needed..."></textarea>
+                <textarea name="budget_partners[]" aria-label="Partner Agencies" title="Partner Agencies" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Partner organizations..."></textarea>
+                <input type="text" name="budget_amount[]" aria-label="Amount" title="Amount" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="₱ 0.00">
                 <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
               </div>
             </div>
@@ -319,26 +477,26 @@
       <div class="md:hidden space-y-3">
         <div id="budgetContainerMobile" class="space-y-3">
           <div class="budget-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm">
-            <div class="space-y-1">
-              <label class="block text-xs font-medium text-gray-600">Activity</label>
-              <textarea name="budget_activity[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Activity"></textarea>
-            </div>
-            <div class="space-y-1">
-              <label class="block text-xs font-medium text-gray-600">Resources Needed</label>
-              <textarea name="budget_resources[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Resources Needed"></textarea>
-            </div>
-            <div class="space-y-1">
-              <label class="block text-xs font-medium text-gray-600">Partner Agencies</label>
-              <textarea name="budget_partners[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Partner Agencies"></textarea>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-2">
-              <div class="space-y-1 flex-1">
-                <label class="block text-xs font-medium text-gray-600">Amount</label>
-                <input type="text" name="budget_amount[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="₱ 0.00">
+              <div class="space-y-1">
+                <label class="block text-xs font-medium text-gray-600">Activity</label>
+                <textarea name="budget_activity[]" aria-label="Budget Activity" title="Budget Activity" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Activity"></textarea>
               </div>
-              <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
+              <div class="space-y-1">
+                <label class="block text-xs font-medium text-gray-600">Resources Needed</label>
+                <textarea name="budget_resources[]" aria-label="Resources Needed" title="Resources Needed" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Resources Needed"></textarea>
+              </div>
+              <div class="space-y-1">
+                <label class="block text-xs font-medium text-gray-600">Partner Agencies</label>
+                <textarea name="budget_partners[]" aria-label="Partner Agencies" title="Partner Agencies" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Partner Agencies"></textarea>
+              </div>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <div class="space-y-1 flex-1">
+                  <label class="block text-xs font-medium text-gray-600">Amount</label>
+                  <input type="text" name="budget_amount[]" aria-label="Amount" title="Amount" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="₱ 0.00">
+                </div>
+                <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
+              </div>
             </div>
-          </div>
         </div>
       </div>
 
@@ -354,19 +512,28 @@
 
     <!-- SUBMIT and SAVE BUTTONS -->
     <div class="flex flex-col sm:flex-row gap-3 justify-end pt-6">
-      <button type="button" id="saveDraftBtn" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors">Save as Draft</button>
-      <button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Submit Project</button>
+      @if($project->Project_Status === 'draft')
+        <button type="button" id="saveDraftBtn" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors">Save as Draft</button>
+        <button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Submit Project</button>
+      @elseif($project->Project_Status === 'submitted')
+        <button type="button" id="saveProjectBtn" data-current-status="{{ $project->Project_Status }}" class="rounded-lg bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Save Project</button>
+        <a href="{{ route('projects.show', $project) }}" class="rounded-lg bg-gray-300 hover:bg-gray-400 px-4 py-2 text-sm md:text-base text-gray-800 transition-colors flex items-center justify-center">Cancel Edit</a>
+      @else
+        <!-- For other statuses (e.g., current), default to Save Project + Cancel -->
+        <button type="button" id="saveProjectBtn" data-current-status="{{ $project->Project_Status }}" class="rounded-lg bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Save Project</button>
+        <a href="{{ route('projects.show', $project) }}" class="rounded-lg bg-gray-300 hover:bg-gray-400 px-4 py-2 text-sm md:text-base text-gray-800 transition-colors flex items-center justify-center">Cancel</a>
+      @endif
     </div>
   </form>
 </section>
 
 
 <!-- Member Selection Modal -->
-<div id="memberModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+<div id="memberModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center hidden z-50">
   <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-lg font-bold">Select Team Members</h3>
-      <button id="closeMemberModal" class="text-gray-500 hover:text-gray-700">
+      <button id="closeMemberModal" aria-label="Close member modal" title="Close member modal" class="text-gray-500 hover:text-gray-700">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
@@ -474,7 +641,7 @@
   }
 
   // Add Row for Activities
-  document.getElementById('addActivityRow').addEventListener('click', () => {
+  safeAddListener('addActivityRow', 'click', function() {
     // Desktop table view
     const desktopContainer = document.getElementById('activitiesContainer');
     if (desktopContainer) {
@@ -536,7 +703,7 @@
   });
 
   // Add Row for Budget
-  document.getElementById('addBudgetRow').addEventListener('click', () => {
+  safeAddListener('addBudgetRow', 'click', function() {
     // Add a blank budget row using the existing function that prevents duplicates
     addBlankBudgetRow();
     attachRemoveButtons();
@@ -740,7 +907,7 @@
 
 
   // Handle Save as Draft
-  document.getElementById('saveDraftBtn').addEventListener('click', function() {
+  safeAddListener('saveDraftBtn', 'click', function() {
     // For save as draft, we don't require all fields to be filled
     // Just show a simple confirmation and save
     Swal.fire({
@@ -753,16 +920,21 @@
       confirmButtonText: 'Yes, save as draft!'
     }).then((result) => {
       if (result.isConfirmed) {
+        const form = document.getElementById('projectForm');
+        // Relax required attributes for draft so partial data can be saved
+        relaxRequiredForDraft(form);
+        // Disable hidden duplicate inputs but preserve hidden server fields
+        prepareFormForSubmit(form);
         document.getElementById('saveDraftInput').value = '1';
         document.getElementById('submitProjectInput').value = '0';
-        document.getElementById('projectForm').submit();
+        form.submit();
       }
     })
   });
 
 
   // Handle Submit Project with confirmation
-  document.getElementById('submitProjectBtn').addEventListener('click', function() {
+  safeAddListener('submitProjectBtn', 'click', function() {
     // Validate minimum requirements before submitting
     if (!validateFormRequirements()) return;
     
@@ -1097,6 +1269,8 @@
             // Set the submit flag and submit the form
             document.getElementById('saveDraftInput').value = '0';
             document.getElementById('submitProjectInput').value = '1';
+            // Disable hidden duplicate inputs so only visible ones are submitted
+            prepareFormForSubmit(form);
             form.submit();
           }
         });
@@ -1104,23 +1278,104 @@
     });
   }
 
+  // Save Project handler for editing submitted/current projects (staff)
+  const saveProjectBtn = document.getElementById('saveProjectBtn');
+  if (saveProjectBtn) {
+    saveProjectBtn.addEventListener('click', function() {
+      const form = document.getElementById('projectForm');
+      // Determine whether to preserve submitted status
+      const currentStatus = this.dataset.currentStatus || '';
+      // If current status is 'submitted', set submit flag so controller keeps it as submitted
+      if (currentStatus === 'submitted') {
+        document.getElementById('submitProjectInput').value = '1';
+      } else {
+        document.getElementById('submitProjectInput').value = '0';
+      }
+      document.getElementById('saveDraftInput').value = '0';
+      // Prepare form (disable hidden duplicates)
+      prepareFormForSubmit(form);
+      form.submit();
+    });
+  }
+
+
+  // Disable inputs inside elements that are not displayed so duplicate hidden inputs don't get submitted
+  function prepareFormForSubmit(form) {
+    // Re-enable everything first (in case function run multiple times)
+    form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = false);
+
+    // Disable elements that are not visible (offsetParent === null typically means display:none)
+    // But DO NOT disable hidden inputs such as CSRF `_token` or `_method` — they are required by Laravel.
+    form.querySelectorAll('input, textarea, select').forEach(el => {
+      try {
+        const t = (el.type || '').toLowerCase();
+        // Keep server-required hidden inputs enabled
+        if (t === 'hidden') return;
+        if (el.name && (el.name === '_token' || el.name === '_method')) return;
+
+        if (el.offsetParent === null) {
+          el.disabled = true;
+        }
+      } catch (e) {
+        // ignore elements that throw
+      }
+    });
+  }
+
+  // Remove `required` attributes from fields that should be optional when saving drafts
+  function relaxRequiredForDraft(form) {
+    const selectors = [
+      'input[name^="member_"]',
+      'input[name="member_role[]"]',
+      'input[name="member_name[]"]',
+      'input[name="member_email[]"]',
+      'input[name="member_contact[]"]',
+      'input[name^="member_student_id"]',
+      'input[name^="stage"]',
+      'textarea[name^="activities"]',
+      'input[name^="timeframe"]',
+      'textarea[name^="point_person"]',
+      'select[name^="status"]',
+      'textarea[name^="budget_"]',
+      'input[name^="budget_amount[]"]',
+      'input[name="Project_Logo"]'
+    ];
+
+    selectors.forEach(sel => {
+      form.querySelectorAll(sel).forEach(el => {
+        if (el.hasAttribute('required')) el.removeAttribute('required');
+      });
+    });
+  }
+
   // Member selection modal
-  document.getElementById('openMemberModal').addEventListener('click', function() {
+  // Helper to safely add event listeners only if the element exists
+  function safeAddListener(id, event, handler) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener(event, handler);
+  }
+
+  // Member selection modal (use safe listeners to avoid runtime errors when elements are absent)
+  safeAddListener('openMemberModal', 'click', function() {
     loadMemberList();
-    document.getElementById('memberModal').classList.remove('hidden');
+    const mm = document.getElementById('memberModal');
+    if (mm) mm.classList.remove('hidden');
   });
 
-  document.getElementById('openMemberModalMobile').addEventListener('click', function() {
+  safeAddListener('openMemberModalMobile', 'click', function() {
     loadMemberList();
-    document.getElementById('memberModal').classList.remove('hidden');
+    const mm = document.getElementById('memberModal');
+    if (mm) mm.classList.remove('hidden');
   });
 
-  document.getElementById('closeMemberModal').addEventListener('click', function() {
-    document.getElementById('memberModal').classList.add('hidden');
+  safeAddListener('closeMemberModal', 'click', function() {
+    const mm = document.getElementById('memberModal');
+    if (mm) mm.classList.add('hidden');
   });
 
-  document.getElementById('cancelMemberSelection').addEventListener('click', function() {
-    document.getElementById('memberModal').classList.add('hidden');
+  safeAddListener('cancelMemberSelection', 'click', function() {
+    const mm = document.getElementById('memberModal');
+    if (mm) mm.classList.add('hidden');
   });
 
   // Load member list from same section and component
@@ -1171,7 +1426,7 @@
   }
 
   // Add selected members to the form
-  document.getElementById('addSelectedMembers').addEventListener('click', function() {
+  safeAddListener('addSelectedMembers', 'click', function() {
     const selectedMembers = document.querySelectorAll('input[name="available_members[]"]:checked');
    
     selectedMembers.forEach(checkbox => {
@@ -1190,14 +1445,14 @@
         newRow.className = 'hover:bg-gray-50 transition-colors member-row';
         newRow.innerHTML = `
           <td class="px-6 py-4">
-            <input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberName}" readonly>
+            <input name="member_name[]" aria-label="Member name" title="Member name" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberName}" readonly>
             <input type="hidden" name="member_student_id[]" value="${memberId}">
           </td>
           <td class="px-6 py-4">
-            <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Member" required>
+            <input name="member_role[]" aria-label="Member role" title="Member role" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Member" required>
           </td>
           <td class="px-6 py-4">
-            <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
+            <input type="email" name="member_email[]" aria-label="Member email" title="Member email" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
           </td>
           <td class="px-6 py-4">
             <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required>
@@ -1219,16 +1474,16 @@
         newCard.innerHTML = `
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
-            <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberName}" readonly>
+            <input name="member_name[]" aria-label="Member name" title="Member name" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberName}" readonly>
             <input type="hidden" name="member_student_id[]" value="${memberId}">
           </div>
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
-            <input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Member" required>
+            <input name="member_role[]" aria-label="Member role" title="Member role" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Member" required>
           </div>
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
-            <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
+            <input type="email" name="member_email[]" aria-label="Member email" title="Member email" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
           </div>
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
@@ -1454,14 +1709,14 @@
       newRow.className = 'hover:bg-gray-50 transition-colors member-row';
       newRow.innerHTML = `
         <td class="px-6 py-4">
-          <input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" ${isOwner ? 'readonly' : 'required'}>
+          <input name="member_name[]" aria-label="Member name" title="Member name" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" ${isOwner ? 'readonly' : 'required'}>
           <input type="hidden" name="member_student_id[]" value="${studentId}">
         </td>
         <td class="px-6 py-4">
-          <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" ${isOwner ? 'required' : ''}>
+          <input name="member_role[]" aria-label="Member role" title="Member role" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" ${isOwner ? 'required' : ''}>
         </td>
         <td class="px-6 py-4">
-          <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" ${isOwner ? 'readonly' : 'required'}>
+          <input type="email" name="member_email[]" aria-label="Member email" title="Member email" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" ${isOwner ? 'readonly' : 'required'}>
         </td>
         <td class="px-6 py-4">
           <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" ${isOwner ? 'readonly' : 'required'}>
@@ -1482,16 +1737,16 @@
       newCard.innerHTML = `
         <div class="space-y-1">
           <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
-          <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" ${isOwner ? 'readonly' : 'required'}>
+          <input name="member_name[]" aria-label="Member name" title="Member name" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" ${isOwner ? 'readonly' : 'required'}>
           <input type="hidden" name="member_student_id[]" value="${studentId}">
         </div>
         <div class="space-y-1">
           <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
-          <input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" ${isOwner ? 'required' : ''}>
+          <input name="member_role[]" aria-label="Member role" title="Member role" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" ${isOwner ? 'required' : ''}>
         </div>
         <div class="space-y-1">
           <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
-          <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" ${isOwner ? 'readonly' : 'required'}>
+          <input type="email" name="member_email[]" aria-label="Member email" title="Member email" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" ${isOwner ? 'readonly' : 'required'}>
         </div>
         <div class="space-y-1">
           <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
@@ -1562,5 +1817,4 @@
       console.error('Error fetching student details:', error);
     });
   }
-</script>
-@endsection
+  </script>

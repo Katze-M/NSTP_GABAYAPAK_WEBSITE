@@ -354,16 +354,24 @@ class ProjectController extends Controller
                 return redirect()->route('projects.show', $project)->with('error', 'Submitted projects cannot be edited. You can only update activity status and upload proof for submitted projects.');
             }
         }
-        
+
         // Load the project with its relationships
         $project->load(['activities.budget']);
-        
+
         // Debug: Check if project is loaded correctly
         if (!$project || !$project->Project_ID) {
             abort(404, 'Project not found.');
         }
-        
-        return view('projects.edit', compact('project'));
+
+        // Choose the correct edit blade based on project status
+        if ($project->Project_Status === 'draft') {
+            return view('projects.edit-draft', ['project' => $project, 'isDraft' => true]);
+        } elseif ($project->Project_Status === 'submitted') {
+            return view('projects.edit-submitted', ['project' => $project, 'isDraft' => false]);
+        } else {
+            // Fallback to original edit view for other statuses
+            return view('projects.edit', ['project' => $project, 'isDraft' => false]);
+        }
     }
 
     /**

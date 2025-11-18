@@ -147,49 +147,56 @@
                                 </div>
                                 <p class="text-gray-600 mt-2">Point Persons: {{ $activity->Point_Persons ?? 'Not specified' }}</p>
                                 
-                                <!-- Edit Activity Button (for project owner) -->
-                                @if(Auth::user()->student->id === $project->student_id)
+                                <!-- Edit Activity Button (for project owner) - Only when project is submitted -->
+                                @if(Auth::user()->isStudent() && Auth::user()->student && Auth::user()->student->id === $project->student_id && $project->Project_Status !== 'draft')
                                     <div class="mt-3">
                                         <a href="{{ route('activities.edit', $activity) }}" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
                                             Edit Status & Proof
                                         </a>
                                     </div>
                                 @endif
-                                
-                                @if($activity->budget)
-                                    <div class="mt-3 p-3 bg-white rounded-lg border border-gray-300">
-                                        <h4 class="font-medium text-gray-900">Budget</h4>
-                                        @if($activity->budget->Specific_Activity)
-                                            <p class="text-sm text-gray-600 mt-1">Activity: {{ $activity->budget->Specific_Activity }}</p>
-                                        @endif
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
-                                            <div>
-                                                <p class="text-sm text-gray-500">Resources Needed</p>
-                                                <p class="text-gray-700">{{ $activity->budget->Resources_Needed ?? 'N/A' }}</p>
-                                            </div>
-                                            <div>
-                                                <p class="text-sm text-gray-500">Partner Agencies</p>
-                                                <p class="text-gray-700">{{ $activity->budget->Partner_Agencies ?? 'N/A' }}</p>
-                                            </div>
-                                            <div>
-                                                <p class="text-sm text-gray-500">Amount</p>
-                                                <p class="text-gray-700">₱{{ number_format($activity->budget->Amount ?? 0, 2) }}</p>
-                                            </div>
-                                        </div>
+                            </div>
+                        @empty
+                            <div class="bg-gray-50 p-4 rounded-lg text-center">
+                                <p class="text-gray-500">No activities have been added to this project yet.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
 
-                                        <!-- Proof Picture (if exists) -->
-                                        @if($activity->budget->proof_picture)
-                                            <div class="mt-3">
-                                                <p class="text-sm text-gray-500">Proof of Activity</p>
-                                                <img src="{{ asset('storage/' . $activity->budget->proof_picture) }}" alt="Proof" class="max-w-xs h-auto rounded-lg mt-2">
-                                            </div>
-                                        @endif
+                <!-- Budget Items (Separated from Activities) -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold mb-4">Budget Items</h2>
+                    <div class="space-y-4">
+                        @forelse($project->activities->filter(function($activity) { return $activity->budget !== null; }) as $activity)
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <h3 class="text-lg font-semibold mb-2">{{ $activity->Stage ?? 'Unspecified Activity' }}</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                    <div>
+                                        <p class="text-sm text-gray-500">Resources Needed</p>
+                                        <p class="text-gray-700">{{ $activity->budget->Resources_Needed ?? 'N/A' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Partner Agencies</p>
+                                        <p class="text-gray-700">{{ $activity->budget->Partner_Agencies ?? 'N/A' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Amount</p>
+                                        <p class="text-gray-700">₱{{ number_format($activity->budget->Amount ?? 0, 2) }}</p>
+                                    </div>
+                                </div>
+
+                                <!-- Proof Picture (if exists) - Only when project is submitted -->
+                                @if($project->Project_Status !== 'draft' && $activity->budget->proof_picture)
+                                    <div class="mt-3">
+                                        <p class="text-sm text-gray-500">Proof of Activity</p>
+                                        <img src="{{ asset('storage/' . $activity->budget->proof_picture) }}" alt="Proof" class="max-w-xs h-auto rounded-lg mt-2">
                                     </div>
                                 @endif
                             </div>
                         @empty
                             <div class="bg-gray-50 p-4 rounded-lg text-center">
-                                <p class="text-gray-500">No activities have been added to this project yet.</p>
+                                <p class="text-gray-500">No budget items have been added to this project yet.</p>
                             </div>
                         @endforelse
                     </div>
@@ -205,7 +212,7 @@
                 
                 <!-- Edit and Submit Buttons -->
                 <div class="flex flex-wrap justify-center gap-2 mt-6">
-                    @if(Auth::user()->student->id === $project->student_id)
+                    @if(Auth::user()->isStudent() && Auth::user()->student && Auth::user()->student->id === $project->student_id)
                         @if($project->Project_Status === 'draft')
                             <a href="{{ route('projects.edit', $project) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
                                 Edit Project

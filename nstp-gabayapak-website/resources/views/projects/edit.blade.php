@@ -46,6 +46,7 @@
             <p class="text-sm text-gray-600 mb-2">Upload a new logo to replace the current one (optional if logo exists)</p>
           @endif
           <input type="file" name="Project_Logo" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" {{ $project->Project_Logo ? '' : 'required' }}>
+          <p class="text-sm text-gray-600 mt-1">Note: Logo is required when submitting a project, but optional when saving as draft.</p>
         </div>
         <!-- Component Dropdown -->
         <div class="relative">
@@ -389,11 +390,25 @@
   </div>
 </div>
 
-
-
-
-
 <script>
+  // Keep track of added member emails to prevent duplicates
+  let addedMemberEmails = new Set();
+  // Keep track of whether data has already been populated to prevent duplicates
+  let dataPopulated = false;
+
+  // Initialize addedMemberEmails with existing member emails
+  document.addEventListener('DOMContentLoaded', function() {
+    // Only collect member emails if we haven't already done so
+    if (addedMemberEmails.size === 0) {
+      // Collect existing member emails
+      document.querySelectorAll('input[name="member_email[]"]').forEach(input => {
+        if (input.value) {
+          addedMemberEmails.add(input.value);
+        }
+      });
+    }
+  });
+
   // helper: remove row when button is clicked with SweetAlert2 confirmation
   function attachRemoveButtons() {
     document.querySelectorAll('.removeRow').forEach(btn => {
@@ -412,6 +427,13 @@
               confirmButtonColor: '#3085d6'
             });
             return;
+          }
+          
+          // Remove member email from addedMemberEmails set when removing a member
+          const memberRow = btn.closest('tr, .member-card');
+          const emailInput = memberRow.querySelector('input[name="member_email[]"]');
+          if (emailInput && emailInput.value) {
+            addedMemberEmails.delete(emailInput.value);
           }
         }
         
@@ -450,7 +472,6 @@
       };
     });
   }
-
 
   // Add Row for Activities
   document.getElementById('addActivityRow').addEventListener('click', () => {
@@ -516,59 +537,39 @@
 
   // Add Row for Budget
   document.getElementById('addBudgetRow').addEventListener('click', () => {
-    // Desktop table view
-    const desktopContainer = document.getElementById('budgetContainer');
-    if (desktopContainer) {
-      const newRow = document.createElement('div');
-      newRow.className = 'budget-row hover:bg-gray-50 transition-colors px-6 py-4';
-      newRow.innerHTML = `
-        <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start">
-          <textarea name="budget_activity[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe the activity..."></textarea>
-          <textarea name="budget_resources[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="List resources needed..."></textarea>
-          <textarea name="budget_partners[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Partner organizations..."></textarea>
-          <input type="text" name="budget_amount[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="0.00">
-          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
-        </div>
-      `;
-      desktopContainer.appendChild(newRow);
-    }
-
-    // Mobile card view
-    const mobileContainer = document.getElementById('budgetContainerMobile');
-    if (mobileContainer) {
-      const newCard = document.createElement('div');
-      newCard.className = 'budget-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
-      newCard.innerHTML = `
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-gray-600">Activity</label>
-          <textarea name="budget_activity[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Activity"></textarea>
-        </div>
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-gray-600">Resources Needed</label>
-          <textarea name="budget_resources[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Resources Needed"></textarea>
-        </div>
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-gray-600">Partner Agencies</label>
-          <textarea name="budget_partners[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Partner Agencies"></textarea>
-        </div>
-        <div class="flex flex-col sm:flex-row gap-2">
-          <div class="space-y-1 flex-1">
-            <label class="block text-xs font-medium text-gray-600">Amount</label>
-            <input type="text" name="budget_amount[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="0.00">
-          </div>
-          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
-        </div>
-      `;
-      mobileContainer.appendChild(newCard);
-    }
-   
+    // Add a blank budget row using the existing function that prevents duplicates
+    addBlankBudgetRow();
     attachRemoveButtons();
   });
 
   // Function to add an activity row with existing data
   function addActivityRow(stage, specificActivity, timeframe, pointPerson, status) {
-    // Desktop table view
+    // Check if this exact activity row already exists to prevent duplicates
     const desktopContainer = document.getElementById('activitiesContainer');
+    const mobileContainer = document.getElementById('activitiesContainerMobile');
+    
+    // Check desktop container
+    if (desktopContainer) {
+      const existingRows = desktopContainer.querySelectorAll('.activity-row');
+      for (let row of existingRows) {
+        const stageInput = row.querySelector('input[name="stage[]"]');
+        const activityInput = row.querySelector('textarea[name="activities[]"]');
+        const timeframeInput = row.querySelector('input[name="timeframe[]"]');
+        const pointPersonInput = row.querySelector('textarea[name="point_person[]"]');
+        
+        if (stageInput && activityInput && timeframeInput && pointPersonInput) {
+          if (stageInput.value === (stage || '') && 
+              activityInput.value === (specificActivity || '') && 
+              timeframeInput.value === (timeframe || '') && 
+              pointPersonInput.value === (pointPerson || '')) {
+            // This exact row already exists, don't add it again
+            return;
+          }
+        }
+      }
+    }
+    
+    // Desktop table view
     if (desktopContainer) {
       const newRow = document.createElement('div');
       newRow.className = 'activity-row hover:bg-gray-50 transition-colors px-6 py-4';
@@ -590,7 +591,6 @@
     }
 
     // Mobile card view
-    const mobileContainer = document.getElementById('activitiesContainerMobile');
     if (mobileContainer) {
       const newCard = document.createElement('div');
       newCard.className = 'activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
@@ -634,6 +634,41 @@
 
   // Function to add a budget row with existing data
   function addBudgetRow(activity, resources, partners, amount) {
+    // Check if this exact budget row already exists to prevent duplicates
+    const desktopContainer = document.getElementById('budgetContainer');
+    const mobileContainer = document.getElementById('budgetContainerMobile');
+    
+    // Check desktop container
+    if (desktopContainer) {
+      const existingRows = desktopContainer.querySelectorAll('.budget-row');
+      for (let row of existingRows) {
+        const activityInput = row.querySelector('textarea[name="budget_activity[]"]');
+        const resourcesInput = row.querySelector('textarea[name="budget_resources[]"]');
+        const partnersInput = row.querySelector('textarea[name="budget_partners[]"]');
+        const amountInput = row.querySelector('input[name="budget_amount[]"]');
+        
+        if (activityInput && resourcesInput && partnersInput && amountInput) {
+          // Format the amount for comparison
+          let displayAmount = '';
+          if (amount !== null && amount !== undefined && amount !== '') {
+            if (!isNaN(amount)) {
+              displayAmount = parseFloat(amount).toFixed(2);
+            } else {
+              displayAmount = amount;
+            }
+          }
+          
+          if (activityInput.value === (activity || '') && 
+              resourcesInput.value === (resources || '') && 
+              partnersInput.value === (partners || '') && 
+              amountInput.value === displayAmount) {
+            // This exact row already exists, don't add it again
+            return;
+          }
+        }
+      }
+    }
+    
     // Format amount for display
     let displayAmount = '';
     if (amount !== null && amount !== undefined && amount !== '') {
@@ -646,7 +681,6 @@
     }
     
     // Desktop table view
-    const desktopContainer = document.getElementById('budgetContainer');
     if (desktopContainer) {
       const newRow = document.createElement('div');
       newRow.className = 'budget-row hover:bg-gray-50 transition-colors px-6 py-4';
@@ -663,7 +697,6 @@
     }
 
     // Mobile card view
-    const mobileContainer = document.getElementById('budgetContainerMobile');
     if (mobileContainer) {
       const newCard = document.createElement('div');
       newCard.className = 'budget-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
@@ -801,7 +834,7 @@
           </div>
           <div class="ml-8 text-xs text-gray-600">
             <div class="flex items-center gap-2 mt-1">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
               ${memberEmails[idx] || 'N/A'}
             </div>
             <div class="flex items-center gap-2 mt-1">
@@ -1071,26 +1104,24 @@
     });
   }
 
-
   // Member selection modal
   document.getElementById('openMemberModal').addEventListener('click', function() {
     loadMemberList();
     document.getElementById('memberModal').classList.remove('hidden');
   });
- 
+
   document.getElementById('openMemberModalMobile').addEventListener('click', function() {
     loadMemberList();
     document.getElementById('memberModal').classList.remove('hidden');
   });
- 
+
   document.getElementById('closeMemberModal').addEventListener('click', function() {
     document.getElementById('memberModal').classList.add('hidden');
   });
- 
+
   document.getElementById('cancelMemberSelection').addEventListener('click', function() {
     document.getElementById('memberModal').classList.add('hidden');
   });
-
 
   // Load member list from same section and component
   function loadMemberList() {
@@ -1098,12 +1129,7 @@
     memberList.innerHTML = '<p class="text-center text-gray-500">Loading members...</p>';
    
     // Get existing member emails to exclude them from the list
-    const existingMemberEmails = [];
-    document.querySelectorAll('input[name="member_email[]"]').forEach(input => {
-      if (input.value) {
-        existingMemberEmails.push(input.value);
-      }
-    });
+    const existingMemberEmails = Array.from(addedMemberEmails);
    
     // Fetch students from the same section and component, excluding existing members
     const url = new URL('{{ route("projects.students.same-section") }}', window.location.origin);
@@ -1144,7 +1170,6 @@
       });
   }
 
-
   // Add selected members to the form
   document.getElementById('addSelectedMembers').addEventListener('click', function() {
     const selectedMembers = document.querySelectorAll('input[name="available_members[]"]:checked');
@@ -1154,6 +1179,9 @@
       const memberName = checkbox.dataset.name;
       const memberEmail = checkbox.dataset.email;
       const memberContact = checkbox.dataset.contact;
+     
+      // Add email to addedMemberEmails set to prevent duplicates
+      addedMemberEmails.add(memberEmail);
      
       // Add to desktop table
       const desktopTable = document.querySelector('#memberTable tbody');
@@ -1221,18 +1249,91 @@
     document.getElementById('memberModal').classList.add('hidden');
   });
 
-
-  // initial remove buttons
-  attachRemoveButtons();
-
+  // initial remove buttons (only if data hasn't been populated yet)
+  if (!dataPopulated) {
+    attachRemoveButtons();
+  }
 
   // Populate existing data when the page loads
   document.addEventListener('DOMContentLoaded', function() {
-    // Add existing activities
+    // Check if data has already been populated to prevent duplicates
+    if (dataPopulated) {
+      return;
+    }
+    dataPopulated = true;
+    
+    // IMPORTANT: Clear default rows first before populating
+    
+    // Clear default activity rows
+    const desktopActivityContainer = document.getElementById('activitiesContainer');
+    const mobileActivityContainer = document.getElementById('activitiesContainerMobile');
+    if (desktopActivityContainer) {
+        // Remove all rows except the first one (template)
+        while (desktopActivityContainer.children.length > 1) {
+            desktopActivityContainer.removeChild(desktopActivityContainer.lastChild);
+        }
+        // Clear the first row's content
+        if (desktopActivityContainer.children.length > 0) {
+            desktopActivityContainer.innerHTML = '';
+        }
+    }
+    if (mobileActivityContainer) {
+        // Remove all rows except the first one (template)
+        while (mobileActivityContainer.children.length > 1) {
+            mobileActivityContainer.removeChild(mobileActivityContainer.lastChild);
+        }
+        // Clear the first row's content
+        if (mobileActivityContainer.children.length > 0) {
+            mobileActivityContainer.innerHTML = '';
+        }
+    }
+    
+    // Clear default budget rows
+    const desktopBudgetContainer = document.getElementById('budgetContainer');
+    const mobileBudgetContainer = document.getElementById('budgetContainerMobile');
+    if (desktopBudgetContainer) {
+        // Remove all rows except the first one (template)
+        while (desktopBudgetContainer.children.length > 1) {
+            desktopBudgetContainer.removeChild(desktopBudgetContainer.lastChild);
+        }
+        // Clear the first row's content
+        if (desktopBudgetContainer.children.length > 0) {
+            desktopBudgetContainer.innerHTML = '';
+        }
+    }
+    if (mobileBudgetContainer) {
+        // Remove all rows except the first one (template)
+        while (mobileBudgetContainer.children.length > 1) {
+            mobileBudgetContainer.removeChild(mobileBudgetContainer.lastChild);
+        }
+        // Clear the first row's content
+        if (mobileBudgetContainer.children.length > 0) {
+            mobileBudgetContainer.innerHTML = '';
+        }
+    }
+    
+    // Now add existing activities
     @if(isset($project->activities) && $project->activities->count() > 0)
-      @foreach($project->activities as $activity)
-        addActivityRow('{{ addslashes($activity->Stage) }}', '{{ addslashes($activity->Specific_Activity) }}', '{{ addslashes($activity->Time_Frame) }}', '{{ addslashes($activity->Point_Persons) }}', '{{ addslashes($activity->status) }}');
-      @endforeach
+      @if($project->Project_Status !== 'draft')
+        // For submitted projects, load all activities
+        @foreach($project->activities as $activity)
+          addActivityRow('{{ addslashes($activity->Stage) }}', '{{ addslashes($activity->Specific_Activity) }}', '{{ addslashes($activity->Time_Frame) }}', '{{ addslashes($activity->Point_Persons) }}', '{{ addslashes($activity->status) }}');
+        @endforeach
+      @else
+        // For draft projects, load activities but check if they have data
+        let activityAdded = false;
+        @foreach($project->activities as $activity)
+          // For drafts, only load activities that have at least some data
+          @if(!empty($activity->Stage) || !empty($activity->Specific_Activity) || !empty($activity->Time_Frame) || !empty($activity->Point_Persons))
+            addActivityRow('{{ addslashes($activity->Stage) }}', '{{ addslashes($activity->Specific_Activity) }}', '{{ addslashes($activity->Time_Frame) }}', '{{ addslashes($activity->Point_Persons) }}', '{{ addslashes($activity->status) }}');
+            activityAdded = true;
+          @endif
+        @endforeach
+        // If no activities with data were found, add one blank row
+        if (!activityAdded) {
+          addBlankActivityRow();
+        }
+      @endif
     @else
       // Add one blank activity row
       addBlankActivityRow();
@@ -1240,11 +1341,40 @@
     
     // Add existing budget items
     @if(isset($project->activities))
+      @php
+        $budgetAdded = false;
+      @endphp
       @foreach($project->activities as $activity)
         @if($activity->budget)
+          @php
+            $budgetAdded = true;
+          @endphp
           addBudgetRow('{{ addslashes($activity->budget->Specific_Activity) }}', '{{ addslashes($activity->budget->Resources_Needed) }}', '{{ addslashes($activity->budget->Partner_Agencies) }}', '{{ addslashes($activity->budget->Amount) }}');
         @endif
       @endforeach
+      @if(!$budgetAdded)
+        // For drafts, check if any activities have budget data even if not explicitly marked
+        @if($project->Project_Status === 'draft')
+          @php
+            $hasBudgetData = false;
+          @endphp
+          @foreach($project->activities as $activity)
+            @if($activity->budget && (!empty($activity->budget->Specific_Activity) || !empty($activity->budget->Resources_Needed) || !empty($activity->budget->Partner_Agencies) || !empty($activity->budget->Amount)))
+              @php
+                $hasBudgetData = true;
+              @endphp
+              addBudgetRow('{{ addslashes($activity->budget->Specific_Activity) }}', '{{ addslashes($activity->budget->Resources_Needed) }}', '{{ addslashes($activity->budget->Partner_Agencies) }}', '{{ addslashes($activity->budget->Amount) }}');
+            @endif
+          @endforeach
+          @if(!$hasBudgetData)
+            // Add one blank budget row if no budget items exist
+            addBlankBudgetRow();
+          @endif
+        @else
+          // Add one blank budget row if no budget items exist
+          addBlankBudgetRow();
+        @endif
+      @endif
     @else
       // Add one blank budget row
       addBlankBudgetRow();
@@ -1252,24 +1382,10 @@
     
     // Populate existing team members
     @if(isset($project->student_ids) && $project->student_ids)
-      const studentIds = @json(json_decode($project->student_ids, true));
+      const studentIds = {!! json_encode(json_decode($project->student_ids, true)) !!};
       if (Array.isArray(studentIds) && studentIds.length > 0) {
-        // Remove the default owner row since we'll add all members including the owner
-        const memberTable = document.querySelector('#memberTable tbody');
-        const memberContainer = document.getElementById('memberContainer');
-        
-        // Clear existing rows
-        if (memberTable) {
-          memberTable.innerHTML = '';
-        }
-        if (memberContainer) {
-          memberContainer.innerHTML = '';
-        }
-        
-        // Add all members
+        // Add all members (clearing is already done above)
         studentIds.forEach((studentId, index) => {
-          // We'll need to fetch member details via AJAX or have them pre-loaded
-          // For now, we'll add placeholder rows that can be populated later
           addMemberRowPlaceholder(studentId, index === 0); // First member is owner (readonly)
         });
       }
@@ -1280,139 +1396,6 @@
     
     // Populate member details after a small delay
     setTimeout(populateMemberDetails, 100);
-  });
-
-  // Function to add a member row placeholder
-  function addMemberRowPlaceholder(studentId, isOwner = false) {
-    // Desktop table view
-    const desktopTable = document.querySelector('#memberTable tbody');
-    if (desktopTable) {
-      const newRow = document.createElement('tr');
-      newRow.className = 'hover:bg-gray-50 transition-colors member-row';
-      newRow.innerHTML = `
-        <td class="px-6 py-4">
-          <input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
-          <input type="hidden" name="member_student_id[]" value="${studentId}">
-        </td>
-        <td class="px-6 py-4">
-          <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" ${isOwner ? 'required' : ''}>
-        </td>
-        <td class="px-6 py-4">
-          <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
-        </td>
-        <td class="px-6 py-4">
-          <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
-        </td>
-        <td class="px-6 py-4 text-center">
-          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm" ${isOwner ? 'disabled' : ''}>
-            Remove
-          </button>
-        </td>
-      `;
-      desktopTable.appendChild(newRow);
-    }
-
-    // Mobile card view
-    const mobileContainer = document.getElementById('memberContainer');
-    if (mobileContainer) {
-      const newCard = document.createElement('div');
-      newCard.className = 'member-card bg-white p-3 rounded-lg border-2 border-gray-400 shadow-sm space-y-3 member-row';
-      newCard.innerHTML = `
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
-          <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
-          <input type="hidden" name="member_student_id[]" value="${studentId}">
-        </div>
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
-          <input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" ${isOwner ? 'required' : ''}>
-        </div>
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
-          <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
-        </div>
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
-          <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Loading..." readonly>
-        </div>
-        <div class="flex justify-end">
-          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs" ${isOwner ? 'disabled' : ''}>Remove</button>
-        </div>
-      `;
-      mobileContainer.appendChild(newCard);
-    }
-  }
-
-  // Function to populate member details after loading
-  function populateMemberDetails() {
-    // Get all member rows
-    const memberRows = document.querySelectorAll('.member-row');
-    
-    // Get student IDs from hidden inputs
-    const studentIds = [];
-    document.querySelectorAll('input[name="member_student_id[]"]').forEach(input => {
-      studentIds.push(input.value);
-    });
-    
-    if (studentIds.length > 0) {
-      // Make AJAX request to get member details
-      fetch('/api/students/details', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ student_ids: studentIds })
-      })
-      .then(response => response.json())
-      .then(data => {
-        // Populate member details
-        memberRows.forEach((row, index) => {
-          if (data[index]) {
-            const member = data[index];
-            const isDesktop = row.querySelector('td');
-            
-            if (isDesktop) {
-              // Desktop view
-              row.querySelector('input[name="member_name[]"]').value = member.name;
-              row.querySelector('input[name="member_email[]"]').value = member.email;
-              row.querySelector('input[name="member_contact[]"]').value = member.contact_number || '';
-            } else {
-              // Mobile view
-              const inputs = row.querySelectorAll('input');
-              inputs[0].value = member.name; // name input
-              inputs[2].value = member.email; // email input
-              inputs[3].value = member.contact_number || ''; // contact input
-            }
-          }
-        });
-      })
-      .catch(error => {
-        console.error('Error fetching member details:', error);
-        // Fallback: populate with "Unknown" values
-        memberRows.forEach(row => {
-          const isDesktop = row.querySelector('td');
-          
-          if (isDesktop) {
-            // Desktop view
-            row.querySelector('input[name="member_name[]"]').value = 'Unknown Member';
-            row.querySelector('input[name="member_email[]"]').value = 'unknown@example.com';
-            row.querySelector('input[name="member_contact[]"]').value = '';
-          } else {
-            // Mobile view
-            const inputs = row.querySelectorAll('input');
-            inputs[0].value = 'Unknown Member'; // name input
-            inputs[2].value = 'unknown@example.com'; // email input
-            inputs[3].value = ''; // contact input
-          }
-        });
-      });
-    }
-  }
-
-  // Call populateMemberDetails after DOM is loaded
-  document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(populateMemberDetails, 100); // Small delay to ensure rows are created
   });
 
   // Validate minimum requirements for form submission
@@ -1446,6 +1429,138 @@
 
     return true;
   }
+  
+  // Function to add a member row placeholder
+  function addMemberRowPlaceholder(studentId, isOwner = false) {
+    // Check if this member row already exists to prevent duplicates
+    const desktopTable = document.querySelector('#memberTable tbody');
+    const mobileContainer = document.getElementById('memberContainer');
+    
+    // Check desktop table
+    if (desktopTable) {
+      const existingRows = desktopTable.querySelectorAll('tr');
+      for (let row of existingRows) {
+        const studentIdInput = row.querySelector('input[name="member_student_id[]"]');
+        if (studentIdInput && studentIdInput.value == studentId) {
+          // This member already exists, don't add it again
+          return;
+        }
+      }
+    }
+    
+    // Add to desktop table
+    if (desktopTable) {
+      const newRow = document.createElement('tr');
+      newRow.className = 'hover:bg-gray-50 transition-colors member-row';
+      newRow.innerHTML = `
+        <td class="px-6 py-4">
+          <input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" ${isOwner ? 'readonly' : 'required'}>
+          <input type="hidden" name="member_student_id[]" value="${studentId}">
+        </td>
+        <td class="px-6 py-4">
+          <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" ${isOwner ? 'required' : ''}>
+        </td>
+        <td class="px-6 py-4">
+          <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" ${isOwner ? 'readonly' : 'required'}>
+        </td>
+        <td class="px-6 py-4">
+          <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" ${isOwner ? 'readonly' : 'required'}>
+        </td>
+        <td class="px-6 py-4 text-center">
+          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm" ${isOwner ? 'disabled' : ''}>
+            Remove
+          </button>
+        </td>
+      `;
+      desktopTable.appendChild(newRow);
+    }
+    
+    // Add to mobile view
+    if (mobileContainer) {
+      const newCard = document.createElement('div');
+      newCard.className = 'member-card bg-white p-3 rounded-lg border-2 border-gray-400 shadow-sm space-y-3 member-row';
+      newCard.innerHTML = `
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
+          <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" ${isOwner ? 'readonly' : 'required'}>
+          <input type="hidden" name="member_student_id[]" value="${studentId}">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
+          <input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" ${isOwner ? 'required' : ''}>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
+          <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" ${isOwner ? 'readonly' : 'required'}>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
+          <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" ${isOwner ? 'readonly' : 'required'}>
+        </div>
+        <div class="flex justify-end">
+          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs" ${isOwner ? 'disabled' : ''}>Remove</button>
+        </div>
+      `;
+      mobileContainer.appendChild(newCard);
+    }
+  }
+  
+  // Function to populate member details
+  function populateMemberDetails() {
+    // Get all member student IDs
+    const memberStudentIds = [];
+    document.querySelectorAll('input[name="member_student_id[]"]').forEach(input => {
+      if (input.value) {
+        memberStudentIds.push(input.value);
+      }
+    });
+    
+    if (memberStudentIds.length === 0) return;
+    
+    // Fetch member details
+    fetch('{{ route("api.students.details") }}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({ student_ids: memberStudentIds })
+    })
+    .then(response => response.json())
+    .then(students => {
+      // Update member details
+      document.querySelectorAll('input[name="member_student_id[]"]').forEach((input, index) => {
+        const studentId = input.value;
+        const student = students.find(s => s.id == studentId);
+        
+        if (student) {
+          // Update name
+          const nameInput = input.closest('.member-row, tr, .member-card').querySelector('input[name="member_name[]"]');
+          if (nameInput) nameInput.value = student.name;
+          
+          // Update email
+          const emailInput = input.closest('.member-row, tr, .member-card').querySelector('input[name="member_email[]"]');
+          if (emailInput) emailInput.value = student.email;
+          
+          // Add email to addedMemberEmails set to prevent duplicates
+          if (student.email) {
+            addedMemberEmails.add(student.email);
+          }
+          
+          // Update contact
+          const contactInput = input.closest('.member-row, tr, .member-card').querySelector('input[name="member_contact[]"]');
+          if (contactInput) contactInput.value = student.contact_number || '';
+          
+          // For readonly inputs, make sure the value is properly set
+          if (contactInput && contactInput.hasAttribute('readonly')) {
+            contactInput.value = student.contact_number || '';
+          }
+        }
+      });
+    })
+    .catch(error => {
+      console.error('Error fetching student details:', error);
+    });
+  }
 </script>
 @endsection
-

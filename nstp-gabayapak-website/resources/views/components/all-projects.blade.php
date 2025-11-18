@@ -69,10 +69,28 @@
                         @endif
                     </div>
                     <p class="text-gray-600">{{ $project->Project_Team_Name }}</p>
-                    <a href="@if(($section ?? '') === 'My Projects') {{ route('my-projects.details', $project->Project_ID) }} @else {{ route('projects.show', $project->Project_ID) }} @endif" 
-                       class="mt-4 inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors duration-200">
-                      View Project
-                    </a>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap justify-center gap-2 mt-4">
+                        <a href="@if(($section ?? '') === 'My Projects') {{ route('my-projects.details', $project->Project_ID) }} @else {{ route('projects.show', $project->Project_ID) }} @endif" 
+                           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors duration-200">
+                          View Project
+                        </a>
+                        
+                        @if(($section ?? '') === 'My Projects' && $project->Project_Status === 'draft')
+                            <a href="{{ route('projects.edit', $project) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors duration-200">
+                                Edit Project
+                            </a>
+                            <!-- Delete Button for Draft Projects -->
+                            <form action="{{ route('projects.destroy', $project) }}" method="POST" class="delete-form">
+                                @csrf
+                                @method('DELETE')
+                                <button type="button" class="delete-btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors duration-200">
+                                    Delete
+                                </button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
             @endforeach
         @else
@@ -83,3 +101,33 @@
         @endif
     </div>
 </div>
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add SweetAlert2 confirmation to delete buttons
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const form = this.closest('.delete-form');
+            
+            Swal.fire({
+                title: 'Delete Draft Project?',
+                text: "Are you sure you want to delete this draft project? This action cannot be undone.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
+@endsection

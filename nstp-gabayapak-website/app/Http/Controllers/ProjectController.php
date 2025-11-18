@@ -40,18 +40,29 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         // Only students can create projects
-        if (Auth::user()->isStaff()) {
+        if (!Auth::user()->isStudent() || !Auth::user()->student) {
             abort(403, 'Unauthorized action.');
         }
         
         // Determine if this is a draft or submission
         $isDraft = !$request->input('submit_project', false);
         
+        // Check if student already has a draft (only one draft allowed per student)
+        if ($isDraft) {
+            $existingDraft = Project::where('student_id', Auth::user()->student->id)
+                ->where('Project_Status', 'draft')
+                ->first();
+            
+            if ($existingDraft && !$request->route()->parameter('project')) {
+                return redirect()->back()->with('error', 'You already have a draft project. Please edit or submit your existing draft before creating a new one.');
+            }
+        }
+        
         // Define validation rules based on draft vs submission
         $rules = [
             'Project_Name' => 'required|string|max:255',
             'Project_Team_Name' => 'required|string|max:255',
-            'Project_Logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'Project_Logo' => $isDraft ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048' : 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             // Budget data - not required in either case
             'budget_activity' => 'nullable|array',
             'budget_activity.*' => 'nullable|string',
@@ -211,9 +222,17 @@ class ProjectController extends Controller
                     $activity->save();
                     
                     // Create budget for this activity if provided
-                    if (isset($validatedData['budget_activity'][$i]) && !empty($validatedData['budget_activity'][$i])) {
+                    // Fix: Check if budget data exists at this index and has at least one non-empty field
+                    if (isset($validatedData['budget_activity']) && 
+                        is_array($validatedData['budget_activity']) && 
+                        isset($validatedData['budget_activity'][$i]) && 
+                        (!empty($validatedData['budget_activity'][$i]) || 
+                         !empty($validatedData['budget_resources'][$i] ?? '') || 
+                         !empty($validatedData['budget_partners'][$i] ?? '') || 
+                         !empty($validatedData['budget_amount'][$i] ?? ''))) {
+                        
                         $activity->budget()->create([
-                            'Specific_Activity' => $validatedData['budget_activity'][$i],
+                            'Specific_Activity' => $validatedData['budget_activity'][$i] ?? '',
                             'Resources_Needed' => $validatedData['budget_resources'][$i] ?? '',
                             'Partner_Agencies' => $validatedData['budget_partners'][$i] ?? '',
                             'Amount' => !empty($validatedData['budget_amount'][$i]) ? $validatedData['budget_amount'][$i] : 0,
@@ -259,7 +278,7 @@ class ProjectController extends Controller
     public function edit(Project $project)
     {
         // Only the project owner can edit the project
-        if (Auth::user()->student->id !== $project->student_id) {
+        if (!Auth::user()->isStudent() || !Auth::user()->student || Auth::user()->student->id !== $project->student_id) {
             abort(403, 'Unauthorized action.');
         }
         
@@ -289,7 +308,7 @@ class ProjectController extends Controller
     public function update(Request $request, Project $project)
     {
         // Only the project owner can update the project
-        if (Auth::user()->student->id !== $project->student_id) {
+        if (!Auth::user()->isStudent() || !Auth::user()->student || Auth::user()->student->id !== $project->student_id) {
             abort(403, 'Unauthorized action.');
         }
         
@@ -305,6 +324,18 @@ class ProjectController extends Controller
         
         // Determine if this is a draft or submission
         $isDraft = !$request->input('submit_project', false);
+        
+        // Check if student already has a draft (only one draft allowed per student)
+        if ($isDraft) {
+            $existingDraft = Project::where('student_id', Auth::user()->student->id)
+                ->where('Project_Status', 'draft')
+                ->where('Project_ID', '!=', $project->Project_ID)
+                ->first();
+            
+            if ($existingDraft) {
+                return redirect()->back()->with('error', 'You already have a draft project. Please edit or submit your existing draft before creating a new one.');
+            }
+        }
         
         // Define validation rules based on draft vs submission
         $rules = [
@@ -471,9 +502,17 @@ class ProjectController extends Controller
                     ]);
                     
                     // Create budget for this activity if provided
-                    if (isset($validatedData['budget_activity'][$i]) && !empty($validatedData['budget_activity'][$i])) {
+                    // Fix: Check if budget data exists at this index and has at least one non-empty field
+                    if (isset($validatedData['budget_activity']) && 
+                        is_array($validatedData['budget_activity']) && 
+                        isset($validatedData['budget_activity'][$i]) && 
+                        (!empty($validatedData['budget_activity'][$i]) || 
+                         !empty($validatedData['budget_resources'][$i] ?? '') || 
+                         !empty($validatedData['budget_partners'][$i] ?? '') || 
+                         !empty($validatedData['budget_amount'][$i] ?? ''))) {
+                        
                         $activity->budget()->create([
-                            'Specific_Activity' => $validatedData['budget_activity'][$i],
+                            'Specific_Activity' => $validatedData['budget_activity'][$i] ?? '',
                             'Resources_Needed' => $validatedData['budget_resources'][$i] ?? '',
                             'Partner_Agencies' => $validatedData['budget_partners'][$i] ?? '',
                             'Amount' => !empty($validatedData['budget_amount'][$i]) ? $validatedData['budget_amount'][$i] : 0,
@@ -499,7 +538,20 @@ class ProjectController extends Controller
      */
     public function destroy(Project $project)
     {
-        //
+        // Only the project owner can delete the project
+        if (!Auth::user()->isStudent() || !Auth::user()->student || Auth::user()->student->id !== $project->student_id) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        // Only allow deletion of draft projects
+        if ($project->Project_Status !== 'draft') {
+            return redirect()->back()->with('error', 'Only draft projects can be deleted.');
+        }
+        
+        // Delete the project
+        $project->delete();
+        
+        return redirect()->route('projects.my')->with('success', 'Draft project deleted successfully.');
     }
 
     /**
@@ -635,6 +687,11 @@ class ProjectController extends Controller
      */
     public function myProjectDetails($id)
     {
+        // Only students can access this
+        if (!Auth::user()->isStudent() || !Auth::user()->student) {
+            abort(403, 'Unauthorized action.');
+        }
+        
         // Get the project for the authenticated student
         $project = Project::where('Project_ID', $id)
             ->where('student_id', Auth::user()->student->id)
@@ -665,7 +722,7 @@ class ProjectController extends Controller
     public function getStudentsBySectionAndComponent(Request $request)
     {
         // Only students can access this
-        if (Auth::user()->isStaff()) {
+        if (!Auth::user()->isStudent() || !Auth::user()->student) {
             abort(403, 'Unauthorized action.');
         }
         

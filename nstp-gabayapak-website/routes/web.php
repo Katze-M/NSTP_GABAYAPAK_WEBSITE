@@ -107,6 +107,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/projects/current', [ProjectController::class, 'current'])->name('projects.current');
     Route::get('/projects/pending', [ProjectController::class, 'pending'])->name('projects.pending')->middleware('staff');
     Route::get('/projects/archived', [ProjectController::class, 'archived'])->name('projects.archived')->middleware('staff');
+    // Approve / Reject actions for staff
+    Route::post('/projects/{project}/approve', [ProjectController::class, 'approve'])->name('projects.approve')->middleware('staff');
+    Route::post('/projects/{project}/reject', [ProjectController::class, 'reject'])->name('projects.reject')->middleware('staff');
+    Route::post('/projects/{project}/archive', [ProjectController::class, 'archive'])->name('projects.archive')->middleware('staff');
     Route::get('/projects/rotc/{section?}', [ProjectController::class, 'rotc'])->name('projects.rotc');
     Route::get('/projects/lts/{section?}', [ProjectController::class, 'lts'])->name('projects.lts');
     Route::get('/projects/cwts/{section?}', [ProjectController::class, 'cwts'])->name('projects.cwts');
@@ -118,10 +122,12 @@ Route::middleware('auth')->group(function () {
     // Project CRUD routes (Student only)
     Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create')->middleware('student');
     Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store')->middleware('student');
-    Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show')->middleware('student');
-    Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit')->middleware('student');
-    Route::put('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update')->middleware('student');
-    Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy')->middleware('student');
+    // Allow controller to enforce access (owner or staff). Do not restrict to 'student' middleware here.
+    Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
+    // Allow controller to enforce whether a user is allowed to edit/update/delete (owner student or staff)
+    Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
+    Route::put('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
+    Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
     
     // Project Details
     Route::get('/projects/details/{id}', [ProjectController::class, 'details'])->name('projects.details');

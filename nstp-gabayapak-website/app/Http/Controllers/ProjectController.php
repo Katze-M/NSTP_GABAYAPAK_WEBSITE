@@ -22,6 +22,58 @@ class ProjectController extends Controller
     }
 
     /**
+     * Approve a pending project (staff only).
+     */
+    public function approve(Project $project)
+    {
+        if (!Auth::user() || !Auth::user()->isStaff()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Only allow approving pending projects
+        if ($project->Project_Status !== 'pending' && $project->Project_Status !== 'submitted') {
+            return redirect()->back()->with('error', 'Only pending/submitted projects can be approved.');
+        }
+
+        $project->Project_Status = 'current';
+        $project->Project_Rejection_Reason = null;
+        // Clear rejected-by when approving
+        if (isset($project->Project_Rejected_By)) {
+            $project->Project_Rejected_By = null;
+        }
+        $project->save();
+
+        return redirect()->back()->with('success', 'Project approved successfully.');
+    }
+
+    /**
+     * Reject a pending project with a reason (staff only).
+     */
+    public function reject(Request $request, Project $project)
+    {
+        if (!Auth::user() || !Auth::user()->isStaff()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if ($project->Project_Status !== 'pending' && $project->Project_Status !== 'submitted') {
+            return redirect()->back()->with('error', 'Only pending/submitted projects can be rejected.');
+        }
+
+        $data = $request->validate([
+            'reason' => 'required|string|max:2000',
+        ]);
+
+        $project->Project_Status = 'rejected';
+        $project->Project_Rejection_Reason = $data['reason'];
+        // Record which staff rejected the project (prefer user_id if present)
+        $staffId = Auth::user()->user_id ?? Auth::id();
+        $project->Project_Rejected_By = $staffId;
+        $project->save();
+
+        return redirect()->back()->with('success', 'Project rejected successfully.');
+    }
+
+    /**
      * Show the form for creating a new resource.
      *
      * @return \Illuminate\Http\Response
@@ -55,6 +107,17 @@ class ProjectController extends Controller
             
             if ($existingDraft && !$request->route()->parameter('project')) {
                 return redirect()->back()->with('error', 'You already have a draft project. Please edit or submit your existing draft before creating a new one.');
+            }
+        }
+
+        // If this is a submission, ensure the student doesn't already have a submitted/pending project
+        if (!$isDraft) {
+            $existingSubmitted = Project::where('student_id', Auth::user()->student->id)
+                ->whereIn('Project_Status', ['submitted', 'pending'])
+                ->first();
+
+            if ($existingSubmitted) {
+                return redirect()->back()->with('error', 'You already have a project submitted for review. You can only have one submitted project at a time.');
             }
         }
         
@@ -277,14 +340,19 @@ class ProjectController extends Controller
      */
     public function edit(Project $project)
     {
-        // Only the project owner can edit the project
-        if (!Auth::user()->isStudent() || !Auth::user()->student || Auth::user()->student->id !== $project->student_id) {
-            abort(403, 'Unauthorized action.');
-        }
-        
-        // Prevent editing of submitted projects
-        if ($project->Project_Status === 'submitted') {
-            return redirect()->route('projects.show', $project)->with('error', 'Submitted projects cannot be edited. You can only update activity status and upload proof for submitted projects.');
+        // Allow staff to edit any project. Students may edit only their own projects and not submitted ones.
+        if (Auth::user()->isStaff()) {
+            // staff may edit projects
+        } else {
+            // must be student owner
+            if (!Auth::user()->isStudent() || !Auth::user()->student || Auth::user()->student->id !== $project->student_id) {
+                abort(403, 'Unauthorized action.');
+            }
+
+            // Prevent editing of submitted projects by student owner
+            if ($project->Project_Status === 'submitted') {
+                return redirect()->route('projects.show', $project)->with('error', 'Submitted projects cannot be edited. You can only update activity status and upload proof for submitted projects.');
+            }
         }
         
         // Load the project with its relationships
@@ -307,19 +375,23 @@ class ProjectController extends Controller
      */
     public function update(Request $request, Project $project)
     {
-        // Only the project owner can update the project
-        if (!Auth::user()->isStudent() || !Auth::user()->student || Auth::user()->student->id !== $project->student_id) {
-            abort(403, 'Unauthorized action.');
+        // Allow staff to update any project. Students may update only their own projects and not submitted ones.
+        if (Auth::user()->isStaff()) {
+            // staff allowed
+        } else {
+            if (!Auth::user()->isStudent() || !Auth::user()->student || Auth::user()->student->id !== $project->student_id) {
+                abort(403, 'Unauthorized action.');
+            }
+
+            // Prevent updating submitted projects by student owner
+            if ($project->Project_Status === 'submitted') {
+                return redirect()->route('projects.show', $project)->with('error', 'Submitted projects cannot be edited. You can only update activity status and upload proof for submitted projects.');
+            }
         }
-        
+
         // Debug: Check if project is loaded correctly
         if (!$project || !$project->Project_ID) {
             abort(404, 'Project not found.');
-        }
-        
-        // Prevent updating submitted projects
-        if ($project->Project_Status === 'submitted') {
-            return redirect()->route('projects.show', $project)->with('error', 'Submitted projects cannot be edited. You can only update activity status and upload proof for submitted projects.');
         }
         
         // Determine if this is a draft or submission
@@ -334,6 +406,18 @@ class ProjectController extends Controller
             
             if ($existingDraft) {
                 return redirect()->back()->with('error', 'You already have a draft project. Please edit or submit your existing draft before creating a new one.');
+            }
+        }
+
+        // If this request is transitioning to a submission, ensure the student doesn't already have another submitted/pending project
+        if (!$isDraft) {
+            $existingSubmittedOther = Project::where('student_id', Auth::user()->student->id)
+                ->whereIn('Project_Status', ['submitted', 'pending'])
+                ->where('Project_ID', '!=', $project->Project_ID)
+                ->first();
+
+            if ($existingSubmittedOther) {
+                return redirect()->back()->with('error', 'You already have another project submitted for review. You can only have one submitted project at a time.');
             }
         }
         
@@ -538,19 +622,26 @@ class ProjectController extends Controller
      */
     public function destroy(Project $project)
     {
-        // Only the project owner can delete the project
+        // Allow staff to delete any project. Students may delete only their own drafts.
+        if (Auth::user()->isStaff()) {
+            // staff may delete any project
+            $project->delete();
+            return redirect()->back()->with('success', 'Project deleted successfully.');
+        }
+
+        // Student owner deletion rules
         if (!Auth::user()->isStudent() || !Auth::user()->student || Auth::user()->student->id !== $project->student_id) {
             abort(403, 'Unauthorized action.');
         }
-        
-        // Only allow deletion of draft projects
+
+        // Only allow deletion of draft projects for students
         if ($project->Project_Status !== 'draft') {
             return redirect()->back()->with('error', 'Only draft projects can be deleted.');
         }
-        
+
         // Delete the project
         $project->delete();
-        
+
         return redirect()->route('projects.my')->with('success', 'Draft project deleted successfully.');
     }
 
@@ -564,6 +655,7 @@ class ProjectController extends Controller
         // Get current projects that are not drafts
         $projects = Project::where('Project_Status', 'current')
             ->orderBy('created_at', 'desc')
+            ->with('rejectedBy')
             ->get();
         
         return view('all_projects.current', compact('projects'));
@@ -576,9 +668,10 @@ class ProjectController extends Controller
      */
     public function pending()
     {
-        // Get pending projects that are not drafts
-        $projects = Project::where('Project_Status', 'pending')
+        // Get projects that are pending review (include both 'pending' and newly 'submitted')
+        $projects = Project::whereIn('Project_Status', ['pending', 'submitted'])
             ->orderBy('created_at', 'desc')
+            ->with('rejectedBy')
             ->get();
         
         return view('all_projects.pending', compact('projects'));
@@ -594,9 +687,25 @@ class ProjectController extends Controller
         // Get archived projects that are not drafts
         $projects = Project::where('Project_Status', 'archived')
             ->orderBy('created_at', 'desc')
+            ->with('rejectedBy')
             ->get();
         
         return view('all_projects.archived', compact('projects'));
+    }
+
+    /**
+     * Archive a project (staff only).
+     */
+    public function archive(Project $project)
+    {
+        if (!Auth::user() || !Auth::user()->isStaff()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $project->Project_Status = 'archived';
+        $project->save();
+
+        return redirect()->back()->with('success', 'Project archived successfully.');
     }
 
     /**
@@ -610,11 +719,18 @@ class ProjectController extends Controller
         // ROTC only has Section A
         $section = 'A';
         
-        // Get ROTC projects that are not drafts
+        // Get ROTC projects that are approved/current
+        // match either 'A' or 'Section A' if stored with prefix
+        $sectionVal = $section;
+        $sectionPrefixed = 'Section ' . $section;
         $projects = Project::where('Project_Component', 'ROTC')
-            ->where('Project_Status', '!=', 'draft')
-            ->where('Project_Section', $section)
+            ->where('Project_Status', 'current')
+            ->where(function($q) use ($sectionVal, $sectionPrefixed) {
+                $q->where('Project_Section', $sectionVal)
+                  ->orWhere('Project_Section', $sectionPrefixed);
+            })
             ->orderBy('created_at', 'desc')
+            ->with('rejectedBy')
             ->get();
         
         return view('projects.rotc', compact('section', 'projects'));
@@ -630,12 +746,18 @@ class ProjectController extends Controller
     {
         // If no section provided, default to 'A'
         $section = $section ?? 'A';
+        $sectionVal = $section;
+        $sectionPrefixed = 'Section ' . $section;
         
-        // Get LTS projects that are not drafts
+        // Get LTS projects that are approved/current matching either raw or prefixed section
         $projects = Project::where('Project_Component', 'LTS')
-            ->where('Project_Status', '!=', 'draft')
-            ->where('Project_Section', $section)
+            ->where('Project_Status', 'current')
+            ->where(function($q) use ($sectionVal, $sectionPrefixed) {
+                $q->where('Project_Section', $sectionVal)
+                  ->orWhere('Project_Section', $sectionPrefixed);
+            })
             ->orderBy('created_at', 'desc')
+            ->with('rejectedBy')
             ->get();
         
         return view('projects.lts', compact('section', 'projects'));
@@ -651,12 +773,18 @@ class ProjectController extends Controller
     {
         // If no section provided, default to 'A'
         $section = $section ?? 'A';
-        
-        // Get CWTS projects that are not drafts
+        $sectionVal = $section;
+        $sectionPrefixed = 'Section ' . $section;
+
+        // Get CWTS projects that are approved/current matching either raw or prefixed section
         $projects = Project::where('Project_Component', 'CWTS')
-            ->where('Project_Status', '!=', 'draft')
-            ->where('Project_Section', $section)
+            ->where('Project_Status', 'current')
+            ->where(function($q) use ($sectionVal, $sectionPrefixed) {
+                $q->where('Project_Section', $sectionVal)
+                  ->orWhere('Project_Section', $sectionPrefixed);
+            })
             ->orderBy('created_at', 'desc')
+            ->with('rejectedBy')
             ->get();
         
         return view('projects.cwts', compact('section', 'projects'));
@@ -674,6 +802,7 @@ class ProjectController extends Controller
         
         $projects = $student->projects()
             ->orderBy('created_at', 'desc')
+            ->with('rejectedBy')
             ->get();
         
         return view('all_projects.my-projects', compact('projects'));

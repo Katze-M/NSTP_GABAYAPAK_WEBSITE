@@ -57,6 +57,10 @@
                 <div class="bg-white p-4 rounded-lg shadow-md text-center relative">
                     @if($project->Project_Status === 'draft')
                         <span class="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded">Draft</span>
+                    @elseif($project->Project_Status === 'rejected')
+                        <span class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">Rejected</span>
+                    @elseif($project->Project_Status === 'current')
+                        <span class="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">Current</span>
                     @endif
                     <h2 class="text-lg font-semibold">{{ $project->Project_Name }}</h2>
                     <div class="w-16 h-16 mx-auto my-4">
@@ -69,13 +73,20 @@
                         @endif
                     </div>
                     <p class="text-gray-600">{{ $project->Project_Team_Name }}</p>
+                    @if($project->Project_Status === 'rejected')
+                        <p class="text-sm text-red-600 mt-1">Reason: {{ \Illuminate\Support\Str::limit($project->Project_Rejection_Reason ?? 'No reason provided', 80) }}</p>
+                        @if(isset($project->Project_Rejected_By) && $project->rejectedBy)
+                            <p class="text-xs text-gray-600">Rejected by: {{ $project->rejectedBy->user_Name ?? 'Staff' }}</p>
+                        @endif
+                    @endif
                     
                     <!-- Action Buttons -->
                     <div class="flex flex-wrap justify-center gap-2 mt-4">
-                        <a href="@if(($section ?? '') === 'My Projects') {{ route('my-projects.details', $project->Project_ID) }} @else {{ route('projects.show', $project->Project_ID) }} @endif" 
-                           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors duration-200">
-                          View Project
-                        </a>
+                                                <a href="@if(($section ?? '') === 'My Projects') {{ route('my-projects.details', $project->Project_ID) }} @else {{ route('projects.show', $project->Project_ID) }} @endif" 
+                                                     class="view-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors duration-200"
+                                                     style="background-color:#2563eb;color:#ffffff;">
+                                                    View Project
+                                                </a>
                         
                         @if(($section ?? '') === 'My Projects' && $project->Project_Status === 'draft')
                             <a href="{{ route('projects.edit', $project) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors duration-200">
@@ -88,6 +99,46 @@
                                 <button type="button" class="delete-btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors duration-200">
                                     Delete
                                 </button>
+                            </form>
+                        @endif
+                        
+                        @php
+                            $isStaff = false;
+                            if (Auth::check()) {
+                                $user = Auth::user();
+                                $isStaff = (isset($user->user_Type) && $user->user_Type === 'staff') || (method_exists($user, 'isStaff') && $user->isStaff());
+                            }
+                        @endphp
+                        @if($isStaff && in_array($project->Project_Status, ['submitted','pending']))
+                            <!-- Approve / Reject for Staff -->
+                            <form action="{{ route('projects.approve', $project) }}" method="POST" class="approve-form">
+                                @csrf
+                                <button type="button" class="approve-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors duration-200" style="background-color:#16a34a;color:#ffffff;">
+                                    Approve
+                                </button>
+                            </form>
+
+                            <form action="{{ route('projects.reject', $project) }}" method="POST" class="reject-form">
+                                @csrf
+                                <input type="hidden" name="reason" class="reject-reason-input" value="">
+                                <button type="button" class="reject-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors duration-200" style="background-color:#dc2626;color:#ffffff;">
+                                    Reject
+                                </button>
+                            </form>
+                        @endif
+                        
+                        @if($isStaff && $project->Project_Status === 'current')
+                            <a href="{{ route('projects.edit', $project) }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded transition-colors duration-200 view-btn" style="background-color:#4f46e5;color:#ffffff;">Edit</a>
+
+                            <form action="{{ route('projects.archive', $project) }}" method="POST" class="inline-block archive-form">
+                                @csrf
+                                <button type="button" class="archive-btn bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition-colors duration-200" style="background-color:#f59e0b;color:#ffffff;">Archive</button>
+                            </form>
+
+                            <form action="{{ route('projects.destroy', $project) }}" method="POST" class="delete-form-staff inline-block">
+                                @csrf
+                                @method('DELETE')
+                                <button type="button" class="delete-btn-staff bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition-colors duration-200" style="background-color:#dc2626;color:#ffffff;">Delete</button>
                             </form>
                         @endif
                     </div>
@@ -129,5 +180,154 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+    
+    // Approve and Reject handlers for staff
+    document.addEventListener('DOMContentLoaded', function() {
+        // Approve
+        document.querySelectorAll('.approve-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const form = this.closest('.approve-form');
+
+                Swal.fire({
+                    title: 'Approve Project?',
+                    text: "Are you sure you want to approve this project?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, approve'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        // Reject with reason
+        document.querySelectorAll('.reject-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const form = this.closest('.reject-form');
+                const reasonInput = form.querySelector('.reject-reason-input');
+
+                Swal.fire({
+                    title: 'Reject Project',
+                    input: 'textarea',
+                    inputLabel: 'Reason for rejection',
+                    inputPlaceholder: 'Type the reason for rejection here...',
+                    inputAttributes: {
+                        'aria-label': 'Type the reason for rejection here'
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Reject',
+                    cancelButtonText: 'Cancel',
+                    preConfirm: (value) => {
+                        if (!value || !value.trim()) {
+                            Swal.showValidationMessage('A rejection reason is required');
+                        }
+                        return value;
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        reasonInput.value = result.value;
+                        form.submit();
+                    }
+                });
+            });
+        });
+    });
+
+    // Archive and staff-delete handlers
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.archive-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const form = this.closest('.archive-form');
+
+                Swal.fire({
+                    title: 'Archive Project?',
+                    text: "Are you sure you want to archive this project?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, archive'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('.delete-btn-staff').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const form = this.closest('.delete-form-staff');
+
+                Swal.fire({
+                    title: 'Delete Project?',
+                    text: "This will permanently delete the project.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    });
 </script>
 @endsection
+
+<style>
+    /* Fallback styles for approve/reject buttons when Tailwind is not compiled */
+    .approve-btn, .reject-btn {
+        cursor: pointer !important;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+        outline: none;
+    }
+
+    .approve-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.16);
+        opacity: 0.98;
+    }
+
+    .reject-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 18px rgba(239, 68, 68, 0.16);
+        opacity: 0.98;
+    }
+
+    .approve-btn:active, .reject-btn:active {
+        transform: translateY(0);
+        box-shadow: none;
+    }
+    
+    /* View button fallback styles */
+    .view-btn {
+        cursor: pointer !important;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+        display: inline-block;
+        text-decoration: none;
+    }
+
+    .view-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.12);
+        opacity: 0.98;
+    }
+
+    .view-btn:active {
+        transform: translateY(0);
+        box-shadow: none;
+    }
+</style>

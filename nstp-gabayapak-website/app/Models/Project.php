@@ -40,6 +40,8 @@ class Project extends Model
         'Project_Section',
         'student_id',
         'student_ids',
+        'Project_Rejection_Reason',
+        'Project_Rejected_By',
     ];
 
     /**
@@ -56,6 +58,14 @@ class Project extends Model
     public function activities()
     {
         return $this->hasMany(Activity::class, 'project_id', 'Project_ID');
+    }
+
+    /**
+     * Staff user who rejected the project (if any).
+     */
+    public function rejectedBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'Project_Rejected_By', 'user_id');
     }
 
     /**

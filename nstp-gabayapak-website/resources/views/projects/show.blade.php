@@ -57,8 +57,29 @@
                         <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
                             {{ $project->Project_Component ?? 'No Component' }}
                         </span>
+                        @php $section = $project->Project_Section ?? null; @endphp
                         <span class="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
-                            {{ ucfirst($project->Project_Status ?? 'draft') }}
+                            @if($section)
+                                {{ \Illuminate\Support\Str::startsWith($section, 'Section ') ? $section : 'Section ' . $section }}
+                            @else
+                                Section N/A
+                            @endif
+                        </span>
+                        @php
+                            $status = $project->Project_Status ?? 'draft';
+                            $statusLabel = ucfirst($status);
+                            $badgeClasses = 'bg-gray-100 text-gray-800';
+                            $badgeStyle = 'background-color:#E5E7EB;color:#1F2937;';
+                            if ($status === 'draft') { $badgeClasses = 'bg-yellow-500 text-white'; $badgeStyle = 'background-color:#F59E0B;color:#ffffff;'; }
+                            elseif ($status === 'submitted') { $badgeClasses = 'bg-indigo-100 text-indigo-800'; $badgeStyle = 'background-color:#E0E7FF;color:#3730A3;'; }
+                            elseif ($status === 'pending') { $badgeClasses = 'bg-purple-100 text-purple-800'; $badgeStyle = 'background-color:#F3E8FF;color:#6D28D9;'; }
+                            elseif ($status === 'current') { $badgeClasses = 'bg-green-600 text-white'; $badgeStyle = 'background-color:#16A34A;color:#ffffff;'; }
+                            elseif ($status === 'rejected') { $badgeClasses = 'bg-red-600 text-white'; $badgeStyle = 'background-color:#DC2626;color:#ffffff;'; }
+                            elseif ($status === 'archived') { $badgeClasses = 'bg-slate-400 text-white'; $badgeStyle = 'background-color:#94A3B8;color:#ffffff;'; }
+                        @endphp
+
+                        <span class="{{ $badgeClasses }} text-sm font-medium px-3 py-1 rounded-full" style="{{ $badgeStyle }}">
+                            {{ $statusLabel }}
                         </span>
                     </div>
                 </div>
@@ -94,7 +115,7 @@
                         @foreach($project->teamMembers() as $member)
                             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                 <div class="flex items-center">
-                                    <div class="flex-shrink-0">
+                                    <div class="shrink-0">
                                         <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 flex items-center justify-center">
                                             <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                                 <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
@@ -209,6 +230,16 @@
                         <p class="text-2xl font-bold text-green-600">₱{{ number_format($project->total_budget ?? 0, 2) }}</p>
                     </div>
                 </div>
+                
+                @if($project->Project_Status === 'rejected')
+                    <div class="mt-6 bg-red-50 p-4 rounded-lg border border-red-200">
+                        <h3 class="text-lg font-semibold text-red-700">Rejection Reason</h3>
+                        <p class="text-gray-800 whitespace-pre-line">{{ $project->Project_Rejection_Reason ?? 'No reason provided' }}</p>
+                        @if($project->rejectedBy)
+                            <p class="mt-2 text-sm text-gray-600">Rejected by: {{ $project->rejectedBy->user_Name ?? 'Staff' }} @if(!empty($project->rejectedBy->user_role)) ({{ $project->rejectedBy->user_role }}) @endif</p>
+                        @endif
+                    </div>
+                @endif
                 
                 <!-- Edit and Submit Buttons -->
                 <div class="flex flex-wrap justify-center gap-2 mt-6">

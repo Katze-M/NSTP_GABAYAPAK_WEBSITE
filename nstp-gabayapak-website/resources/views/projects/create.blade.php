@@ -202,11 +202,11 @@
   <div class="overflow-x-auto w-full min-w-0">
     <div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400 w-full min-w-0">
       <div class="bg-linear-to-r from-green-50 to-emerald-50 border-b-2 border-gray-400 px-6 py-3 w-full min-w-[900px]">
-        <div class="flex items-center gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider w-full min-w-[900px]">
+        <div class="flex items-center gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider w-full min-w-[900px] py-2">
             <div class="w-16 px-1 flex-none">Stage <span class="text-red-500">*</span></div>
             <div class="flex-1 px-2">Specific Activities <span class="text-red-500">*</span></div>
-            <div class="w-32 px-2 flex-none">Time Frame <span class="text-red-500">*</span></div>
-            <div class="w-32 flex-none">Implementation Date <span class="text-red-500">*</span></div>
+            <div class="w-32 px-1 flex-none">Time Frame <span class="text-red-500">*</span></div>
+            <div class="w-40 px-2 flex-1">Implementation Date <span class="text-red-500">*</span></div>
             <div class="flex-1 px-2">Point Person/s <span class="text-red-500">*</span></div>
             <div class="w-28 flex-none">Status</div>
             <div class="w-20 px-2 flex-none">Action</div>
@@ -214,28 +214,28 @@
       </div>
       <div id="activitiesContainer" class="divide-y divide-gray-400 w-full min-w-0">
         <div class="proposal-table-row activity-row flex items-center gap-4 w-full">
-          <div class="w-16 flex-none">
-            <input name="stage[]" class="proposal-input w-full" placeholder="e.g., Planning" required>
+          <div class="w-20 flex-none">
+            <input name="stage[]" class="proposal-input w-full" placeholder="e.g., 1" required>
           </div>
           <div class="flex-1 px-2">
             <textarea name="activities[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe specific activities..." required></textarea>
           </div>
-          <div class="w-32 px-2 flex-none">
+          <div class="w-36 px-2 flex-none">
             <input name="timeframe[]" class="proposal-input w-full" placeholder="e.g., Week 1-2" required>
           </div>
-          <div class="w-32 px-2 flex-none">
+          <div class="w-44 px-2 flex-none">
             <input type="date" name="implementation_date[]" class="proposal-input w-full" required>
           </div>
           <div class="flex-1 px-2">
             <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s" required></textarea>
           </div>
-          <div class="w-28 px-2 flex-none">
+          <div class="w-30 py-3 flex-none">
             <select name="status[]" class="proposal-select w-full">
               <option>Planned</option>
               <option>Ongoing</option>
             </select>
           </div>
-          <div class="w-20 px-2 flex-none">
+          <div class="w-20 py-3 flex-none">
             <button type="button" class="proposal-remove-btn removeRow">Remove</button>
           </div>
         </div>
@@ -483,10 +483,10 @@ document.addEventListener('click', function(e) {
     const desktopContainer = document.getElementById('activitiesContainer');
     if (desktopContainer) {
       const newRow = document.createElement('div');
-      newRow.className = 'proposal-table-row flex items-center gap-4';
+      newRow.className = 'proposal-table-row activity-row flex items-center gap-4 w-full';
       newRow.innerHTML = `
-        <div class="w-12 flex-none">
-          <input name="stage[]" class="proposal-input w-full" placeholder="e.g., Planning" required>
+        <div class="w-20 flex-none">
+          <input name="stage[]" class="proposal-input w-full" placeholder="e.g., 1" required>
         </div>
         <div class="flex-1 px-2">
           <textarea name="activities[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe specific activities..." required></textarea>
@@ -494,19 +494,19 @@ document.addEventListener('click', function(e) {
         <div class="w-36 px-2 flex-none">
           <input name="timeframe[]" class="proposal-input w-full" placeholder="e.g., Week 1-2" required>
         </div>
-        <div class="w-36 px-2 flex-none">
+        <div class="w-44 px-2 flex-none">
           <input type="date" name="implementation_date[]" class="proposal-input w-full" required>
         </div>
         <div class="flex-1 px-2">
           <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s" required></textarea>
         </div>
-        <div class="w-32 px-2 flex-none">
+        <div class="w-30 py-3 flex-none">
           <select name="status[]" class="proposal-select w-full">
             <option>Planned</option>
             <option>Ongoing</option>
           </select>
         </div>
-        <div class="w-24 px-2 flex-none">
+        <div class="w-20 py-3 flex-none">
           <button type="button" class="proposal-remove-btn removeRow">Remove</button>
         </div>
       `;

@@ -971,27 +971,7 @@
     });
   }
 
-  document.getElementById('saveDraftBtn').addEventListener('click', function() {
-    // For save as draft, we don't require all fields to be filled
-    // Just show a simple confirmation and save
-    Swal.fire({
-      title: 'Save as Draft?',
-      text: "Your project will be saved as a draft and can be edited later.",
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Yes, save as draft!'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const form = document.getElementById('projectForm');
-        relaxRequiredForDraft(form);
-        document.getElementById('saveDraftInput').value = '1';
-        document.getElementById('submitProjectInput').value = '0';
-        form.submit();
-      }
-    })
-  });
+
 
 
   // Handle Submit Project with confirmation

@@ -1,93 +1,253 @@
 <script>
-  // Keep track of added member emails to prevent duplicates
-  let addedMemberEmails = new Set();
-  // Keep track of whether data has already been populated to prevent duplicates
-  let dataPopulated = false;
+// --- CONSOLIDATED DYNAMIC ROW LOGIC ---
+let addedMemberEmails = new Set();
+let dataPopulated = false;
 
-  // Initialize addedMemberEmails with existing member emails
-  document.addEventListener('DOMContentLoaded', function() {
-    // Only collect member emails if we haven't already done so
-    if (addedMemberEmails.size === 0) {
-      // Collect existing member emails
-      document.querySelectorAll('input[name="member_email[]"]').forEach(input => {
-        if (input.value) {
-          addedMemberEmails.add(input.value);
+// Attach remove button handler (event delegation)
+function attachRemoveButtons() {
+  if (!window._removeRowHandlerAttached) {
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('.removeRow');
+      if (!btn) return;
+      e.preventDefault();
+      // Prevent removing last member
+      if (btn.closest('#memberTable tbody tr') || btn.closest('.member-card')) {
+        const memberTableRows = document.querySelectorAll('#memberTable tbody tr').length;
+        const memberCardRows = document.querySelectorAll('.member-card').length;
+        if (memberTableRows + memberCardRows <= 1) {
+          Swal.fire({ icon: 'error', title: 'Cannot Remove', text: 'At least one team member is required.', confirmButtonColor: '#3085d6' });
+          return;
+        }
+        const memberRow = btn.closest('tr, .member-card');
+        const emailInput = memberRow.querySelector('input[name="member_email[]"]');
+        if (emailInput && emailInput.value) addedMemberEmails.delete(emailInput.value);
+      }
+      // Prevent removing last activity
+      if (btn.closest('.activity-row')) {
+        const activityRows = document.querySelectorAll('.activity-row').length;
+        if (activityRows <= 1) {
+          Swal.fire({ icon: 'error', title: 'Cannot Remove', text: 'At least one activity is required.', confirmButtonColor: '#3085d6' });
+          return;
+        }
+      }
+      Swal.fire({ title: 'Are you sure?', text: "You won't be able to revert this!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Yes, remove it!' }).then((result) => {
+        if (result.isConfirmed) {
+          btn.closest('tr, .grid, .activity-row, .budget-row, .member-card').remove();
+          Swal.fire('Removed!', 'The item has been removed.', 'success');
+        }
+      });
+    });
+    window._removeRowHandlerAttached = true;
+  }
+}
+
+// Add a blank activity row only if none exist
+function addBlankActivityRow() {
+  const desktopContainer = document.getElementById('activitiesContainer');
+  const mobileContainer = document.getElementById('activitiesContainerMobile');
+  const desktopRows = desktopContainer ? desktopContainer.querySelectorAll('.activity-row').length : 0;
+  const mobileRows = mobileContainer ? mobileContainer.querySelectorAll('.activity-row').length : 0;
+  if (desktopRows === 0 && mobileRows === 0) {
+    addActivityRow('', '', '', '', 'Planned');
+  }
+}
+
+// Add a blank budget row only if none exist
+function addBlankBudgetRow() {
+  const desktopContainer = document.getElementById('budgetContainer');
+  const mobileContainer = document.getElementById('budgetContainerMobile');
+  const desktopRows = desktopContainer ? desktopContainer.querySelectorAll('.budget-row').length : 0;
+  const mobileRows = mobileContainer ? mobileContainer.querySelectorAll('.budget-row').length : 0;
+  if (desktopRows === 0 && mobileRows === 0) {
+    addBudgetRow('', '', '', '');
+  }
+}
+
+// Dedupe helpers
+function dedupeEmptyActivityRows() {
+  try {
+    const desktopContainer = document.getElementById('activitiesContainer');
+    const mobileContainer = document.getElementById('activitiesContainerMobile');
+    function isRowEmpty(row) {
+      if (!row) return true;
+      const inputs = row.querySelectorAll('input, textarea, select');
+      for (let el of inputs) {
+        const t = (el.type || '').toLowerCase();
+        if (t === 'hidden') continue;
+        if (el.name && (el.name === '_token' || el.name === '_method')) continue;
+        if (el.value && el.value.toString().trim() !== '') return false;
+      }
+      return true;
+    }
+    if (desktopContainer) {
+      const rows = Array.from(desktopContainer.querySelectorAll('.proposal-table-row, .activity-row'));
+      let emptyFound = false;
+      rows.forEach(r => {
+        if (isRowEmpty(r)) {
+          if (!emptyFound) { emptyFound = true; } else { r.remove(); }
         }
       });
     }
-  });
+    if (mobileContainer) {
+      const cards = Array.from(mobileContainer.querySelectorAll('.activity-row'));
+      let emptyFound = false;
+      cards.forEach(c => {
+        if (isRowEmpty(c)) {
+          if (!emptyFound) { emptyFound = true; } else { c.remove(); }
+        }
+      });
+    }
+  } catch (e) { console.error('dedupeEmptyActivityRows error', e); }
+}
+function dedupeEmptyBudgetRows() {
+  try {
+    const desktopContainer = document.getElementById('budgetContainer');
+    const mobileContainer = document.getElementById('budgetContainerMobile');
+    function isBudgetRowEmpty(row) {
+      if (!row) return true;
+      const inputs = row.querySelectorAll('input, textarea, select');
+      for (let el of inputs) {
+        const t = (el.type || '').toLowerCase();
+        if (t === 'hidden') continue;
+        if (el.name && (el.name === '_token' || el.name === '_method')) continue;
+        if (el.value && el.value.toString().trim() !== '') return false;
+      }
+      return true;
+    }
+    if (desktopContainer) {
+      const rows = Array.from(desktopContainer.querySelectorAll('.proposal-table-row, .budget-row'));
+      let emptyFound = false;
+      rows.forEach(r => {
+        if (isBudgetRowEmpty(r)) {
+          if (!emptyFound) { emptyFound = true; } else { r.remove(); }
+        }
+      });
+    }
+    if (mobileContainer) {
+      const cards = Array.from(mobileContainer.querySelectorAll('.budget-row'));
+      let emptyFound = false;
+      cards.forEach(c => {
+        if (isBudgetRowEmpty(c)) {
+          if (!emptyFound) { emptyFound = true; } else { c.remove(); }
+        }
+      });
+    }
+  } catch (e) { console.error('dedupeEmptyBudgetRows error', e); }
+}
 
-  // helper: remove row when button is clicked with SweetAlert2 confirmation
-  // Use event delegation for remove buttons so it works for dynamically added rows
-  function attachRemoveButtons() {
-    // Only attach once
-    if (!window._removeRowHandlerAttached) {
-      document.addEventListener('click', handleRemoveRow);
-      window._removeRowHandlerAttached = true;
-    }
+// DOMContentLoaded: attach remove, dedupe after population
+document.addEventListener('DOMContentLoaded', function() {
+  if (!dataPopulated) {
+    attachRemoveButtons();
+    dataPopulated = true;
   }
+  setTimeout(() => {
+    dedupeEmptyActivityRows();
+    dedupeEmptyBudgetRows();
+  }, 0);
+});
 
-  function handleRemoveRow(e) {
-    // Only handle left mouse button
-    if (e.type !== 'click' || (e.button !== undefined && e.button !== 0)) return;
-    const btn = e.target.closest('.removeRow');
-    if (!btn) return;
-    // Prevent multiple triggers
-    e.stopPropagation();
-    e.preventDefault();
-    // Check if this is an attempt to remove the last member
-    if (btn.closest('#memberTable tbody tr') || btn.closest('.member-card')) {
-      const memberTableRows = document.querySelectorAll('#memberTable tbody tr').length;
-      const memberCardRows = document.querySelectorAll('.member-card').length;
-      const totalMemberRows = memberTableRows + memberCardRows;
-      if (totalMemberRows <= 1) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Cannot Remove',
-          text: 'At least one team member is required.',
-          confirmButtonColor: '#3085d6'
-        });
-        return;
-      }
-      // Remove member email from addedMemberEmails set when removing a member
-      const memberRow = btn.closest('tr, .member-card');
-      const emailInput = memberRow.querySelector('input[name="member_email[]"]');
-      if (emailInput && emailInput.value) {
-        addedMemberEmails.delete(emailInput.value);
-      }
+// Save as Draft: dedupe before submit
+
+// Single robust Save as Draft handler
+document.addEventListener('DOMContentLoaded', function() {
+    const saveDraftBtn = document.getElementById('saveDraftBtn');
+    let projectForm = document.getElementById('projectForm');
+    
+    // Find the form if it wasn't found by ID, traversing up from the button
+    if (!projectForm && saveDraftBtn) {
+        projectForm = saveDraftBtn.closest('form');
     }
-    // Check if this is an attempt to remove the last activity
-    if (btn.closest('.activity-row')) {
-      const activityRows = document.querySelectorAll('.activity-row').length;
-      if (activityRows <= 1) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Cannot Remove',
-          text: 'At least one activity is required.',
-          confirmButtonColor: '#3085d6'
+    
+    // Flag to prevent double submission
+    let isSubmitting = false; 
+
+    if (saveDraftBtn && projectForm) {
+        saveDraftBtn.addEventListener('click', function(event) {
+            event.preventDefault(); // Stop default form submission
+            
+            if (isSubmitting) return;
+
+            // 1. Show Confirmation Modal (using Swal.fire)
+            Swal.fire({
+                title: 'Save as Draft?',
+                text: "Your project will be saved as a draft and can be edited later.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, save as draft!'
+            }).then((result) => {
+                // This code only runs AFTER the user interacts with the modal
+                if (result.isConfirmed) {
+                    isSubmitting = true; // Set flag to prevent double submission
+
+                    // 2. Perform Clean-up (Remove Blank Rows)
+                    
+                    // --- Activity Rows Cleanup ---
+                    document.querySelectorAll('.activity-row').forEach(row => {
+                        // Select all inputs/textareas, excluding hidden fields and specific status fields
+                        const inputs = Array.from(row.querySelectorAll('input:not([type="hidden"]), textarea, select')).filter(
+                            input => !input.name || !input.name.startsWith('status[')
+                        );
+                        // Check if ALL filtered inputs are empty
+                        const isEmpty = inputs.every(input => input.value.trim() === '');
+                        if (isEmpty) row.remove();
+                    });
+
+                    // --- Budget Rows Cleanup ---
+                    document.querySelectorAll('.budget-row, .proposal-table-row').forEach(row => {
+                        // Select budget-related fields (adjust selector as needed)
+                        const budgetInputs = Array.from(row.querySelectorAll('textarea[name^="budget_"], input[name^="budget_"]'));
+                        
+                        // Exclude status fields and ensure at least one budget field is present for check
+                        const filtered = budgetInputs.filter(input => !input.name || !input.name.startsWith('status['));
+                        
+                        if (filtered.length > 0) {
+                            const isEmpty = filtered.every(input => input.value.trim() === '');
+                            if (isEmpty) row.remove();
+                        }
+                    });
+                    
+                    // 3. Call External/Helper Functions (assuming they are defined globally)
+                    // The 'relaxRequiredForDraft' and 'prepareFormForSubmit' functions are run here.
+                    if (typeof relaxRequiredForDraft === 'function') relaxRequiredForDraft(projectForm);
+                    if (typeof dedupeEmptyActivityRows === 'function') dedupeEmptyActivityRows();
+                    if (typeof dedupeEmptyBudgetRows === 'function') dedupeEmptyBudgetRows();
+                    // Assuming removeAllEmptyBudgetRows is a global function
+                    if (typeof removeAllEmptyBudgetRows === 'function') removeAllEmptyBudgetRows(); 
+                    if (typeof prepareFormForSubmit === 'function') prepareFormForSubmit(projectForm);
+
+                    // 4. Set Draft/Submit Flags
+                    // Ensure you have these hidden inputs in your form:
+                    const saveDraftInput = document.getElementById('saveDraftInput');
+                    const submitProjectInput = document.getElementById('submitProjectInput');
+                    
+                    if (saveDraftInput) saveDraftInput.value = '1';
+                    if (submitProjectInput) submitProjectInput.value = '0';
+                    
+                    // 5. Submit the Form
+                    projectForm.submit();
+                }
+            });
+            // The code that was previously here (cleanup and projectForm.submit())
+            // has been REMOVED as it was causing the immediate, non-confirmed submission.
         });
-        return;
-      }
     }
-    Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, remove it!'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        btn.closest('tr, .grid, .activity-row, .budget-row, .member-card').remove();
-        Swal.fire(
-          'Removed!',
-          'The item has been removed.',
-          'success'
-        )
-      }
-    });
-  }
+});
+
+
+// Submit Project: dedupe before submit
+safeAddListener('submitProjectBtn', 'click', function() {
+  if (!validateFormRequirements()) return;
+  dedupeEmptyActivityRows();
+  dedupeEmptyBudgetRows();
+  setTimeout(() => {
+    dedupeEmptyActivityRows();
+    dedupeEmptyBudgetRows();
+  }, 0);
+  showConfirmationModal();
+});
 
   // Add Row for Activities
   document.getElementById('addActivityRow').addEventListener('click', () => {
@@ -248,30 +408,19 @@
 
         if (desktopContainer) {
           const rows = Array.from(desktopContainer.querySelectorAll('.proposal-table-row, .budget-row'));
-          let emptyFound = false;
-          rows.forEach(r => {
-            if (isBudgetRowEmpty(r)) {
-              if (!emptyFound) {
-                emptyFound = true;
-              } else {
-                r.remove();
-              }
-            }
-          });
+          // Remove all empty rows except the last one
+          const emptyRows = rows.filter(isBudgetRowEmpty);
+          if (emptyRows.length > 1) {
+            emptyRows.slice(0, -1).forEach(r => r.remove());
+          }
         }
 
         if (mobileContainer) {
           const cards = Array.from(mobileContainer.querySelectorAll('.budget-row'));
-          let emptyFound = false;
-          cards.forEach(c => {
-            if (isBudgetRowEmpty(c)) {
-              if (!emptyFound) {
-                emptyFound = true;
-              } else {
-                c.remove();
-              }
-            }
-          });
+          const emptyRows = cards.filter(isBudgetRowEmpty);
+          if (emptyRows.length > 1) {
+            emptyRows.slice(0, -1).forEach(c => c.remove());
+          }
         }
       } catch (e) {
         console.error('dedupeEmptyBudgetRows error', e);
@@ -282,11 +431,11 @@
 
   // Add Row for Budget
   safeAddListener('addBudgetRow', 'click', function() {
-    // Desktop table view - create markup identical to static budget row
+    // Desktop table view - always append after the last budget row
     const desktopContainer = document.getElementById('budgetContainer');
     if (desktopContainer) {
       const newRow = document.createElement('div');
-      newRow.className = 'proposal-table-row grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start';
+      newRow.className = 'proposal-table-row grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start budget-row';
       newRow.innerHTML = `
         <textarea name="budget_activity[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe the activity..."></textarea>
         <textarea name="budget_resources[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="List resources needed..."></textarea>
@@ -294,10 +443,11 @@
         <input type="text" name="budget_amount[]" class="proposal-input w-full" placeholder="₱ 0.00">
         <button type="button" class="proposal-remove-btn removeRow whitespace-nowrap">Remove</button>
       `;
+      // Always append at the end
       desktopContainer.appendChild(newRow);
     }
 
-    // Mobile card view - mirror existing mobile layout and ensure remove button has removeRow
+    // Mobile card view - always append after the last budget row
     const mobileContainer = document.getElementById('budgetContainerMobile');
     if (mobileContainer) {
       const newCard = document.createElement('div');
@@ -323,6 +473,7 @@
           <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
         </div>
       `;
+      // Always append at the end
       mobileContainer.appendChild(newCard);
     }
 
@@ -354,6 +505,8 @@
         // Remove duplicate/extra empty activity and budget rows before submit
         dedupeEmptyActivityRows();
         dedupeEmptyBudgetRows();
+        // Remove all empty budget rows before submit
+        removeAllEmptyBudgetRows();
         prepareFormForSubmit(form);
         document.getElementById('saveDraftInput').value = '1';
         document.getElementById('submitProjectInput').value = '0';
@@ -466,8 +619,33 @@
             // Remove duplicate/extra empty activity and budget rows before final submit
             dedupeEmptyActivityRows();
             dedupeEmptyBudgetRows();
+            removeAllEmptyBudgetRows();
             prepareFormForSubmit(form);
             form.submit();
+          // Remove all empty budget rows (for submit)
+          function removeAllEmptyBudgetRows() {
+            const desktopContainer = document.getElementById('budgetContainer');
+            const mobileContainer = document.getElementById('budgetContainerMobile');
+            function isBudgetRowEmpty(row) {
+              if (!row) return true;
+              const inputs = row.querySelectorAll('input, textarea, select');
+              for (let el of inputs) {
+                const t = (el.type || '').toLowerCase();
+                if (t === 'hidden') continue;
+                if (el.name && (el.name === '_token' || el.name === '_method')) continue;
+                if (el.value && el.value.toString().trim() !== '') return false;
+              }
+              return true;
+            }
+            if (desktopContainer) {
+              const rows = Array.from(desktopContainer.querySelectorAll('.proposal-table-row, .budget-row'));
+              rows.forEach(r => { if (isBudgetRowEmpty(r)) r.remove(); });
+            }
+            if (mobileContainer) {
+              const cards = Array.from(mobileContainer.querySelectorAll('.budget-row'));
+              cards.forEach(c => { if (isBudgetRowEmpty(c)) c.remove(); });
+            }
+          }
           }
         });
       }

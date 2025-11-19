@@ -1,4 +1,8 @@
-    <!-- TEAM INFORMATION -->
+@php
+    $isDraftMode = isset($isDraft) && $isDraft;
+@endphp
+
+<!-- TEAM INFORMATION -->
     <div class="rounded-2xl bg-gray-100 p-6 shadow-subtle space-y-4">
       <h2 class="text-2xl font-bold flex items-center gap-2">
         <span class="text-3xl">🖼️</span> Team Information
@@ -8,11 +12,11 @@
       <div class="space-y-3">
         <div>
           <label class="block text-lg font-medium">Project Name<span class="text-red-500">*</span></label>
-          <input name="Project_Name" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" placeholder="Name of Project" required value="{{ old('Project_Name', $project->Project_Name) }}">
+          <input name="Project_Name" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" placeholder="Name of Project" @if(!$isDraftMode) required @endif value="{{ old('Project_Name', $project->Project_Name) }}">
         </div>
         <div>
           <label class="block text-lg font-medium">Team Name<span class="text-red-500">*</span></label>
-          <input name="Project_Team_Name" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" placeholder="Name of Team" required value="{{ old('Project_Team_Name', $project->Project_Team_Name) }}">
+          <input name="Project_Team_Name" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" placeholder="Name of Team" @if(!$isDraftMode) required @endif value="{{ old('Project_Team_Name', $project->Project_Team_Name) }}">
         </div>
         <div>
           <label class="block text-lg font-medium">Team Logo<span class="text-red-500">*</span></label>
@@ -75,19 +79,19 @@
 					@foreach($project->members() as $i => $member)
 						<tr class="hover:bg-gray-50 transition-colors">
 							<td class="px-6 py-4">
-								<input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" required value="{{ old('member_name.' . $i, $member['name']) }}">
+								<input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" @if(!$isDraftMode) required @endif value="{{ old('member_name.' . $i, $member['name']) }}">
 								@if(isset($member['student_id']))
 									<input type="hidden" name="member_student_id[]" value="{{ $member['student_id'] }}">
 								@endif
 							</td>
 							<td class="px-6 py-4">
-								<input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" required value="{{ old('member_role.' . $i, $member['role']) }}">
+								<input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" @if(!$isDraftMode) required @endif value="{{ old('member_role.' . $i, $member['role']) }}">
 							</td>
 							<td class="px-6 py-4">
-								<input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" required value="{{ old('member_email.' . $i, $member['email']) }}">
+								<input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" @if(!$isDraftMode) required @endif value="{{ old('member_email.' . $i, $member['email']) }}">
 							</td>
 							<td class="px-6 py-4">
-								<input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" required value="{{ old('member_contact.' . $i, $member['contact']) }}">
+								<input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" @if(!$isDraftMode) required @endif value="{{ old('member_contact.' . $i, $member['contact']) }}">
 							</td>
 							<td class="px-6 py-4 text-center">
 								<button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm" {{ $i === 0 ? 'disabled' : '' }}>Remove</button>
@@ -112,19 +116,19 @@
 			<div class="member-card bg-white p-3 rounded-lg border-2 border-gray-400 shadow-sm space-y-3">
 				<div class="space-y-1">
 					<label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
-					<input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="{{ old('member_name.' . $i, $member['name']) }}">
+					<input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" @if(!$isDraftMode) required @endif value="{{ old('member_name.' . $i, $member['name']) }}">
 				</div>
 				<div class="space-y-1">
 					<label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
-					<input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="{{ old('member_role.' . $i, $member['role']) }}">
+					<input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" @if(!$isDraftMode) required @endif value="{{ old('member_role.' . $i, $member['role']) }}">
 				</div>
 				<div class="space-y-1">
 					<label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
-					<input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="{{ old('member_email.' . $i, $member['email']) }}">
+					<input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" @if(!$isDraftMode) required @endif value="{{ old('member_email.' . $i, $member['email']) }}">
 				</div>
 				<div class="space-y-1">
 					<label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
-					<input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="{{ old('member_contact.' . $i, $member['contact']) }}">
+					<input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" @if(!$isDraftMode) required @endif value="{{ old('member_contact.' . $i, $member['contact']) }}">
 				</div>
 				<div class="flex justify-end">
 					<button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs" {{ $i === 0 ? 'disabled' : '' }}>Remove</button>
@@ -146,23 +150,23 @@
 	<div class="space-y-3">
 		<div>
 			<label class="block text-lg font-medium">Issues/Problem being addressed<span class="text-red-500">*</span></label>
-			<textarea name="Project_Problems" rows="4" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" required>{{ old('Project_Problems', $project->Project_Problems) }}</textarea>
+			<textarea name="Project_Problems" rows="4" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" @if(!$isDraftMode) required @endif>{{ old('Project_Problems', $project->Project_Problems) }}</textarea>
 		</div>
 		<div>
 			<label class="block text-lg font-medium">Goal/Objectives<span class="text-red-500">*</span></label>
-			<textarea name="Project_Goals" rows="4" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" required>{{ old('Project_Goals', $project->Project_Goals) }}</textarea>
+			<textarea name="Project_Goals" rows="4" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" @if(!$isDraftMode) required @endif>{{ old('Project_Goals', $project->Project_Goals) }}</textarea>
 		</div>
 		<div>
 			<label class="block text-lg font-medium">Target Community<span class="text-red-500">*</span></label>
-			<textarea name="Project_Target_Community" rows="2" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" required>{{ old('Project_Target_Community', $project->Project_Target_Community) }}</textarea>
+			<textarea name="Project_Target_Community" rows="2" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" @if(!$isDraftMode) required @endif>{{ old('Project_Target_Community', $project->Project_Target_Community) }}</textarea>
 		</div>
 		<div>
 			<label class="block text-lg font-medium">Solutions/Activities to be implemented<span class="text-red-500">*</span></label>
-			<textarea name="Project_Solution" rows="4" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" required>{{ old('Project_Solution', $project->Project_Solution) }}</textarea>
+			<textarea name="Project_Solution" rows="4" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" @if(!$isDraftMode) required @endif>{{ old('Project_Solution', $project->Project_Solution) }}</textarea>
 		</div>
 		<div>
 			<label class="block text-lg font-medium">Expected Outcomes<span class="text-red-500">*</span></label>
-			<textarea name="Project_Expected_Outcomes" rows="5" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" required>{{ old('Project_Expected_Outcomes', $project->Project_Expected_Outcomes) }}</textarea>
+			<textarea name="Project_Expected_Outcomes" rows="5" class="mt-1 w-full rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors auto-expand" @if(!$isDraftMode) required @endif>{{ old('Project_Expected_Outcomes', $project->Project_Expected_Outcomes) }}</textarea>
 		</div>
 	</div>
 </div>
@@ -191,22 +195,22 @@
         </div>
       </div>
       <div id="activitiesContainer" class="divide-y divide-gray-400 w-full min-w-0">
-		@foreach($project->activities as $i => $activity)
+        @foreach($project->activities as $i => $activity)
         <div class="proposal-table-row activity-row flex items-center gap-4 w-full">
           <div class="w-20 flex-none">
-            <input name="stage[]" class="proposal-input w-full" placeholder="e.g., 1" required value="{{ old('stage.' . $i, $activity->Stage)}}">
+            <input name="stage[]" class="proposal-input w-full" placeholder="e.g., 1" @if(!$isDraftMode) required @endif value="{{ old('stage.' . $i, $activity->Stage)}}">
           </div>
           <div class="flex-1 px-2">
-            <textarea name="activities[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe specific activities..." required>{{ old('activities.' . $i, $activity->Specific_Activity) }}</textarea>
+            <textarea name="activities[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe specific activities..." @if(!$isDraftMode) required @endif>{{ old('activities.' . $i, $activity->Specific_Activity) }}</textarea>
           </div>
           <div class="w-36 px-2 flex-none">
-            <input name="timeframe[]" class="proposal-input w-full" placeholder="e.g., Week 1-2" required value="{{ old('timeframe.' . $i, $activity->Time_Frame) }}">
+            <input name="timeframe[]" class="proposal-input w-full" placeholder="e.g., Week 1-2" @if(!$isDraftMode) required @endif value="{{ old('timeframe.' . $i, $activity->Time_Frame) }}">
           </div>
           <div class="w-44 px-2 flex-none">
-            <input type="date" name="implementation_date[]" class="proposal-input w-full" required value="{{ old('implementation_date.' . $i, $activity->Implementation_Date) }}">
+            <input type="date" name="implementation_date[]" class="proposal-input w-full" @if(!$isDraftMode) required @endif value="{{ old('implementation_date.' . $i, $activity->Implementation_Date) }}">
           </div>
           <div class="flex-1 px-2">
-            <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s" required>{{ old('point_person.' . $i, $activity->Point_Persons) }}</textarea>
+            <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s" @if(!$isDraftMode) required @endif>{{ old('point_person.' . $i, $activity->Point_Persons) }}</textarea>
           </div>
           <div class="w-30 py-3 flex-none">
             <select name="status[]" class="proposal-select w-full">
@@ -218,24 +222,23 @@
             <button type="button" class="proposal-remove-btn removeRow">Remove</button>
           </div>
         </div>
-      </div>
-	  @endforeach
-	  @if($project->activities->isEmpty())
-	    <div class="proposal-table-row activity-row flex items-center gap-4 w-full">
+        @endforeach
+        @if($project->activities->isEmpty())
+        <div class="proposal-table-row activity-row flex items-center gap-4 w-full">
           <div class="w-20 flex-none">
-            <input name="stage[]" class="proposal-input w-full" placeholder="e.g., 1" required>
+            <input name="stage[]" class="proposal-input w-full" placeholder="e.g., 1" @if(!$isDraftMode) required @endif>
           </div>
           <div class="flex-1 px-2">
-            <textarea name="activities[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe specific activities..." required></textarea>
+            <textarea name="activities[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe specific activities..." @if(!$isDraftMode) required @endif></textarea>
           </div>
           <div class="w-36 px-2 flex-none">
-            <input name="timeframe[]" class="proposal-input w-full" placeholder="e.g., Week 1-2" required>
+            <input name="timeframe[]" class="proposal-input w-full" placeholder="e.g., Week 1-2" @if(!$isDraftMode) required @endif>
           </div>
           <div class="w-44 px-2 flex-none">
-            <input type="date" name="implementation_date[]" class="proposal-input w-full" required>
+            <input type="date" name="implementation_date[]" class="proposal-input w-full" @if(!$isDraftMode) required @endif>
           </div>
           <div class="flex-1 px-2">
-            <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s" required></textarea>
+            <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s" @if(!$isDraftMode) required @endif></textarea>
           </div>
           <div class="w-30 py-3 flex-none">
             <select name="status[]" class="proposal-select w-full">
@@ -247,7 +250,8 @@
             <button type="button" class="proposal-remove-btn removeRow">Remove</button>
           </div>
         </div>
-		@endif
+        @endif
+      </div>
     </div>
   </div>
 </div>
@@ -267,35 +271,35 @@
         <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
         <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
           focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          placeholder="Stage" required>
+          placeholder="Stage" @if(!$isDraftMode) required @endif>
       </div>
 
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
         <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
           focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          rows="2" placeholder="Specific Activities" required></textarea>
+          rows="2" placeholder="Specific Activities" @if(!$isDraftMode) required @endif></textarea>
       </div>
 
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
         <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
           focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          placeholder="Time Frame" required>
+          placeholder="Time Frame" @if(!$isDraftMode) required @endif>
       </div>
 
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Implementation Date <span class="text-red-500">*</span></label>
         <input type="date" name="implementation_date[]" class="w-full rounded-md border-2 border-gray-400 
           px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          required>
+          @if(!$isDraftMode) required @endif>
       </div>
 
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
         <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
           focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          rows="2" placeholder="Point Person/s" required></textarea>
+          rows="2" placeholder="Point Person/s" @if(!$isDraftMode) required @endif></textarea>
       </div>
 
       <div class="flex flex-col sm:flex-row gap-2">
@@ -337,7 +341,7 @@
               <div>Action</div>
             </div>
             <div id="budgetContainer" class="w-full min-w-0">
-				@foreach($project->budgetsArray() as $i => $budget)
+                @foreach($project->budgetsArray() as $i => $budget)
               <div class="proposal-table-row grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start w-full">
                 <textarea name="budget_activity[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe the activity...">{{ old('budget_activity.' . $i, $budget['activity']) }}</textarea>
                 <textarea name="budget_resources[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="List resources needed...">{{ old('budget_resources.' . $i, $budget['resources']) }}</textarea>
@@ -345,18 +349,17 @@
                 <input type="text" name="budget_amount[]" class="proposal-input w-full" placeholder="₱ 0.00" value="{{ old('budget_amount.' . $i, $budget['amount']) }}">
                 <button type="button" class="proposal-remove-btn removeRow whitespace-nowrap">Remove</button>
               </div>
-            </div>
-			@endforeach
-			@if(empty($project->budgetsArray()))
-			<div class="proposal-table-row grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start w-full">
+                @endforeach
+                @if(empty($project->budgetsArray()))
+              <div class="proposal-table-row grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start w-full">
                 <textarea name="budget_activity[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe the activity..."></textarea>
                 <textarea name="budget_resources[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="List resources needed..."></textarea>
                 <textarea name="budget_partners[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Partner organizations..."></textarea>
                 <input type="text" name="budget_amount[]" class="proposal-input w-full" placeholder="₱ 0.00">
                 <button type="button" class="proposal-remove-btn removeRow whitespace-nowrap">Remove</button>
               </div>
-			@endif
-          </div>
+                @endif
+      </div>
         </div>
       </div>
 
@@ -401,10 +404,10 @@
 <div class="flex flex-col sm:flex-row gap-3 justify-end pt-6">
 	@if($isDraft)
 		<button type="button" id="cancelEditBtn" class="rounded-lg bg-red-500 hover:bg-red-600 text-white px-6 py-2 text-sm md:text-base transition-colors flex items-center justify-center font-medium">Cancel Edit</button>
-		<button type="button" id="saveDraftBtn" class="rounded-lg bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 text-sm md:text-base transition-colors font-medium">Save as Draft</button>
-		<button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-sm md:text-base transition-colors font-medium">Submit Project</button>
+		<button type="submit" name="action" value="save_draft" id="saveDraftBtn" class="rounded-lg bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 text-sm md:text-base transition-colors font-medium">Save as Draft</button>
+		<button type="submit" name="action" value="submit_project" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-sm md:text-base transition-colors font-medium">Submit Project</button>
 	@else
-		<button type="button" id="saveProjectBtn" data-current-status="{{ $project->Project_Status }}" class="rounded-lg bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Save Project</button>
+		<button type="submit" name="action" value="save_project" id="saveProjectBtn" data-current-status="{{ $project->Project_Status }}" class="rounded-lg bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Save Project</button>
 		<a href="{{ route('projects.show', $project) }}" class="rounded-lg bg-gray-300 hover:bg-gray-400 px-4 py-2 text-sm md:text-base text-gray-800 transition-colors flex items-center justify-center">Cancel Edit</a>
 	@endif
 </div>
@@ -438,5 +441,7 @@
     </div>
   </div>
 </div>
+
+<!-- Refine 'Save as Draft' functionality to enforce confirmation and prevent blank rows -->
 
 

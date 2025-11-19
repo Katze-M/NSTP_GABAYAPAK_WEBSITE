@@ -23,9 +23,9 @@ class ActivityController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        // Only allow editing activities for submitted projects
-        if ($activity->project->Project_Status !== 'submitted') {
-            return redirect()->route('projects.show', $activity->project)->with('error', 'Activity status and proof can only be updated for submitted projects.');
+        // Only allow editing activities for submitted or current projects
+        if ($activity->project->Project_Status !== 'submitted' && $activity->project->Project_Status !== 'current') {
+            return redirect()->route('projects.show', $activity->project)->with('error', 'Activity status and proof can only be updated for submitted or current projects.');
         }
         
         return view('activities.edit', compact('activity'));
@@ -45,41 +45,50 @@ class ActivityController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        // Only allow updating activities for submitted projects
-        if ($activity->project->Project_Status !== 'submitted') {
-            return redirect()->route('projects.show', $activity->project)->with('error', 'Activity status and proof can only be updated for submitted projects.');
+        // Only allow updating activities for submitted or current projects
+        if ($activity->project->Project_Status !== 'submitted' && $activity->project->Project_Status !== 'current') {
+            return redirect()->route('projects.show', $activity->project)->with('error', 'Activity status and proof can only be updated for submitted or current projects.');
         }
+        
+        // Check if activity already has a proof picture
+        $hasExistingProof = $activity->proof_picture;
         
         // Validate the request
         $validatedData = $request->validate([
             // accept common casings, we'll normalize before saving
             'status' => 'required|string|in:Planned,Ongoing,Completed,planned,ongoing,completed',
             'Implementation_Date' => 'nullable|date',
-            'proof_picture' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'proof_picture' => $hasExistingProof ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048' : 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
         
-        // Handle file upload
+        // Handle file upload if a new file is provided
         if ($request->hasFile('proof_picture')) {
-            // Delete old proof picture if exists
-            // Note: We need to find the budget directly now since we removed the activity relationship
-            $budget = Budget::where('project_id', $activity->project_id)->first();
-            if ($budget && $budget->proof_picture) {
-                Storage::disk('public')->delete($budget->proof_picture);
+            $file = $request->file('proof_picture');
+            // Log file details
+            logger()->info('File uploaded:', [
+                'name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+            ]);
+
+            // Delete old proof picture if exists (from Activity)
+            if ($activity->proof_picture) {
+                Storage::disk('public')->delete($activity->proof_picture);
+                logger()->info('Old proof picture deleted from Activity:', ['path' => $activity->proof_picture]);
             }
-            
+
             // Store new proof picture
-            $validatedData['proof_picture'] = $request->file('proof_picture')->store('proof_pictures', 'public');
-            
-            // Update the budget with the proof picture
+            $newProofPath = $file->store('proof_pictures', 'public');
+            logger()->info('New proof picture stored:', ['path' => $newProofPath]);
+
+            // Update the activity with the new proof picture
+            $activity->update(['proof_picture' => $newProofPath]);
+
+            // Optionally, update the budget as well if needed (keep if you want to sync)
             $budget = Budget::where('project_id', $activity->project_id)->first();
             if ($budget) {
-                $budget->update(['proof_picture' => $validatedData['proof_picture']]);
-            } else {
-                // Create a budget if it doesn't exist
-                Budget::create([
-                    'project_id' => $activity->project_id,
-                    'proof_picture' => $validatedData['proof_picture'],
-                ]);
+                $budget->update(['proof_picture' => $newProofPath]);
+                logger()->info('Budget updated with new proof picture:', ['budget_id' => $budget->id]);
             }
         }
         
@@ -89,6 +98,7 @@ class ActivityController extends Controller
         $activity->update([
             'status' => $statusNormalized,
             'Implementation_Date' => $validatedData['Implementation_Date'] ?? null,
+            // proof_picture is already updated above if a new file was uploaded
         ]);
         
         return redirect()->route('projects.show', $activity->project)->with('success', 'Activity updated successfully!');

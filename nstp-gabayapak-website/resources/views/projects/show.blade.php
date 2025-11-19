@@ -176,8 +176,16 @@
                                     <p class="text-gray-600 mt-2">Implementation Date: {{ \Carbon\Carbon::parse($activity->Implementation_Date)->format('F j, Y') }}</p>
                                 @endif
                                 
-                                <!-- Edit Activity Button (for project owner) - Only when project is submitted -->
-                                @if(Auth::user()->isStudent() && Auth::user()->student && Auth::user()->student->id === $project->student_id && $project->Project_Status !== 'draft')
+                                <!-- Proof Picture (if exists) - Only when project is submitted or current -->
+                                @if(($project->Project_Status === 'submitted' || $project->Project_Status === 'current') && $activity->proof_picture)
+                                    <div class="mt-3">
+                                        <p class="text-sm text-gray-500">Proof of Activity</p>
+                                        <img src="{{ asset('storage/' . $activity->proof_picture) }}" alt="Proof" class="max-w-xs h-auto rounded-lg mt-2">
+                                    </div>
+                                @endif
+                                
+                                <!-- Edit Activity Button (for project owner) - Only when project is submitted or current -->
+                                @if(Auth::user()->isStudent() && Auth::user()->student && Auth::user()->student->id === $project->student_id && ($project->Project_Status === 'submitted' || $project->Project_Status === 'current'))
                                     <div class="mt-3">
                                         <a href="{{ route('activities.edit', $activity) }}" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
                                             Edit Status & Proof
@@ -215,13 +223,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Proof Picture (if exists) - Only when project is submitted -->
-                                @if($project->Project_Status !== 'draft' && $budget->proof_picture)
-                                    <div class="mt-3">
-                                        <p class="text-sm text-gray-500">Proof of Activity</p>
-                                        <img src="{{ asset('storage/' . $budget->proof_picture) }}" alt="Proof" class="max-w-xs h-auto rounded-lg mt-2">
-                                    </div>
-                                @endif
+                                <!-- Proof pictures are now displayed in the activities section -->
                             </div>
                         @empty
                             <div class="bg-gray-50 p-4 rounded-lg text-center">

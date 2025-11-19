@@ -10,6 +10,120 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+/* --- Project Proposal Form Custom Styles --- */
+.proposal-section {
+    background: #f8fafc;
+    border-radius: 1.25rem;
+    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+    padding: 1.25rem;
+    margin: 2rem auto;
+    max-width: 1200px;
+}
+
+/* Page container with 2cm gap from each screen edge */
+.page-container {
+    max-width: calc(100vw - 4cm);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* Slightly larger spacing between major sections */
+.section-gap {
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.proposal-section h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.proposal-table-header {
+    background: linear-gradient(90deg, #e0f2fe 0%, #f0fdf4 100%);
+    border-bottom: 2px solid #d1d5db;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #334155;
+    font-size: 0.95rem;
+}
+
+.proposal-table-row, .proposal-card-row {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1rem 1.5rem;
+    transition: background 0.2s;
+}
+.proposal-table-row:hover, .proposal-card-row:hover {
+    background: #f1f5f9;
+}
+
+.proposal-input, .proposal-textarea, .proposal-select {
+    border: 2px solid #cbd5e1;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+.proposal-input:focus, .proposal-textarea:focus, .proposal-select:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 2px #bae6fd;
+    outline: none;
+}
+
+.proposal-remove-btn {
+    background: #ef4444;
+    color: #fff;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+.proposal-remove-btn:hover {
+    background: #b91c1c;
+}
+
+.proposal-add-btn {
+    background: #22c55e;
+    color: #fff;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    box-shadow: 0 1px 4px 0 rgba(34,197,94,0.08);
+    transition: background 0.2s;
+}
+.proposal-add-btn:hover {
+    background: #15803d;
+}
+
+.proposal-section label {
+    font-weight: 500;
+    color: #334155;
+    margin-bottom: 0.25rem;
+}
+
+.proposal-section .text-xs {
+    color: #64748b;
+}
+
+@media (max-width: 768px) {
+    .proposal-section {
+        padding: 1rem 0.5rem;
+    }
+    .proposal-table-header, .proposal-table-row {
+        padding: 0.75rem 0.5rem;
+    }
+}
+
 /* Active link styling for sidebar */
 .active-link {
     background-color: #ffffff !important;

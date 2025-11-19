@@ -24,6 +24,7 @@ class Activity extends Model
         'Point_Persons',
         'status',
         'project_id',
+        'proof_picture',
     ];
 
     /**

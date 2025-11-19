@@ -6,7 +6,7 @@
 
 @section('content')
 <!-- Project Proposal -->
-<section id="upload-project" class="space-y-6 md:space-y-8">
+<section id="upload-project" class="space-y-6 md:space-y-8 page-container max-w-screen-lg mx-auto">
   <!-- Main Heading -->
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4">
@@ -204,7 +204,7 @@
 
 
     <!-- PROJECT ACTIVITIES -->
-    <div class="rounded-2xl bg-gray-100 p-4 md:p-6 shadow-subtle">
+    <div class="proposal-section section-gap">
       <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2 mb-4">
         <span class="text-2xl md:text-3xl">📅</span> Project Activities
       </h2>
@@ -212,60 +212,61 @@
 
 <!-- Desktop Table View -->
 <div class="hidden md:block">
-  <div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400">
+  <div class="overflow-x-auto w-full" style="max-width:100%;">
+    <div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400 min-w-[900px]">
 
     <!-- Header -->
-    <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-gray-400 px-6 py-3">
-      <div class="flex items-center gap-12 text-sm font-semibold text-gray-700 uppercase tracking-wider">
-        <div class="w-[130px] px-1 shrink-0">Stage <span class="text-red-500">*</span></div>
-        <div class="w-[260px] px-4 shrink-0">Specific Activities <span class="text-red-500">*</span></div>
-        <div class="w-[110px] px-4 shrink-0">Time Frame <span class="text-red-500">*</span></div>
-        <div class="w-[130px] shrink-0">Implementation Date <span class="text-red-500">*</span></div>
-        <div class="w-[260px] shrink-0">Point Person/s <span class="text-red-500">*</span></div>
-        <div class="w-[120px] shrink-0">Status</div>
-        <div class="w-[90px] px-3 shrink-0">Action</div>
+      <div class="bg-linear-to-r from_green-50 to-emerald-50 border-b-2 border-gray-400 px-6 py-3 min-w-[900px]">
+        <div class="flex items-center gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">
+          <div class="w-16 px-1 flex-none">Stage <span class="text-red-500">*</span></div>
+          <div class="flex-1 px-2">Specific Activities <span class="text-red-500">*</span></div>
+          <div class="w-32 px-2 flex-none">Time Frame <span class="text-red-500">*</span></div>
+          <div class="w-32 flex-none">Implementation Date <span class="text-red-500">*</span></div>
+          <div class="flex-1 px-2">Point Person/s <span class="text-red-500">*</span></div>
+          <div class="w-28 flex-none">Status</div>
+          <div class="w-20 px-2 flex-none">Action</div>
+        </div>
       </div>
-    </div>
 
     <!-- Row -->
-    <div id="activitiesContainer" class="divide-y divide-gray-400">
+    <div id="activitiesContainer" class="divide-y divide-gray-400 min-w-0">
       @foreach($project->activities as $i => $activity)
       <div class="activity-row hover:bg-gray-50 transition-colors px-4 py-2">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-4">
           
 
           <!-- Stage -->
-          <div class="w-[30px] flex-none">
+          <div class="w-12 flex-none">
             <input name="stage[]" 
             class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg text-sm" 
             placeholder="e.g., Planning" required value="{{ old('stage.' . $i, $activity->Stage)}}">
           </div>
 
           <!-- Specific Activities -->
-          <div class="w-[260px] px-2">
+          <div class="flex-1 px-2">
             <textarea name="activities[]"
-              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none"
+              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none w-full"
               rows="2" placeholder="Describe specific activities..." required>{{ old('activities.' . $i, $activity->Specific_Activity) }}</textarea>
           </div>
 
           <!-- Time Frame -->
-          <div class="px-2">
+          <div class="w-36 px-2 flex-none">
             <input name="timeframe[]"
-              class="w-40 px-3 py-2 border-2 border-gray-400 rounded-lg text-sm"
+              class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg text-sm"
               placeholder="e.g., Week 1-2" required value="{{ old('timeframe.' . $i, $activity->Time_Frame) }}">
           </div>
 
           <!-- Implementation Date -->
-          <div class="w-[130px] px-2">
+          <div class="w-36 px-2 flex-none">
             <input type="date" name="implementation_date[]"
-              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm"
+              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm w-full"
               required value="{{ old('implementation_date.' . $i, $activity->Implementation_Date) }}">
           </div>
 
           <!-- Point Person -->
-          <div class="w-[260px] px-2">
+          <div class="flex-1 px-2">
             <textarea name="point_person[]"
-              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none"
+              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none w-full"
               rows="2" placeholder="Responsible person/s" required>{{ old('point_person.' . $i, $activity->Point_Persons) }}</textarea>
           </div>
 
@@ -326,20 +327,16 @@
           </div>
 
           <!-- Status -->
-          <div class="w-[120px] px-2">
-            <select name="status[]"
-              class="px-3 py-2 border-2 border-gray-400 rounded-lg text-sm">
+          <div class="w-32 px-2 flex-none">
+            <select name="status[]" class="proposal-select w-full">
               <option>Planned</option>
               <option>Ongoing</option>
             </select>
           </div>
 
           <!-- Remove Button -->
-          <div class="w-[90px] px-2">
-            <button type="button"
-              class=" bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium">
-              Remove
-            </button>
+          <div class="w-24 px-2 flex-none">
+            <button type="button" class="proposal-remove-btn removeRow">Remove</button>
           </div>
         </div>
       </div>
@@ -351,7 +348,7 @@
 
 
 
-      <button type="button" id="addActivityRow" class="mt-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">+ Add Activity</button>
+      <button type="button" id="addActivityRow" class="proposal-add-btn">+ Add Activity</button>
     </div>
 
     <!-- Mobile Card View -->
@@ -421,7 +418,7 @@
 
 
     <!-- BUDGET -->
-    <div class="rounded-2xl bg-gray-100 p-4 md:p-6 shadow-subtle">
+    <div class="proposal-section section-gap">
       <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2 mb-4">
         <span class="text-2xl md:text-3xl">💰</span> Budget
       </h2>
@@ -429,24 +426,26 @@
 
       <!-- Desktop Table View -->
       <div class="hidden md:block">
-        <div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400">
-          <div class="bg-gradient-to-r from-yellow-50 to-amber-50 border-b-2 border-gray-400 px-6 py-4">
-            <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">
-              <div>Activity</div>
-              <div>Resources Needed</div>
-              <div>Partner Agencies</div>
-              <div>Amount</div>
-              <div>Action</div>
+        <div class="overflow-x-auto w-full" style="max-width:100%;">
+          <div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400 min-w-0">
+            <div class="bg-linear-to-r from-yellow-50 to-emerald-50 border-b-2 border-gray-400 px-6 py-4 min-w-0">
+              <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                <div>Activity</div>
+                <div>Resources Needed</div>
+                <div>Partner Agencies</div>
+                <div>Amount</div>
+                <div>Action</div>
+              </div>
             </div>
-          </div>
-          <div id="budgetContainer" class="divide-y divide-gray-400">
-            <div class="budget-row hover:bg-gray-50 transition-colors px-6 py-4">
-              <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start">
-                <textarea name="budget_activity[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe the activity..."></textarea>
-                <textarea name="budget_resources[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="List resources needed..."></textarea>
-                <textarea name="budget_partners[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Partner organizations..."></textarea>
-                <input type="text" name="budget_amount[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="₱ 0.00">
-                <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
+            <div id="budgetContainer" class="divide-y divide-gray-400 min-w-0">
+              <div class="budget-row hover:bg-gray-50 transition-colors px-6 py-4">
+                <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start">
+                  <textarea name="budget_activity[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe the activity..."></textarea>
+                  <textarea name="budget_resources[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="List resources needed..."></textarea>
+                  <textarea name="budget_partners[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Partner organizations..."></textarea>
+                  <input type="text" name="budget_amount[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="₱ 0.00">
+                  <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
+                </div>
               </div>
             </div>
           </div>
@@ -497,6 +496,7 @@
       <button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Submit Project</button>
     </div>
   </form>
+  </div>
 </section>
 
 
@@ -614,126 +614,77 @@
 
   // Add Row for Activities
   document.getElementById('addActivityRow').addEventListener('click', () => {
-    // Desktop table view
+    // Desktop table view - create markup identical to static row
     const desktopContainer = document.getElementById('activitiesContainer');
     if (desktopContainer) {
       const newRow = document.createElement('div');
-      newRow.className = 'activity-row hover:bg-gray-50 transition-colors px-6 py-4';
+      newRow.className = 'proposal-table-row flex items-center gap-4';
       newRow.innerHTML = `
-        <div class="flex items-center gap-2">
-          <!-- Stage -->
-          <div class="w-[30px] flex-none">
-            <input name="stage[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg text-sm" placeholder="e.g., Planning" required>
-          </div>
-
-          <!-- Specific Activities -->
-          <div class="w-[260px] px-2">
-            <textarea name="activities[]"
-              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none"
-              rows="2" placeholder="Describe specific activities..." required></textarea>
-          </div>
-
-          <!-- Time Frame -->
-          <div class="px-2">
-            <input name="timeframe[]"
-              class="w-40 px-3 py-2 border-2 border-gray-400 rounded-lg text-sm"
-              placeholder="e.g., Week 1-2" required>
-          </div>
-
-          <!-- Implementation Date -->
-          <div class="w-[130px] px-2">
-            <input type="date" name="implementation_date[]"
-              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm"
-              required>
-          </div>
-
-          <!-- Point Person -->
-          <div class="w-[260px] px-2">
-            <textarea name="point_person[]"
-              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none"
-              rows="2" placeholder="Responsible person/s" required></textarea>
-          </div>
-
-          <!-- Status -->
-          <div class="w-[120px] px-2">
-            <select name="status[]"
-              class="px-3 py-2 border-2 border-gray-400 rounded-lg text-sm">
-              <option>Planned</option>
-              <option>Ongoing</option>
-            </select>
-          </div>
-
-          <!-- Remove Button -->
-          <div class="w-[90px] px-2">
-            <button type="button"
-              class=" bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium">
-              Remove
-            </button>
-          </div>
+        <div class="w-12 flex-none">
+          <input name="stage[]" class="proposal-input w-full" placeholder="e.g., Planning" required>
+        </div>
+        <div class="flex-1 px-2">
+          <textarea name="activities[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe specific activities..." required></textarea>
+        </div>
+        <div class="w-36 px-2 flex-none">
+          <input name="timeframe[]" class="proposal-input w-full" placeholder="e.g., Week 1-2" required>
+        </div>
+        <div class="w-36 px-2 flex-none">
+          <input type="date" name="implementation_date[]" class="proposal-input w-full" required>
+        </div>
+        <div class="flex-1 px-2">
+          <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s" required></textarea>
+        </div>
+        <div class="w-32 px-2 flex-none">
+          <select name="status[]" class="proposal-select w-full">
+            <option>Planned</option>
+            <option>Ongoing</option>
+          </select>
+        </div>
+        <div class="w-24 px-2 flex-none">
+          <button type="button" class="proposal-remove-btn removeRow">Remove</button>
         </div>
       `;
       desktopContainer.appendChild(newRow);
     }
 
 
-    // Mobile card view
+    // Mobile card view - keep existing card layout but ensure remove button has removeRow
     const mobileContainer = document.getElementById('activitiesContainerMobile');
     if (mobileContainer) {
       const newCard = document.createElement('div');
       newCard.className = 'activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
       newCard.innerHTML = `
-        <div class="activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm">
-
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
-        <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
-          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          placeholder="Stage" required>
+        <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Stage" required>
       </div>
-
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
-        <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
-          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          rows="2" placeholder="Specific Activities" required></textarea>
+        <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Specific Activities" required></textarea>
       </div>
-
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
-        <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
-          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          placeholder="Time Frame" required>
+        <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Time Frame" required>
       </div>
-
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Implementation Date <span class="text-red-500">*</span></label>
-        <input type="date" name="implementation_date[]" class="w-full rounded-md border-2 border-gray-400 
-          px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          required>
+        <input type="date" name="implementation_date[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required>
       </div>
-
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
-        <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
-          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          rows="2" placeholder="Point Person/s" required></textarea>
+        <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Point Person/s" required></textarea>
       </div>
-
       <div class="flex flex-col sm:flex-row gap-2">
         <div class="space-y-1 flex-1">
           <label class="block text-xs font-medium text-gray-600">Status</label>
-          <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
-            focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors">
+          <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors">
             <option>Planned</option>
             <option>Ongoing</option>
           </select>
         </div>
 
-        <button type="button" 
-          class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 
-          text-xs whitespace-nowrap">
-          Remove
-        </button>
+        <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
       </div>
       `;
       mobileContainer.appendChild(newCard);
@@ -746,8 +697,50 @@
 
   // Add Row for Budget
   document.getElementById('addBudgetRow').addEventListener('click', () => {
-    // Add a blank budget row using the existing function that prevents duplicates
-    addBlankBudgetRow();
+    // Desktop table view - create markup identical to static budget row
+    const desktopContainer = document.getElementById('budgetContainer');
+    if (desktopContainer) {
+      const newRow = document.createElement('div');
+      newRow.className = 'proposal-table-row grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start';
+      newRow.innerHTML = `
+        <textarea name="budget_activity[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe the activity..."></textarea>
+        <textarea name="budget_resources[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="List resources needed..."></textarea>
+        <textarea name="budget_partners[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Partner organizations..."></textarea>
+        <input type="text" name="budget_amount[]" class="proposal-input w-full" placeholder="₱ 0.00">
+        <button type="button" class="proposal-remove-btn removeRow whitespace-nowrap">Remove</button>
+      `;
+      desktopContainer.appendChild(newRow);
+    }
+
+    // Mobile card view - mirror existing mobile layout and ensure remove button has removeRow
+    const mobileContainer = document.getElementById('budgetContainerMobile');
+    if (mobileContainer) {
+      const newCard = document.createElement('div');
+      newCard.className = 'budget-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
+      newCard.innerHTML = `
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Activity</label>
+          <textarea name="budget_activity[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Activity"></textarea>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Resources Needed</label>
+          <textarea name="budget_resources[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Resources Needed"></textarea>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Partner Agencies</label>
+          <textarea name="budget_partners[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Partner Agencies"></textarea>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="space-y-1 flex-1">
+            <label class="block text-xs font-medium text-gray-600">Amount</label>
+            <input type="text" name="budget_amount[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="₱ 0.00">
+          </div>
+          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
+        </div>
+      `;
+      mobileContainer.appendChild(newCard);
+    }
+
     attachRemoveButtons();
   });
 
@@ -757,9 +750,9 @@
     const desktopContainer = document.getElementById('activitiesContainer');
     const mobileContainer = document.getElementById('activitiesContainerMobile');
     
-    // Check desktop container
+    // Check desktop container (match both proposal-table-row and legacy activity-row)
     if (desktopContainer) {
-      const existingRows = desktopContainer.querySelectorAll('.activity-row');
+      const existingRows = desktopContainer.querySelectorAll('.proposal-table-row, .activity-row');
       for (let row of existingRows) {
         const stageInput = row.querySelector('input[name="stage[]"]');
         const activityInput = row.querySelector('textarea[name="activities[]"]');
@@ -781,19 +774,32 @@
     // Desktop table view
     if (desktopContainer) {
       const newRow = document.createElement('div');
-      newRow.className = 'activity-row hover:bg-gray-50 transition-colors px-6 py-4';
+      newRow.className = 'proposal-table-row flex items-center gap-4';
       newRow.innerHTML = `
-        <div class="grid grid-cols-[1fr_2fr_2fr_2fr_1fr_auto] gap-4 items-start">
-          <input name="stage[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Planning" value="${stage || ''}" required>
-          <textarea name="activities[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe specific activities..." required>${specificActivity || ''}</textarea>
-          <input name="timeframe[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Week 1-2" value="${timeframe || ''}" required>
-          <textarea name="point_person[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Responsible person/s" required>${pointPerson || ''}</textarea>
-          <select name="status[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm">
+        <div class="w-12 flex-none">
+          <input name="stage[]" class="proposal-input w-full" placeholder="e.g., Planning" value="${stage || ''}" required>
+        </div>
+        <div class="flex-1 px-2">
+          <textarea name="activities[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe specific activities..." required>${specificActivity || ''}</textarea>
+        </div>
+        <div class="w-36 px-2 flex-none">
+          <input name="timeframe[]" class="proposal-input w-full" placeholder="e.g., Week 1-2" value="${timeframe || ''}" required>
+        </div>
+        <div class="w-36 px-2 flex-none">
+          <input name="implementation_date[]" type="date" class="proposal-input w-full" value="${''}" />
+        </div>
+        <div class="flex-1 px-2">
+          <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s" required>${pointPerson || ''}</textarea>
+        </div>
+        <div class="w-32 px-2 flex-none">
+          <select name="status[]" class="proposal-select w-full">
             <option ${status === 'Planned' ? 'selected' : ''}>Planned</option>
             <option ${status === 'Ongoing' ? 'selected' : ''}>Ongoing</option>
             <option ${status === 'Completed' ? 'selected' : ''}>Completed</option>
           </select>
-          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
+        </div>
+        <div class="w-24 px-2 flex-none">
+          <button type="button" class="proposal-remove-btn removeRow">Remove</button>
         </div>
       `;
       desktopContainer.appendChild(newRow);
@@ -847,9 +853,9 @@
     const desktopContainer = document.getElementById('budgetContainer');
     const mobileContainer = document.getElementById('budgetContainerMobile');
     
-    // Check desktop container
+    // Check desktop container (match both proposal-table-row and legacy budget-row)
     if (desktopContainer) {
-      const existingRows = desktopContainer.querySelectorAll('.budget-row');
+      const existingRows = desktopContainer.querySelectorAll('.proposal-table-row, .budget-row');
       for (let row of existingRows) {
         const activityInput = row.querySelector('textarea[name="budget_activity[]"]');
         const resourcesInput = row.querySelector('textarea[name="budget_resources[]"]');
@@ -892,15 +898,13 @@
     // Desktop table view
     if (desktopContainer) {
       const newRow = document.createElement('div');
-      newRow.className = 'budget-row hover:bg-gray-50 transition-colors px-6 py-4';
+      newRow.className = 'proposal-table-row grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start';
       newRow.innerHTML = `
-        <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start">
-          <textarea name="budget_activity[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe the activity...">${activity || ''}</textarea>
-          <textarea name="budget_resources[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="List resources needed...">${resources || ''}</textarea>
-          <textarea name="budget_partners[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Partner organizations...">${partners || ''}</textarea>
-          <input type="text" name="budget_amount[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="0.00" value="${displayAmount}">
-          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
-        </div>
+        <textarea name="budget_activity[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe the activity...">${activity || ''}</textarea>
+        <textarea name="budget_resources[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="List resources needed...">${resources || ''}</textarea>
+        <textarea name="budget_partners[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Partner organizations...">${partners || ''}</textarea>
+        <input type="text" name="budget_amount[]" class="proposal-input w-full" placeholder="0.00" value="${displayAmount}">
+        <button type="button" class="proposal-remove-btn removeRow">Remove</button>
       `;
       desktopContainer.appendChild(newRow);
     }

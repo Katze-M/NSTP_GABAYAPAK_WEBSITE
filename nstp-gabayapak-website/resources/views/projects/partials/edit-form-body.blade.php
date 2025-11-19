@@ -411,7 +411,7 @@
 	</h2>
 	<div class="hidden md:block">
 		<div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400">
-			<div class="bg-gradient-to-r from-yellow-50 to-amber-50 border-b-2 border-gray-400 px-6 py-4">
+			<div class="bg-yellow-50 border-b-2 border-gray-400 px-6 py-4">
 				<div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider">
 					<div>Activity</div>
 					<div>Resources Needed</div>

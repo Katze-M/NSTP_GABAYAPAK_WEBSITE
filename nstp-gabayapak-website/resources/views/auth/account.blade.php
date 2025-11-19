@@ -161,18 +161,16 @@
 </div>
 
 <!-- Change Password Modal -->
-<div id="changePasswordModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+<div id="changePasswordModal" class="fixed inset-0 z-50 hidden">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <!-- Background overlay -->
-        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-            <div class="absolute inset-0 bg-gray-500 bg-opacity-75"></div>
-        </div>
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" aria-hidden="true"></div>
 
         <!-- This element is to trick the browser into centering the modal contents. -->
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
         <!-- Modal container -->
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative">
             <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div class="sm:flex sm:items-start">
                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
@@ -201,7 +199,7 @@
                         
                         <!-- Display success message -->
                         @if (session('status'))
-                            <div class="mt-4">
+                            <div class="mt-4 hidden">
                                 <div class="font-medium text-green-600">
                                     {{ session('status') }}
                                 </div>
@@ -246,32 +244,53 @@
 </div>
 
 <script>
-    // Get modal elements
-    const modal = document.getElementById('changePasswordModal');
-    const changePasswordBtn = document.getElementById('changePasswordBtn');
-    const cancelModalBtn = document.getElementById('cancelModalBtn');
-    
-    // Show modal when button is clicked
-    changePasswordBtn.addEventListener('click', function() {
-        modal.classList.remove('hidden');
-    });
-    
-    // Hide modal when cancel button is clicked
-    cancelModalBtn.addEventListener('click', function() {
-        modal.classList.add('hidden');
-    });
-    
-    // Hide modal when clicking outside of it
-    window.addEventListener('click', function(event) {
-        if (event.target === modal) {
-            modal.classList.add('hidden');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get modal elements
+        const modal = document.getElementById('changePasswordModal');
+        const changePasswordBtn = document.getElementById('changePasswordBtn');
+        const cancelModalBtn = document.getElementById('cancelModalBtn');
+        
+        // Show modal when button is clicked
+        if (changePasswordBtn && modal) {
+            changePasswordBtn.addEventListener('click', function() {
+                modal.classList.remove('hidden');
+            });
         }
-    });
-    
-    // Hide modal when pressing Escape key
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
-            modal.classList.add('hidden');
+        
+        // Hide modal when cancel button is clicked
+        if (cancelModalBtn && modal) {
+            cancelModalBtn.addEventListener('click', function() {
+                modal.classList.add('hidden');
+            });
+        }
+        
+        // Hide modal when clicking outside of it
+        if (modal) {
+            modal.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Hide modal when pressing Escape key
+        if (modal) {
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Show SweetAlert2 confirmation if password was successfully changed
+        const statusMessage = document.querySelector('.mt-4 .font-medium.text-green-600');
+        if (statusMessage && statusMessage.textContent.trim() !== '') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Password Updated!',
+                text: statusMessage.textContent.trim(),
+                confirmButtonColor: '#3085d6'
+            });
         }
     });
 </script>

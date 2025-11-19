@@ -71,7 +71,14 @@
                 </div>
                 
                 <div class="space-y-4">
-                    <!-- Removed student ID section -->
+                    @if(Auth::user()->student)
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Contact Number</label>
+                            <div class="p-3 bg-gray-50 rounded-lg border">
+                                <p class="text-gray-800">{{ Auth::user()->student->student_contact_number ?? 'N/A' }}</p>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

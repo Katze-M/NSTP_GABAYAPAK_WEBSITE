@@ -489,10 +489,17 @@ class ProjectController extends Controller
         }
         
         // Define validation rules based on draft vs submission
+        // Determine logo validation: if saving as draft, logo not required; if submitting, require logo when project has no existing logo
+        if ($isDraft) {
+            $logoRule = 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048';
+        } else {
+            $logoRule = $project->Project_Logo ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048' : 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048';
+        }
+
         $rules = [
             'Project_Name' => 'required|string|max:255',
             'Project_Team_Name' => 'required|string|max:255',
-            'Project_Logo' => $project->Project_Logo ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048' : 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'Project_Logo' => $logoRule,
             // Budget data - not required in either case
             'budget_activity' => 'nullable|array',
             'budget_activity.*' => 'nullable|string',
@@ -833,6 +840,27 @@ class ProjectController extends Controller
         $project->save();
 
         return redirect()->back()->with('success', 'Project archived successfully.');
+    }
+
+    /**
+     * Unarchive a project (staff only) - move it back to pending for review.
+     */
+    public function unarchive(Project $project)
+    {
+        if (!Auth::user() || !Auth::user()->isStaff()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Only allow unarchiving archived projects
+        if ($project->Project_Status !== 'archived') {
+            return redirect()->back()->with('error', 'Only archived projects can be unarchived.');
+        }
+
+        // Move unarchived projects back to current (active)
+        $project->Project_Status = 'current';
+        $project->save();
+
+        return redirect()->back()->with('success', 'Project unarchived successfully and moved to pending.');
     }
 
     /**

@@ -31,7 +31,7 @@
         </div>
         <div>
           <label class="block text-lg font-medium">Team Logo<span class="text-red-500">*</span></label>
-          <input type="file" name="Project_Logo" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" required>
+          <input type="file" name="Project_Logo" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors">
           <p class="text-sm text-gray-600 mt-1">Note: Logo is required when submitting a project, but optional when saving as draft.</p>
         </div>
         <!-- Component Dropdown -->
@@ -662,11 +662,23 @@ document.addEventListener('click', function(e) {
     const component = formData.get('Project_Component') || 'N/A';
     const section = formData.get('nstp_section') || 'N/A';
     
-    // Get team logo file
+    // Get team logo file and detect existing logo (if any)
     const teamLogoFile = formData.get('Project_Logo');
+    const hasExistingLogo = !!document.querySelector('img[alt="Current Logo"]');
     let teamLogoHTML = '<div class="text-sm text-gray-600">No file uploaded</div>';
     if (teamLogoFile && teamLogoFile.size > 0) {
       teamLogoHTML = `<div class="text-sm text-gray-600">${teamLogoFile.name} (${(teamLogoFile.size / 1024).toFixed(2)} KB)</div>`;
+    }
+
+    // If submitting and no uploaded or existing logo, show friendly message and abort
+    if (!hasExistingLogo && (!teamLogoFile || teamLogoFile.size === 0)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Logo Required',
+        text: 'Submitting a project requires a team logo. Please upload a logo or save as draft.',
+        confirmButtonColor: '#3085d6'
+      });
+      return;
     }
     
     // Project Details

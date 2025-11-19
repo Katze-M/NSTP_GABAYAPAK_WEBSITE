@@ -111,6 +111,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/projects/{project}/approve', [ProjectController::class, 'approve'])->name('projects.approve')->middleware('staff');
     Route::post('/projects/{project}/reject', [ProjectController::class, 'reject'])->name('projects.reject')->middleware('staff');
     Route::post('/projects/{project}/archive', [ProjectController::class, 'archive'])->name('projects.archive')->middleware('staff');
+    Route::post('/projects/{project}/unarchive', [ProjectController::class, 'unarchive'])->name('projects.unarchive')->middleware('staff');
     Route::get('/projects/rotc/{section?}', [ProjectController::class, 'rotc'])->name('projects.rotc');
     Route::get('/projects/lts/{section?}', [ProjectController::class, 'lts'])->name('projects.lts');
     Route::get('/projects/cwts/{section?}', [ProjectController::class, 'cwts'])->name('projects.cwts');

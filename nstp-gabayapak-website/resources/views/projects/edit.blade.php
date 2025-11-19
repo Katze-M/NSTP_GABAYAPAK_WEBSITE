@@ -643,12 +643,11 @@
         </div>
         <div class="w-24 px-2 flex-none">
           <button type="button" class="proposal-remove-btn removeRow">Remove</button>
-        </div>
-      `;
-      desktopContainer.appendChild(newRow);
-    }
 
-
+              <div class="flex justify-end mt-2">
+                <button type="button" id="addActivityRow" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">+ Add Activity</button>
+              </div>
+            </div>
     // Mobile card view - keep existing card layout but ensure remove button has removeRow
     const mobileContainer = document.getElementById('activitiesContainerMobile');
     if (mobileContainer) {
@@ -685,12 +684,11 @@
         </div>
 
         <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
-      </div>
-      `;
-      mobileContainer.appendChild(newCard);
-    }
-   
-    attachRemoveButtons();
+
+            <div class="flex justify-end mt-2 md:hidden">
+              <button type="button" id="addActivityRowMobile" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">+ Add Activity</button>
+            </div>
+          </div>
   });
 
 

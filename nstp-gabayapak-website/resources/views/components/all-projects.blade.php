@@ -59,8 +59,12 @@
                         <span class="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded">Draft</span>
                     @elseif($project->Project_Status === 'rejected')
                         <span class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">Rejected</span>
+                    @elseif($project->Project_Status === 'pending')
+                        <span class="absolute top-2 right-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded" style="background-color:#F3E8FF;color:#6D28D9;">Pending</span>
                     @elseif($project->Project_Status === 'current')
                         <span class="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">Current</span>
+                    @elseif($project->Project_Status === 'archived')
+                        <span class="absolute top-2 right-2 bg-slate-400 text-white text-xs px-2 py-1 rounded">Archived</span>
                     @endif
                     <h2 class="text-lg font-semibold">{{ $project->Project_Name }}</h2>
                     <div class="w-16 h-16 mx-auto my-4">
@@ -134,6 +138,22 @@
                                 @csrf
                                 <button type="button" class="archive-btn bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded transition-colors duration-200" style="background-color:#f59e0b;color:#ffffff;">Archive</button>
                             </form>
+
+                            <form action="{{ route('projects.destroy', $project) }}" method="POST" class="delete-form-staff inline-block">
+                                @csrf
+                                @method('DELETE')
+                                <button type="button" class="delete-btn-staff bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors duration-200" style="background-color:#dc2626;color:#ffffff;">Delete</button>
+                            </form>
+                        @endif
+                        
+                        @if($isStaff && ($section ?? '') === 'Archived Projects')
+                            {{-- Unarchive, Edit, Delete for archived projects --}}
+                            <form action="{{ route('projects.unarchive', $project) }}" method="POST" class="inline-block unarchive-form">
+                                @csrf
+                                <button type="button" class="unarchive-btn bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition-colors duration-200" style="background-color:#f97316;color:#ffffff;">Unarchive</button>
+                            </form>
+
+                            <a href="{{ route('projects.edit', $project) }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition-colors duration-200 view-btn" style="background-color:#4f46e5;color:#ffffff;">Edit</a>
 
                             <form action="{{ route('projects.destroy', $project) }}" method="POST" class="delete-form-staff inline-block">
                                 @csrf
@@ -262,6 +282,28 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
+        // Unarchive handler for staff on archived projects
+        document.querySelectorAll('.unarchive-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const form = this.closest('.unarchive-form');
+
+                Swal.fire({
+                    title: 'Unarchive Project?',
+                    text: "Are you sure you want to unarchive this project and move it back to pending?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, unarchive'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
         document.querySelectorAll('.delete-btn-staff').forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -332,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /* Unified action button fallback (uniform height, padding, hover) */
-    .approve-btn, .reject-btn, .view-btn, .delete-btn, .archive-btn, .delete-btn-staff, .delete-btn-staff {
+    .approve-btn, .reject-btn, .view-btn, .delete-btn, .archive-btn, .unarchive-btn, .delete-btn-staff, .delete-btn-staff {
         display: inline-flex !important;
         align-items: center;
         justify-content: center;
@@ -345,12 +387,12 @@ document.addEventListener('DOMContentLoaded', function() {
         transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
     }
 
-    .approve-btn:hover, .reject-btn:hover, .view-btn:hover, .delete-btn:hover, .archive-btn:hover, .delete-btn-staff:hover, .delete-btn-staff:hover {
+    .approve-btn:hover, .reject-btn:hover, .view-btn:hover, .delete-btn:hover, .archive-btn:hover, .unarchive-btn:hover, .delete-btn-staff:hover, .delete-btn-staff:hover {
         transform: translateY(-3px);
         opacity: 0.98;
     }
 
-    .approve-btn:active, .reject-btn:active, .view-btn:active, .delete-btn:active, .archive-btn:active, .delete-btn-staff:active, .delete-btn-staff:active {
+    .approve-btn:active, .reject-btn:active, .view-btn:active, .delete-btn:active, .archive-btn:active, .unarchive-btn:active, .delete-btn-staff:active, .delete-btn-staff:active {
         transform: translateY(0);
         box-shadow: none;
     }

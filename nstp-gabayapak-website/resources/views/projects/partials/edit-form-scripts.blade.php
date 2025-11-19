@@ -91,6 +91,7 @@
 
   // Add Row for Activities
   document.getElementById('addActivityRow').addEventListener('click', () => {
+    console.debug('[edit-form] addActivityRow button clicked');
     // Desktop table view - create markup identical to static row
     const desktopContainer = document.getElementById('activitiesContainer');
     if (desktopContainer) {
@@ -172,6 +173,111 @@
     attachRemoveButtons();
   });
 
+    // Remove duplicate/extra empty activity rows, leaving at most one blank row
+    function dedupeEmptyActivityRows() {
+      try {
+        const desktopContainer = document.getElementById('activitiesContainer');
+        const mobileContainer = document.getElementById('activitiesContainerMobile');
+
+        // Helper to determine if a row/card is empty (all inputs/textareas/selects blank)
+        function isRowEmpty(row) {
+          if (!row) return true;
+          const inputs = row.querySelectorAll('input, textarea, select');
+          for (let el of inputs) {
+            const t = (el.type || '').toLowerCase();
+            if (t === 'hidden') continue;
+            if (el.name && (el.name === '_token' || el.name === '_method')) continue;
+            if (el.value && el.value.toString().trim() !== '') return false;
+          }
+          return true;
+        }
+
+        // Deduplicate desktop rows
+        if (desktopContainer) {
+          const rows = Array.from(desktopContainer.querySelectorAll('.proposal-table-row, .activity-row'));
+          // Keep at most one empty row
+          let emptyFound = false;
+          rows.forEach(r => {
+            if (isRowEmpty(r)) {
+              if (!emptyFound) {
+                emptyFound = true; // keep the first empty
+              } else {
+                r.remove();
+              }
+            }
+          });
+        }
+
+        // Deduplicate mobile cards
+        if (mobileContainer) {
+          const cards = Array.from(mobileContainer.querySelectorAll('.activity-row'));
+          let emptyFound = false;
+          cards.forEach(c => {
+            if (isRowEmpty(c)) {
+              if (!emptyFound) {
+                emptyFound = true;
+              } else {
+                c.remove();
+              }
+            }
+          });
+        }
+      } catch (e) {
+        // swallow errors to not block submission
+        console.error('dedupeEmptyActivityRows error', e);
+      }
+    }
+
+    // Remove duplicate/extra empty budget rows, leaving at most one blank row
+    function dedupeEmptyBudgetRows() {
+      try {
+        const desktopContainer = document.getElementById('budgetContainer');
+        const mobileContainer = document.getElementById('budgetContainerMobile');
+
+        function isBudgetRowEmpty(row) {
+          if (!row) return true;
+          const inputs = row.querySelectorAll('input, textarea, select');
+          for (let el of inputs) {
+            const t = (el.type || '').toLowerCase();
+            if (t === 'hidden') continue;
+            if (el.name && (el.name === '_token' || el.name === '_method')) continue;
+            if (el.value && el.value.toString().trim() !== '') return false;
+          }
+          return true;
+        }
+
+        if (desktopContainer) {
+          const rows = Array.from(desktopContainer.querySelectorAll('.proposal-table-row, .budget-row'));
+          let emptyFound = false;
+          rows.forEach(r => {
+            if (isBudgetRowEmpty(r)) {
+              if (!emptyFound) {
+                emptyFound = true;
+              } else {
+                r.remove();
+              }
+            }
+          });
+        }
+
+        if (mobileContainer) {
+          const cards = Array.from(mobileContainer.querySelectorAll('.budget-row'));
+          let emptyFound = false;
+          cards.forEach(c => {
+            if (isBudgetRowEmpty(c)) {
+              if (!emptyFound) {
+                emptyFound = true;
+              } else {
+                c.remove();
+              }
+            }
+          });
+        }
+      } catch (e) {
+        console.error('dedupeEmptyBudgetRows error', e);
+      }
+    }
+
 
 
   // Add Row for Budget
@@ -242,9 +348,12 @@
       cancelButtonColor: '#6c757d',
       confirmButtonText: 'Yes, save as draft!'
     }).then((result) => {
-      if (result.isConfirmed) {
+        if (result.isConfirmed) {
         const form = document.getElementById('projectForm');
         relaxRequiredForDraft(form);
+        // Remove duplicate/extra empty activity and budget rows before submit
+        dedupeEmptyActivityRows();
+        dedupeEmptyBudgetRows();
         prepareFormForSubmit(form);
         document.getElementById('saveDraftInput').value = '1';
         document.getElementById('submitProjectInput').value = '0';
@@ -289,9 +398,23 @@
     const section = formData.get('nstp_section') || 'N/A';
     
     const teamLogoFile = formData.get('Project_Logo');
+    // Detect existing logo image (rendered on edit view)
+    const hasExistingLogo = !!document.querySelector('img[alt="Current Logo"]');
     let teamLogoHTML = '<div class="text-sm text-gray-600">No file uploaded</div>';
     if (teamLogoFile && teamLogoFile.size > 0) {
       teamLogoHTML = `<div class="text-sm text-gray-600">${teamLogoFile.name} (${(teamLogoFile.size / 1024).toFixed(2)} KB)</div>`;
+    }
+
+    // Client-side check: if submitting and no uploaded or existing logo, show friendly message
+    const submitting = true; // this modal is only shown when user intends to submit
+    if (!hasExistingLogo && (!teamLogoFile || teamLogoFile.size === 0)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Logo Required',
+        text: 'Submitting a project requires a team logo. Please upload a logo or save as draft.',
+        confirmButtonColor: '#3085d6'
+      });
+      return;
     }
     
     const problems = formData.get('Project_Problems') || 'N/A';
@@ -337,9 +460,12 @@
           cancelButtonText: 'Cancel',
           reverseButtons: true
         }).then((confirmResult) => {
-          if (confirmResult.isConfirmed) {
+            if (confirmResult.isConfirmed) {
             document.getElementById('saveDraftInput').value = '0';
             document.getElementById('submitProjectInput').value = '1';
+            // Remove duplicate/extra empty activity and budget rows before final submit
+            dedupeEmptyActivityRows();
+            dedupeEmptyBudgetRows();
             prepareFormForSubmit(form);
             form.submit();
           }
@@ -360,6 +486,9 @@
         document.getElementById('submitProjectInput').value = '0';
       }
       document.getElementById('saveDraftInput').value = '0';
+      // Remove duplicate/extra empty activity and budget rows before saving
+      dedupeEmptyActivityRows();
+      dedupeEmptyBudgetRows();
       prepareFormForSubmit(form);
       form.submit();
     });

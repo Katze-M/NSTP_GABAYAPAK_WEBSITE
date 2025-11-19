@@ -953,6 +953,26 @@
 
 
   // Handle Save as Draft
+  // Remove `required` attributes from fields for draft saving
+  function relaxRequiredForDraft(form) {
+    const selectors = [
+      'input[name^="member_"]',
+      'input[name^="stage"]',
+      'textarea[name^="activities"]',
+      'input[name^="timeframe"]',
+      'textarea[name^="point_person"]',
+      'select[name^="status"]',
+      'textarea[name^="budget_"]',
+      'input[name^="budget_amount[]"]',
+      'input[name="Project_Logo"]'
+    ];
+    selectors.forEach(sel => {
+      form.querySelectorAll(sel).forEach(el => {
+        if (el.hasAttribute('required')) el.removeAttribute('required');
+      });
+    });
+  }
+
   document.getElementById('saveDraftBtn').addEventListener('click', function() {
     // For save as draft, we don't require all fields to be filled
     // Just show a simple confirmation and save
@@ -966,9 +986,11 @@
       confirmButtonText: 'Yes, save as draft!'
     }).then((result) => {
       if (result.isConfirmed) {
+        const form = document.getElementById('projectForm');
+        relaxRequiredForDraft(form);
         document.getElementById('saveDraftInput').value = '1';
         document.getElementById('submitProjectInput').value = '0';
-        document.getElementById('projectForm').submit();
+        form.submit();
       }
     })
   });

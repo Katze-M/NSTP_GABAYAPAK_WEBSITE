@@ -20,9 +20,19 @@ class Activity extends Model
         'Specific_Activity',
         'Stage',
         'Time_Frame',
+        'Implementation_Date',
         'Point_Persons',
         'status',
         'project_id',
+    ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'Implementation_Date' => 'date',
     ];
 
     /**

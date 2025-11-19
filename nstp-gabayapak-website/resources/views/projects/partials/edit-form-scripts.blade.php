@@ -81,28 +81,69 @@
     });
   }
 
-  // Add Row for Activities
-  safeAddListener('addActivityRow', 'click', function() {
+ // Add Row for Activities
+  document.getElementById('addActivityRow').addEventListener('click', () => {
     // Desktop table view
     const desktopContainer = document.getElementById('activitiesContainer');
     if (desktopContainer) {
       const newRow = document.createElement('div');
       newRow.className = 'activity-row hover:bg-gray-50 transition-colors px-6 py-4';
       newRow.innerHTML = `
-        <div class="grid grid-cols-[1fr_2fr_2fr_2fr_1fr_auto] gap-4 items-start">
-          <input name="stage[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Planning" required>
-          <textarea name="activities[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe specific activities..." required></textarea>
-          <input name="timeframe[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="e.g., Week 1-2" required>
-          <textarea name="point_person[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Responsible person/s" required></textarea>
-          <select name="status[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm">
-            <option>Planned</option>
-            <option>Ongoing</option>
-          </select>
-          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
+        <div class="flex items-center gap-2">
+          <!-- Stage -->
+          <div class="w-[30px] flex-none">
+            <input name="stage[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg text-sm" placeholder="e.g., Planning" required>
+          </div>
+
+          <!-- Specific Activities -->
+          <div class="w-[260px] px-2">
+            <textarea name="activities[]"
+              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none"
+              rows="2" placeholder="Describe specific activities..." required></textarea>
+          </div>
+
+          <!-- Time Frame -->
+          <div class="px-2">
+            <input name="timeframe[]"
+              class="w-40 px-3 py-2 border-2 border-gray-400 rounded-lg text-sm"
+              placeholder="e.g., Week 1-2" required>
+          </div>
+
+          <!-- Implementation Date -->
+          <div class="w-[130px] px-2">
+            <input type="date" name="implementation_date[]"
+              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm"
+              required>
+          </div>
+
+          <!-- Point Person -->
+          <div class="w-[260px] px-2">
+            <textarea name="point_person[]"
+              class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none"
+              rows="2" placeholder="Responsible person/s" required></textarea>
+          </div>
+
+          <!-- Status -->
+          <div class="w-[120px] px-2">
+            <select name="status[]"
+              class="px-3 py-2 border-2 border-gray-400 rounded-lg text-sm">
+              <option>Planned</option>
+              <option>Ongoing</option>
+            </select>
+          </div>
+
+          <!-- Remove Button -->
+          <div class="w-[90px] px-2">
+            <button type="button"
+              class=" bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium">
+              Remove
+            </button>
+          </div>
         </div>
       `;
       desktopContainer.appendChild(newRow);
     }
+
 
     // Mobile card view
     const mobileContainer = document.getElementById('activitiesContainerMobile');
@@ -110,38 +151,67 @@
       const newCard = document.createElement('div');
       newCard.className = 'activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
       newCard.innerHTML = `
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
-          <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Stage" required>
+        <div class="activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm">
+
+      <div class="space-y-1">
+        <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
+        <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
+          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
+          placeholder="Stage" required>
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
+        <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
+          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
+          rows="2" placeholder="Specific Activities" required></textarea>
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
+        <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
+          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
+          placeholder="Time Frame" required>
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-xs font-medium text-gray-600">Implementation Date <span class="text-red-500">*</span></label>
+        <input type="date" name="implementation_date[]" class="w-full rounded-md border-2 border-gray-400 
+          px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
+          required>
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
+        <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
+          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
+          rows="2" placeholder="Point Person/s" required></textarea>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2">
+        <div class="space-y-1 flex-1">
+          <label class="block text-xs font-medium text-gray-600">Status</label>
+          <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
+            focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors">
+            <option>Planned</option>
+            <option>Ongoing</option>
+          </select>
         </div>
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
-          <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Specific Activities" required></textarea>
-        </div>
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
-          <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Time Frame" required>
-        </div>
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
-          <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Point Person/s" required></textarea>
-        </div>
-        <div class="flex flex-col sm:flex-row gap-2">
-          <div class="space-y-1 flex-1">
-            <label class="block text-xs font-medium text-gray-600">Status</label>
-            <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors">
-              <option>Planned</option>
-              <option>Ongoing</option>
-            </select>
-          </div>
-          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
-        </div>
+
+        <button type="button" 
+          class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 
+          text-xs whitespace-nowrap">
+          Remove
+        </button>
+      </div>
       `;
       mobileContainer.appendChild(newCard);
     }
    
     attachRemoveButtons();
   });
+
+
 
   // Add Row for Budget
   safeAddListener('addBudgetRow', 'click', function() {

@@ -52,7 +52,9 @@ class ActivityController extends Controller
         
         // Validate the request
         $validatedData = $request->validate([
-            'status' => 'required|string|in:planned,ongoing,completed',
+            // accept common casings, we'll normalize before saving
+            'status' => 'required|string|in:Planned,Ongoing,Completed,planned,ongoing,completed',
+            'Implementation_Date' => 'nullable|date',
             'proof_picture' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
         
@@ -81,8 +83,13 @@ class ActivityController extends Controller
             }
         }
         
-        // Update the activity status
-        $activity->update(['status' => $validatedData['status']]);
+        // Normalize status casing (store with initial capital) and update the activity
+        $statusNormalized = ucfirst(strtolower($validatedData['status']));
+
+        $activity->update([
+            'status' => $statusNormalized,
+            'Implementation_Date' => $validatedData['Implementation_Date'] ?? null,
+        ]);
         
         return redirect()->route('projects.show', $activity->project)->with('success', 'Activity updated successfully!');
     }

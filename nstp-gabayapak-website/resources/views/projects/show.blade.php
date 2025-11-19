@@ -171,6 +171,11 @@
                                 </div>
                                 <p class="text-gray-600 mt-2">Point Persons: {{ $activity->Point_Persons ?? 'Not specified' }}</p>
                                 
+                                <!-- Implementation Date -->
+                                @if($activity->Implementation_Date)
+                                    <p class="text-gray-600 mt-2">Implementation Date: {{ \Carbon\Carbon::parse($activity->Implementation_Date)->format('F j, Y') }}</p>
+                                @endif
+                                
                                 <!-- Edit Activity Button (for project owner) - Only when project is submitted -->
                                 @if(Auth::user()->isStudent() && Auth::user()->student && Auth::user()->student->id === $project->student_id && $project->Project_Status !== 'draft')
                                     <div class="mt-3">

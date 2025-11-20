@@ -268,6 +268,17 @@
                             <span class="ml-3 bg-yellow-200 text-yellow-800 text-sm font-medium px-2 py-1 rounded-full">Under Review</span>
                         </div>
                         
+                        <!-- Current Rejection Reason -->
+                        @if($project->Project_Rejection_Reason)
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                                <h4 class="font-semibold text-red-800 mb-2">Rejection Reason:</h4>
+                                <p class="text-red-700">{{ $project->Project_Rejection_Reason }}</p>
+                                @if($project->rejectedBy)
+                                    <p class="mt-2 text-sm text-red-600">Rejected by: {{ $project->rejectedBy->user_Name ?? 'Staff' }} @if(!empty($project->rejectedBy->user_role)) ({{ $project->rejectedBy->user_role }}) @endif</p>
+                                @endif
+                            </div>
+                        @endif
+                        
                         @if($project->previous_rejection_reasons)
                             @php
                                 $previousReasons = json_decode($project->previous_rejection_reasons, true);

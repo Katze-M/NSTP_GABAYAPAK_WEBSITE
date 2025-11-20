@@ -18,7 +18,11 @@ class ProjectController extends Controller
      */
     public function index()
     {
-        return view('all_projects.index');
+        $projects = Project::with(['student', 'rejectedBy'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        return view('all_projects.index', compact('projects'));
     }
 
     /**
@@ -37,6 +41,10 @@ class ProjectController extends Controller
 
         $project->Project_Status = 'current';
         $project->Project_Rejection_Reason = null;
+        $project->previous_rejection_reasons = null;
+        $project->is_resubmission = false;
+        $project->resubmission_count = 0;
+        
         // Clear rejected-by when approving
         if (isset($project->Project_Rejected_By)) {
             $project->Project_Rejected_By = null;
@@ -63,8 +71,25 @@ class ProjectController extends Controller
             'reason' => 'required|string|max:2000',
         ]);
 
+        // Store previous rejection reasons if this is a resubmission
+        $previousReasons = [];
+        if ($project->previous_rejection_reasons) {
+            $previousReasons = json_decode($project->previous_rejection_reasons, true) ?: [];
+        }
+        
+        // Add current rejection reason if there's an existing one (from previous rejections)
+        if ($project->Project_Rejection_Reason) {
+            $previousReasons[] = [
+                'reason' => $project->Project_Rejection_Reason,
+                'rejected_by' => $project->Project_Rejected_By,
+                'rejected_at' => now()->format('Y-m-d H:i:s')
+            ];
+        }
+
         $project->Project_Status = 'rejected';
         $project->Project_Rejection_Reason = $data['reason'];
+        $project->previous_rejection_reasons = json_encode($previousReasons);
+        
         // Record which staff rejected the project (prefer user_id if present)
         $staffId = Auth::user()->user_id ?? Auth::id();
         $project->Project_Rejected_By = $staffId;
@@ -452,7 +477,7 @@ class ProjectController extends Controller
                 abort(403, 'Unauthorized action.');
             }
 
-            // Prevent editing of pending projects by student owner
+            // Students can edit drafts and rejected projects, but not pending projects
             if ($project->Project_Status === 'pending') {
                 return redirect()->route('projects.show', $project)->with('error', 'Pending projects cannot be edited. You can only update activity status and upload proof for pending projects.');
             }
@@ -469,6 +494,9 @@ class ProjectController extends Controller
         // Choose the correct edit blade based on project status
         if ($project->Project_Status === 'draft') {
             return view('projects.edit-draft', ['project' => $project, 'isDraft' => true]);
+        } elseif ($project->Project_Status === 'rejected') {
+            // For rejected projects, use draft editing interface for resubmission
+            return view('projects.edit-draft', ['project' => $project, 'isDraft' => false, 'isResubmission' => true]);
         } elseif ($project->Project_Status === 'pending') {
             return view('projects.edit-submitted', ['project' => $project, 'isDraft' => false]);
         } else {
@@ -494,7 +522,7 @@ class ProjectController extends Controller
                 abort(403, 'Unauthorized action.');
             }
 
-            // Prevent updating pending projects by student owner
+            // Students can update drafts and rejected projects, but not pending projects
             if ($project->Project_Status === 'pending') {
                 return redirect()->route('projects.show', $project)->with('error', 'Pending projects cannot be edited. You can only update activity status and upload proof for pending projects.');
             }
@@ -507,10 +535,17 @@ class ProjectController extends Controller
         
         // Determine if this is a draft or submission
         $isDraft = !$request->input('submit_project', false);
+        $isResubmission = $project->Project_Status === 'rejected' && !$isDraft;
+        
+        // Get the current user and ensure they have a student record
+        $user = Auth::user();
+        if (!$user || !$user->student) {
+            return redirect()->back()->with('error', 'You must be a student to edit projects.');
+        }
         
         // Check if student already has a draft (only one draft allowed per student)
-        if ($isDraft) {
-            $existingDraft = Project::where('student_id', Auth::user()->student->id)
+        if ($isDraft && $project->Project_Status !== 'draft') {
+            $existingDraft = Project::where('student_id', $user->student->id)
                 ->where('Project_Status', 'draft')
                 ->where('Project_ID', '!=', $project->Project_ID)
                 ->first();
@@ -522,7 +557,7 @@ class ProjectController extends Controller
 
         // If this request is transitioning to a submission, ensure the student doesn't already have another pending project
         if (!$isDraft) {
-            $existingSubmittedOther = Project::where('student_id', Auth::user()->student->id)
+            $existingSubmittedOther = Project::where('student_id', $user->student->id)
                 ->where('Project_Status', 'pending')
                 ->where('Project_ID', '!=', $project->Project_ID)
                 ->first();
@@ -539,8 +574,17 @@ class ProjectController extends Controller
         
         if ($isStatusOnlyUpdate && $request->input('Project_Status') === 'pending') {
             // Simple status update - no need for full validation
-            $project->update(['Project_Status' => 'pending']);
-            return redirect()->route('projects.show', $project)->with('success', 'Project submitted successfully for review!');
+            if ($isResubmission) {
+                $project->update([
+                    'Project_Status' => 'pending',
+                    'is_resubmission' => true,
+                    'resubmission_count' => $project->resubmission_count + 1
+                ]);
+                return redirect()->route('projects.show', $project)->with('success', 'Project resubmitted successfully for review!');
+            } else {
+                $project->update(['Project_Status' => 'pending']);
+                return redirect()->route('projects.show', $project)->with('success', 'Project submitted successfully for review!');
+            }
         }
         
         // Define validation rules based on draft vs submission
@@ -754,8 +798,8 @@ class ProjectController extends Controller
         $studentIdsJson = json_encode($studentIds);
         $memberRolesJson = json_encode($memberRoles);
         
-        // Update the project
-        $project->update([
+        // Prepare update data
+        $updateData = [
             'Project_Name' => $validatedData['Project_Name'],
             'Project_Team_Name' => $validatedData['Project_Team_Name'],
             'Project_Logo' => $validatedData['Project_Logo'] ?? $project->Project_Logo,
@@ -769,7 +813,16 @@ class ProjectController extends Controller
             'Project_Section' => $request->input('nstp_section') ?? $project->Project_Section,
             'student_ids' => $studentIdsJson,
             'member_roles' => $memberRolesJson,
-        ]);
+        ];
+        
+        // Handle resubmission tracking
+        if ($isResubmission && $projectStatus === 'pending') {
+            $updateData['is_resubmission'] = true;
+            $updateData['resubmission_count'] = $project->resubmission_count + 1;
+        }
+        
+        // Update the project
+        $project->update($updateData);
                 
         // Note: Member data is collected in the form but not stored in a separate table
         // The member information is displayed in the form but not persisted separately
@@ -841,9 +894,13 @@ class ProjectController extends Controller
         }
         
         // Redirect with appropriate message
-        $message = $projectStatus === 'pending' 
-            ? 'Project submitted successfully for review!' 
-            : 'Project updated successfully!';
+        if ($projectStatus === 'pending') {
+            $message = $isResubmission 
+                ? 'Project resubmitted successfully for review!' 
+                : 'Project submitted successfully for review!';
+        } else {
+            $message = 'Project updated successfully!';
+        }
             
         return redirect()->route('projects.show', $project)->with('success', $message);
     }
@@ -1166,5 +1223,26 @@ class ProjectController extends Controller
             });
         
         return response()->json($students);
+    }
+
+    /**
+     * Get the count of pending projects for the current user.
+     */
+    public function getUserPendingCount()
+    {
+        if (!Auth::user() || !Auth::user()->isStudent()) {
+            return response()->json(['count' => 0]);
+        }
+
+        $student = Auth::user()->student;
+        if (!$student) {
+            return response()->json(['count' => 0]);
+        }
+
+        $count = Project::where('student_id', $student->id)
+                       ->where('Project_Status', 'pending')
+                       ->count();
+
+        return response()->json(['count' => $count]);
     }
 }

@@ -60,7 +60,11 @@
                     @elseif($project->Project_Status === 'rejected')
                         <span class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">Rejected</span>
                     @elseif($project->Project_Status === 'pending')
-                        <span class="absolute top-2 right-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded" style="background-color:#F3E8FF;color:#6D28D9;">Pending</span>
+                        @if($project->is_resubmission)
+                            <span class="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">Resubmission #{{ $project->resubmission_count ?? 1 }}</span>
+                        @else
+                            <span class="absolute top-2 right-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded" style="background-color:#F3E8FF;color:#6D28D9;">Pending</span>
+                        @endif
                     @elseif($project->Project_Status === 'current')
                         <span class="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">Current</span>
                     @elseif($project->Project_Status === 'archived')

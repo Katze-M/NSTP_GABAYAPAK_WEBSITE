@@ -460,13 +460,19 @@
 
 <!-- SUBMIT and SAVE BUTTONS -->
 <div class="flex flex-col sm:flex-row gap-3 justify-end pt-6">
-	@if($isDraft)
-		<button type="button" id="cancelEditBtn" class="rounded-lg bg-red-500 hover:bg-red-600 text-white px-6 py-2 text-sm md:text-base transition-colors flex items-center justify-center font-medium">Cancel Edit</button>
-		<button type="submit" name="action" value="save_draft" id="saveDraftBtn" class="rounded-lg bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 text-sm md:text-base transition-colors font-medium">Save as Draft</button>
-		<button type="submit" name="action" value="submit_project" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-sm md:text-base transition-colors font-medium">Submit Project</button>
+	@if($isDraft || (isset($isResubmission) && $isResubmission))
+		<button type="button" id="cancelEditBtn" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors text-center text-gray-700">Cancel</button>
+		<button type="button" id="saveDraftBtn" class="rounded-lg bg-blue-200 hover:bg-blue-300 px-4 py-2 text-sm md:text-base transition-colors text-blue-800">Save Draft</button>
+		<button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-base transition-colors">
+			@if(isset($isResubmission) && $isResubmission)
+				Resubmit Project
+			@else
+				Submit Project
+			@endif
+		</button>
 	@else
 		<button type="submit" name="action" value="save_project" id="saveProjectBtn" data-current-status="{{ $project->Project_Status }}" class="rounded-lg bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Save Project</button>
-		<a href="{{ route('projects.show', $project) }}" class="rounded-lg bg-gray-300 hover:bg-gray-400 px-4 py-2 text-sm md:text-base text-gray-800 transition-colors flex items-center justify-center">Cancel Edit</a>
+		<button type="button" id="cancelEditBtn" class="rounded-lg bg-gray-300 hover:bg-gray-400 px-4 py-2 text-sm md:text-base text-gray-800 transition-colors flex items-center justify-center">Cancel Edit</button>
 	@endif
 </div>
 

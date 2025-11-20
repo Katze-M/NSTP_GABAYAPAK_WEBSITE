@@ -80,7 +80,6 @@
         <span class="text-2xl md:text-3xl">👥</span> Member Profile
       </h2>
 
-
       <!-- Desktop Table View -->
       <div class="hidden md:block mt-4">
         <div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400">
@@ -104,26 +103,8 @@
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-400">
-              <tr class="hover:bg-gray-50 transition-colors">
-                <td class="px-6 py-4">
-                  <input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" required value="{{ Auth::user()->user_Name }}" readonly>
-                </td>
-                <td class="px-6 py-4">
-                  <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" required>
-                </td>
-                <td class="px-6 py-4">
-                  <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" required value="{{ Auth::user()->user_Email }}" readonly>
-                </td>
-                <td class="px-6 py-4">
-                  <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" required value="{{ Auth::user()->student->student_contact_number ?? '' }}" readonly>
-                </td>
-                <td class="px-6 py-4 text-center">
-                  <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm" disabled>
-                    Remove
-                  </button>
-                </td>
-              </tr>
+            <tbody id="memberTableBody" class="divide-y divide-gray-400">
+              <!-- Members will be loaded here dynamically -->
             </tbody>
           </table>
         </div>
@@ -136,30 +117,9 @@
         </div>
       </div>
 
-
       <!-- Mobile Card View -->
       <div id="memberContainer" class="md:hidden mt-4 space-y-3">
-        <div class="member-card bg-white p-3 rounded-lg border-2 border-gray-400 shadow-sm space-y-3">
-          <div class="space-y-1">
-            <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
-            <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="{{ Auth::user()->user_Name }}" readonly>
-          </div>
-          <div class="space-y-1">
-            <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
-            <input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required>
-          </div>
-          <div class="space-y-1">
-            <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
-            <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" required value="{{ Auth::user()->user_Email }}" readonly>
-          </div>
-          <div class="space-y-1">
-            <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
-            <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="{{ Auth::user()->student->student_contact_number ?? '' }}" readonly>
-          </div>
-          <div class="flex justify-end">
-            <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs" disabled>Remove</button>
-          </div>
-        </div>
+        <!-- Members will be loaded here dynamically -->
        
         <!-- Add Member Button -->
         <div class="mt-4">
@@ -348,73 +308,18 @@
 
 
 
-      <button type="button" id="addActivityRow" class="proposal-add-btn">+ Add Activity</button>
+    <!-- Mobile Card View -->
+    <div class="md:hidden space-y-3">
+      <div id="activitiesContainerMobile" class="space-y-3">
+        <!-- Mobile activities will be loaded here dynamically -->
+      </div>
     </div>
 
-    <!-- Mobile Card View -->
-<div class="md:hidden space-y-3">
-  <div id="activitiesContainerMobile" class="space-y-3">
-    <div class="activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm">
-
-      <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
-        <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
-          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          placeholder="Stage" required>
-      </div>
-
-      <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
-        <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
-          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          rows="2" placeholder="Specific Activities" required></textarea>
-      </div>
-
-      <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
-        <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
-          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          placeholder="Time Frame" required>
-      </div>
-
-      <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600">Implementation Date <span class="text-red-500">*</span></label>
-        <input type="date" name="implementation_date[]" class="w-full rounded-md border-2 border-gray-400 
-          px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          required>
-      </div>
-
-      <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
-        <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
-          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
-          rows="2" placeholder="Point Person/s" required></textarea>
-      </div>
-
-      <div class="flex flex-col sm:flex-row gap-2">
-        <div class="space-y-1 flex-1">
-          <label class="block text-xs font-medium text-gray-600">Status</label>
-          <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
-            focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors">
-            <option>Planned</option>
-            <option>Ongoing</option>
-          </select>
-        </div>
-
-        <button type="button" 
-          class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 
-          text-xs whitespace-nowrap">
-          Remove
-        </button>
-      </div>
+    <!-- Add Activity Button (single button for both desktop and mobile) -->
+    <div class="mt-4">
+      <button type="button" id="addActivityRow" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">+ Add Activity</button>
     </div>
   </div>
-</div>
-
-
-
-      <button type="button" id="addActivityRow" class="mt-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">+ Add Activity</button>
-    </div>
 
 
     <!-- BUDGET -->
@@ -438,15 +343,7 @@
               </div>
             </div>
             <div id="budgetContainer" class="divide-y divide-gray-400 min-w-0">
-              <div class="budget-row hover:bg-gray-50 transition-colors px-6 py-4">
-                <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start">
-                  <textarea name="budget_activity[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe the activity..."></textarea>
-                  <textarea name="budget_resources[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="List resources needed..."></textarea>
-                  <textarea name="budget_partners[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Partner organizations..."></textarea>
-                  <input type="text" name="budget_amount[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="₱ 0.00">
-                  <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
-                </div>
-              </div>
+              <!-- Budget items will be loaded here dynamically -->
             </div>
           </div>
         </div>
@@ -456,27 +353,7 @@
       <!-- Mobile Card View -->
       <div class="md:hidden space-y-3">
         <div id="budgetContainerMobile" class="space-y-3">
-          <div class="budget-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm">
-            <div class="space-y-1">
-              <label class="block text-xs font-medium text-gray-600">Activity</label>
-              <textarea name="budget_activity[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Activity"></textarea>
-            </div>
-            <div class="space-y-1">
-              <label class="block text-xs font-medium text-gray-600">Resources Needed</label>
-              <textarea name="budget_resources[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Resources Needed"></textarea>
-            </div>
-            <div class="space-y-1">
-              <label class="block text-xs font-medium text-gray-600">Partner Agencies</label>
-              <textarea name="budget_partners[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Partner Agencies"></textarea>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-2">
-              <div class="space-y-1 flex-1">
-                <label class="block text-xs font-medium text-gray-600">Amount</label>
-                <input type="text" name="budget_amount[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="₱ 0.00">
-              </div>
-              <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
-            </div>
-          </div>
+          <!-- Mobile budget items will be loaded here dynamically -->
         </div>
       </div>
 
@@ -485,15 +362,10 @@
     </div>
 
 
-    <!-- Hidden input to track if it's a draft or submission -->
-    <input type="hidden" name="save_draft" id="saveDraftInput" value="0">
-    <input type="hidden" name="submit_project" id="submitProjectInput" value="0">
-
-
-    <!-- SUBMIT and SAVE BUTTONS -->
+    <!-- EDIT BUTTONS -->
     <div class="flex flex-col sm:flex-row gap-3 justify-end pt-6">
-      <button type="button" id="saveDraftBtn" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors">Save as Draft</button>
-      <button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Submit Project</button>
+      <a href="{{ route('projects.show', $project) }}" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors text-center text-gray-700">Cancel</a>
+      <button type="submit" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Save Edit</button>
     </div>
   </form>
   </div>
@@ -553,9 +425,9 @@
     document.querySelectorAll('.removeRow').forEach(btn => {
       btn.onclick = function() {
         // Check if this is an attempt to remove the last member
-        if (btn.closest('#memberTable tbody tr') || btn.closest('.member-card')) {
-          const memberTableRows = document.querySelectorAll('#memberTable tbody tr').length;
-          const memberCardRows = document.querySelectorAll('.member-card').length;
+        if (btn.closest('#memberTableBody tr') || btn.closest('.member-card')) {
+          const memberTableRows = document.querySelectorAll('#memberTableBody tr').length;
+          const memberCardRows = document.querySelectorAll('#memberContainer .member-card').length;
           const totalMemberRows = memberTableRows + memberCardRows;
           
           if (totalMemberRows <= 1) {
@@ -611,84 +483,274 @@
       };
     });
   }
+        }).then((result) => {
+          if (result.isConfirmed) {
+            btn.closest('tr, .grid, .activity-row, .budget-row, .member-card').remove();
+            Swal.fire(
+              'Removed!',
+              'The item has been removed.',
+              'success'
+            )
+          }
+        })
+      };
+    });
+  }
 
   // Add Row for Activities
+  function initializeEventHandlers() {
+    console.log('Initializing event handlers...');
+    
+    const addActivityBtn = document.getElementById('addActivityRow');
+    const addBudgetBtn = document.getElementById('addBudgetRow');
+    const openMemberModalBtn = document.getElementById('openMemberModal');
+    const openMemberModalMobileBtn = document.getElementById('openMemberModalMobile');
+    
+    if (addActivityBtn) {
+      console.log('Setting up add activity button');
+      addActivityBtn.addEventListener('click', () => {
+        console.log('Add activity button clicked');
+        // Desktop table view - create markup identical to static row
+        const desktopContainer = document.getElementById('activitiesContainer');
+        if (desktopContainer) {
+          const newRow = document.createElement('div');
+          newRow.className = 'activity-row hover:bg-gray-50 transition-colors px-4 py-2';
+          newRow.innerHTML = `
+            <div class="flex items-center gap-4">
+              <div class="w-12 flex-none">
+                <input name="stage[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg text-sm" placeholder="e.g., Planning" required>
+              </div>
+              <div class="flex-1 px-2">
+                <textarea name="activities[]" class="px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none w-full" rows="2" placeholder="Describe specific activities..." required></textarea>
+              </div>
+              <div class="w-36 px-2 flex-none">
+                <input name="timeframe[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg text-sm" placeholder="e.g., Week 1-2" required>
+              </div>
+              <div class="w-36 px-2 flex-none">
+                <input type="date" name="implementation_date[]" class="px-3 py-2 border-2 border-gray-400 rounded-lg text-sm w-full" required>
+              </div>
+              <div class="flex-1 px-2">
+                <textarea name="point_person[]" class="px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none w-full" rows="2" placeholder="Responsible person/s" required></textarea>
+              </div>
+              <div class="w-[120px] px-2">
+                <select name="status[]" class="px-3 py-2 border-2 border-gray-400 rounded-lg text-sm">
+                  <option>Planned</option>
+                  <option>Ongoing</option>
+                </select>
+              </div>
+              <div class="w-[90px] px-2">
+                <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium">Remove</button>
+              </div>
+            </div>
+          `;
+          desktopContainer.appendChild(newRow);
+        }
+
+        // Mobile card view - keep existing card layout but ensure remove button has removeRow
+        const mobileContainer = document.getElementById('activitiesContainerMobile');
+        if (mobileContainer) {
+          const newCard = document.createElement('div');
+          newCard.className = 'activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
+          newCard.innerHTML = `
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
+              <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Stage" required>
+            </div>
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
+              <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Specific Activities" required></textarea>
+            </div>
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
+              <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Time Frame" required>
+            </div>
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-gray-600">Implementation Date <span class="text-red-500">*</span></label>
+              <input type="date" name="implementation_date[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required>
+            </div>
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
+              <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Point Person/s" required></textarea>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <div class="space-y-1 flex-1">
+                <label class="block text-xs font-medium text-gray-600">Status</label>
+                <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors">
+                  <option>Planned</option>
+                  <option>Ongoing</option>
+                </select>
+              </div>
+              <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
+            </div>
+          `;
+          mobileContainer.appendChild(newCard);
+        }
+
+        attachRemoveButtons();
+      });
+    } else {
+      console.error('Add activity button not found during initialization');
+    }
+
+    // Set up add budget button
+    if (addBudgetBtn) {
+      console.log('Setting up add budget button');
+      addBudgetBtn.addEventListener('click', () => {
+        console.log('Add budget button clicked');
+        // Desktop table view - create markup identical to static budget row
+        const desktopContainer = document.getElementById('budgetContainer');
+        if (desktopContainer) {
+          const newRow = document.createElement('div');
+          newRow.className = 'budget-row hover:bg-gray-50 transition-colors px-6 py-4';
+          newRow.innerHTML = `
+            <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start">
+              <textarea name="budget_activity[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe the activity..."></textarea>
+              <textarea name="budget_resources[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="List resources needed..."></textarea>
+              <textarea name="budget_partners[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Partner organizations..."></textarea>
+              <input type="text" name="budget_amount[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="₱ 0.00">
+              <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
+            </div>
+          `;
+          desktopContainer.appendChild(newRow);
+        }
+
+        // Mobile card view
+        const mobileContainer = document.getElementById('budgetContainerMobile');
+        if (mobileContainer) {
+          const newCard = document.createElement('div');
+          newCard.className = 'budget-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
+          newCard.innerHTML = `
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-gray-600">Activity</label>
+              <textarea name="budget_activity[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Activity"></textarea>
+            </div>
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-gray-600">Resources Needed</label>
+              <textarea name="budget_resources[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Resources"></textarea>
+            </div>
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-gray-600">Partner Agencies</label>
+              <textarea name="budget_partners[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Partners"></textarea>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <div class="space-y-1 flex-1">
+                <label class="block text-xs font-medium text-gray-600">Amount</label>
+                <input type="text" name="budget_amount[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="₱ 0.00">
+              </div>
+              <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
+            </div>
+          `;
+          mobileContainer.appendChild(newCard);
+        }
+
+        attachRemoveButtons();
+      });
+    } else {
+      console.error('Add budget button not found during initialization');
+    }
+
+    // Set up member modal buttons
+    if (openMemberModalBtn) {
+      console.log('Setting up open member modal button');
+      openMemberModalBtn.addEventListener('click', function() {
+        console.log('Open member modal button clicked');
+        loadMemberList();
+        document.getElementById('memberModal').classList.remove('hidden');
+      });
+    } else {
+      console.error('Open member modal button not found during initialization');
+    }
+
+    if (openMemberModalMobileBtn) {
+      console.log('Setting up open member modal mobile button');
+      openMemberModalMobileBtn.addEventListener('click', function() {
+        console.log('Open member modal mobile button clicked');
+        loadMemberList();
+        document.getElementById('memberModal').classList.remove('hidden');
+      });
+    } else {
+      console.error('Open member modal mobile button not found during initialization');
+    }
+  }
+
   document.getElementById('addActivityRow').addEventListener('click', () => {
     // Desktop table view - create markup identical to static row
     const desktopContainer = document.getElementById('activitiesContainer');
     if (desktopContainer) {
       const newRow = document.createElement('div');
-      newRow.className = 'proposal-table-row flex items-center gap-4';
+      newRow.className = 'activity-row hover:bg-gray-50 transition-colors px-4 py-2';
       newRow.innerHTML = `
-        <div class="w-12 flex-none">
-          <input name="stage[]" class="proposal-input w-full" placeholder="e.g., Planning" required>
+        <div class="flex items-center gap-4">
+          <div class="w-12 flex-none">
+            <input name="stage[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg text-sm" placeholder="e.g., Planning" required>
+          </div>
+          <div class="flex-1 px-2">
+            <textarea name="activities[]" class="px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none w-full" rows="2" placeholder="Describe specific activities..." required></textarea>
+          </div>
+          <div class="w-36 px-2 flex-none">
+            <input name="timeframe[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg text-sm" placeholder="e.g., Week 1-2" required>
+          </div>
+          <div class="w-36 px-2 flex-none">
+            <input type="date" name="implementation_date[]" class="px-3 py-2 border-2 border-gray-400 rounded-lg text-sm w-full" required>
+          </div>
+          <div class="flex-1 px-2">
+            <textarea name="point_person[]" class="px-3 py-2 border-2 border-gray-400 rounded-lg text-sm resize-none w-full" rows="2" placeholder="Responsible person/s" required></textarea>
+          </div>
+          <div class="w-[120px] px-2">
+            <select name="status[]" class="px-3 py-2 border-2 border-gray-400 rounded-lg text-sm">
+              <option>Planned</option>
+              <option>Ongoing</option>
+            </select>
+          </div>
+          <div class="w-[90px] px-2">
+            <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium">Remove</button>
+          </div>
         </div>
-        <div class="flex-1 px-2">
-          <textarea name="activities[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe specific activities..." required></textarea>
-        </div>
-        <div class="w-36 px-2 flex-none">
-          <input name="timeframe[]" class="proposal-input w-full" placeholder="e.g., Week 1-2" required>
-        </div>
-        <div class="w-36 px-2 flex-none">
-          <input type="date" name="implementation_date[]" class="proposal-input w-full" required>
-        </div>
-        <div class="flex-1 px-2">
-          <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s" required></textarea>
-        </div>
-        <div class="w-32 px-2 flex-none">
-          <select name="status[]" class="proposal-select w-full">
-            <option>Planned</option>
-            <option>Ongoing</option>
-          </select>
-        </div>
-        <div class="w-24 px-2 flex-none">
-          <button type="button" class="proposal-remove-btn removeRow">Remove</button>
+      `;
+      desktopContainer.appendChild(newRow);
+    }
 
-              <div class="flex justify-end mt-2">
-                <button type="button" id="addActivityRow" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">+ Add Activity</button>
-              </div>
-            </div>
     // Mobile card view - keep existing card layout but ensure remove button has removeRow
     const mobileContainer = document.getElementById('activitiesContainerMobile');
     if (mobileContainer) {
       const newCard = document.createElement('div');
       newCard.className = 'activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
       newCard.innerHTML = `
-      <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
-        <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Stage" required>
-      </div>
-      <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
-        <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Specific Activities" required></textarea>
-      </div>
-      <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
-        <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Time Frame" required>
-      </div>
-      <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600">Implementation Date <span class="text-red-500">*</span></label>
-        <input type="date" name="implementation_date[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required>
-      </div>
-      <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
-        <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Point Person/s" required></textarea>
-      </div>
-      <div class="flex flex-col sm:flex-row gap-2">
-        <div class="space-y-1 flex-1">
-          <label class="block text-xs font-medium text-gray-600">Status</label>
-          <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors">
-            <option>Planned</option>
-            <option>Ongoing</option>
-          </select>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
+          <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Stage" required>
         </div>
-
-        <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
-
-            <div class="flex justify-end mt-2 md:hidden">
-              <button type="button" id="addActivityRowMobile" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">+ Add Activity</button>
-            </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
+          <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Specific Activities" required></textarea>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
+          <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Time Frame" required>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Implementation Date <span class="text-red-500">*</span></label>
+          <input type="date" name="implementation_date[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
+          <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Point Person/s" required></textarea>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="space-y-1 flex-1">
+            <label class="block text-xs font-medium text-gray-600">Status</label>
+            <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors">
+              <option>Planned</option>
+              <option>Ongoing</option>
+            </select>
           </div>
+          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
+        </div>
+      `;
+      mobileContainer.appendChild(newCard);
+    }
+
+    attachRemoveButtons();
   });
 
 
@@ -699,13 +761,15 @@
     const desktopContainer = document.getElementById('budgetContainer');
     if (desktopContainer) {
       const newRow = document.createElement('div');
-      newRow.className = 'proposal-table-row grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start';
+      newRow.className = 'budget-row hover:bg-gray-50 transition-colors px-6 py-4';
       newRow.innerHTML = `
-        <textarea name="budget_activity[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe the activity..."></textarea>
-        <textarea name="budget_resources[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="List resources needed..."></textarea>
-        <textarea name="budget_partners[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Partner organizations..."></textarea>
-        <input type="text" name="budget_amount[]" class="proposal-input w-full" placeholder="₱ 0.00">
-        <button type="button" class="proposal-remove-btn removeRow whitespace-nowrap">Remove</button>
+        <div class="grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start">
+          <textarea name="budget_activity[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Describe the activity..."></textarea>
+          <textarea name="budget_resources[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="List resources needed..."></textarea>
+          <textarea name="budget_partners[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm resize-none" rows="2" placeholder="Partner organizations..."></textarea>
+          <input type="text" name="budget_amount[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors text-sm" placeholder="₱ 0.00">
+          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap">Remove</button>
+        </div>
       `;
       desktopContainer.appendChild(newRow);
     }
@@ -1318,16 +1382,6 @@
   }
 
   // Member selection modal
-  document.getElementById('openMemberModal').addEventListener('click', function() {
-    loadMemberList();
-    document.getElementById('memberModal').classList.remove('hidden');
-  });
-
-  document.getElementById('openMemberModalMobile').addEventListener('click', function() {
-    loadMemberList();
-    document.getElementById('memberModal').classList.remove('hidden');
-  });
-
   document.getElementById('closeMemberModal').addEventListener('click', function() {
     document.getElementById('memberModal').classList.add('hidden');
   });
@@ -1340,12 +1394,23 @@
   function loadMemberList() {
     const memberList = document.getElementById('memberList');
     memberList.innerHTML = '<p class="text-center text-gray-500">Loading members...</p>';
+    
+    // Get the selected section from the form
+    const selectedSection = document.querySelector('select[name="nstp_section"]').value;
+    const selectedComponent = document.querySelector('select[name="Project_Component"]').value;
+    
+    if (!selectedSection || !selectedComponent) {
+      memberList.innerHTML = '<p class="text-center text-red-500">Please select both component and section first.</p>';
+      return;
+    }
    
     // Get existing member emails to exclude them from the list
     const existingMemberEmails = Array.from(addedMemberEmails);
    
     // Fetch students from the same section and component, excluding existing members
     const url = new URL('{{ route("projects.students.same-section") }}', window.location.origin);
+    url.searchParams.append('section', selectedSection);
+    url.searchParams.append('component', selectedComponent);
     existingMemberEmails.forEach(email => {
       url.searchParams.append('existing_members[]', email);
     });
@@ -1354,7 +1419,7 @@
       .then(response => response.json())
       .then(students => {
         if (students.length === 0) {
-          memberList.innerHTML = '<p class="text-center text-gray-500">No students found in your section and component.</p>';
+          memberList.innerHTML = `<p class="text-center text-gray-500">No students found in ${selectedComponent} - ${selectedSection}.</p>`;
           return;
         }
        
@@ -1397,7 +1462,7 @@
       addedMemberEmails.add(memberEmail);
      
       // Add to desktop table
-      const desktopTable = document.querySelector('#memberTable tbody');
+      const desktopTable = document.querySelector('#memberTableBody');
       if (desktopTable) {
         const newRow = document.createElement('tr');
         newRow.className = 'hover:bg-gray-50 transition-colors member-row';
@@ -1469,6 +1534,11 @@
 
   // Populate existing data when the page loads
   document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing edit form...');
+    
+    // Initialize event handlers first
+    initializeEventHandlers();
+    
     // Check if data has already been populated to prevent duplicates
     if (dataPopulated) {
       return;
@@ -1553,55 +1623,42 @@
     @endif
     
     // Add existing budget items
-    @if(isset($project->activities))
-      @php
-        $budgetAdded = false;
-      @endphp
-      @foreach($project->activities as $activity)
-        @if($activity->budget)
-          @php
-            $budgetAdded = true;
-          @endphp
-          addBudgetRow('{{ addslashes($activity->budget->Specific_Activity) }}', '{{ addslashes($activity->budget->Resources_Needed) }}', '{{ addslashes($activity->budget->Partner_Agencies) }}', '{{ addslashes($activity->budget->Amount) }}');
-        @endif
+    @if(isset($project->budgets) && $project->budgets->count() > 0)
+      @foreach($project->budgets as $budget)
+        addBudgetRow('{{ addslashes($budget->Specific_Activity ?? '') }}', '{{ addslashes($budget->Resources_Needed ?? '') }}', '{{ addslashes($budget->Partner_Agencies ?? '') }}', '{{ addslashes($budget->Amount ?? '') }}');
       @endforeach
-      @if(!$budgetAdded)
-        // For drafts, check if any activities have budget data even if not explicitly marked
-        @if($project->Project_Status === 'draft')
-          @php
-            $hasBudgetData = false;
-          @endphp
-          @foreach($project->activities as $activity)
-            @if($activity->budget && (!empty($activity->budget->Specific_Activity) || !empty($activity->budget->Resources_Needed) || !empty($activity->budget->Partner_Agencies) || !empty($activity->budget->Amount)))
-              @php
-                $hasBudgetData = true;
-              @endphp
-              addBudgetRow('{{ addslashes($activity->budget->Specific_Activity) }}', '{{ addslashes($activity->budget->Resources_Needed) }}', '{{ addslashes($activity->budget->Partner_Agencies) }}', '{{ addslashes($activity->budget->Amount) }}');
-            @endif
-          @endforeach
-          @if(!$hasBudgetData)
-            // Add one blank budget row if no budget items exist
-            addBlankBudgetRow();
-          @endif
-        @else
-          // Add one blank budget row if no budget items exist
-          addBlankBudgetRow();
-        @endif
-      @endif
     @else
-      // Add one blank budget row
+      // Add one blank budget row if no budget items exist
       addBlankBudgetRow();
     @endif
+    
+    // Clear existing member rows first
+    const memberTableBody = document.getElementById('memberTableBody');
+    const memberContainer = document.getElementById('memberContainer');
+    if (memberTableBody) {
+      memberTableBody.innerHTML = '';
+    }
+    if (memberContainer) {
+      memberContainer.innerHTML = '';
+    }
+    
+    // Reset the added member emails set
+    addedMemberEmails.clear();
     
     // Populate existing team members
     @if(isset($project->student_ids) && $project->student_ids)
       const studentIds = {!! json_encode(json_decode($project->student_ids, true)) !!};
+      const memberRoles = {!! json_encode(json_decode($project->member_roles, true) ?? []) !!};
       if (Array.isArray(studentIds) && studentIds.length > 0) {
-        // Add all members (clearing is already done above)
+        // Add all members
         studentIds.forEach((studentId, index) => {
-          addMemberRowPlaceholder(studentId, index === 0); // First member is owner (readonly)
+          const isOwner = studentId == {{ $project->student_id }}; // Check if this is the project owner
+          addMemberRowPlaceholder(studentId, isOwner);
         });
       }
+    @else
+      // If no student IDs, add the current project owner
+      addMemberRowPlaceholder({{ $project->student_id }}, true);
     @endif
     
     // Reattach remove button handlers
@@ -1646,7 +1703,7 @@
   // Function to add a member row placeholder
   function addMemberRowPlaceholder(studentId, isOwner = false) {
     // Check if this member row already exists to prevent duplicates
-    const desktopTable = document.querySelector('#memberTable tbody');
+    const desktopTable = document.querySelector('#memberTableBody');
     const mobileContainer = document.getElementById('memberContainer');
     
     // Check desktop table
@@ -1720,6 +1777,8 @@
   
   // Function to populate member details
   function populateMemberDetails() {
+    console.log('Populating member details...');
+    
     // Get all member student IDs
     const memberStudentIds = [];
     document.querySelectorAll('input[name="member_student_id[]"]').forEach(input => {
@@ -1728,9 +1787,38 @@
       }
     });
     
-    if (memberStudentIds.length === 0) return;
+    console.log('Found member student IDs:', memberStudentIds);
     
-    // Fetch member details
+    if (memberStudentIds.length === 0) {
+      console.log('No member student IDs found, returning');
+      return;
+    }
+    
+    // First try to populate with existing project member data
+    @if(isset($project->student_ids) && $project->student_ids)
+      const projectStudentIds = {!! json_encode(json_decode($project->student_ids, true)) !!};
+      const projectMemberRoles = {!! json_encode(json_decode($project->member_roles, true) ?? []) !!};
+      
+      console.log('Project student IDs:', projectStudentIds);
+      console.log('Project member roles:', projectMemberRoles);
+      
+      // Update member details from existing project data
+      document.querySelectorAll('input[name="member_student_id[]"]').forEach((input, index) => {
+        const studentId = input.value;
+        const memberRow = input.closest('.member-row, tr, .member-card');
+        
+        if (memberRow && projectStudentIds.includes(parseInt(studentId))) {
+          // Update role from stored data
+          const roleInput = memberRow.querySelector('input[name="member_role[]"]');
+          if (roleInput && projectMemberRoles[studentId]) {
+            roleInput.value = projectMemberRoles[studentId];
+            console.log('Set role for student', studentId, ':', projectMemberRoles[studentId]);
+          }
+        }
+      });
+    @endif
+    
+    // Fetch member details from API to get names, emails, contacts
     fetch('{{ route("api.students.details") }}', {
       method: 'POST',
       headers: {
@@ -1747,12 +1835,14 @@
         const student = students.find(s => s.id == studentId);
         
         if (student) {
+          const memberRow = input.closest('.member-row, tr, .member-card');
+          
           // Update name
-          const nameInput = input.closest('.member-row, tr, .member-card').querySelector('input[name="member_name[]"]');
+          const nameInput = memberRow.querySelector('input[name="member_name[]"]');
           if (nameInput) nameInput.value = student.name;
           
           // Update email
-          const emailInput = input.closest('.member-row, tr, .member-card').querySelector('input[name="member_email[]"]');
+          const emailInput = memberRow.querySelector('input[name="member_email[]"]');
           if (emailInput) emailInput.value = student.email;
           
           // Add email to addedMemberEmails set to prevent duplicates
@@ -1761,13 +1851,8 @@
           }
           
           // Update contact
-          const contactInput = input.closest('.member-row, tr, .member-card').querySelector('input[name="member_contact[]"]');
+          const contactInput = memberRow.querySelector('input[name="member_contact[]"]');
           if (contactInput) contactInput.value = student.contact_number || '';
-          
-          // For readonly inputs, make sure the value is properly set
-          if (contactInput && contactInput.hasAttribute('readonly')) {
-            contactInput.value = student.contact_number || '';
-          }
         }
       });
     })

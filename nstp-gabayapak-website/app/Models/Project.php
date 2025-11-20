@@ -43,6 +43,9 @@ class Project extends Model
         'member_roles',
         'Project_Rejection_Reason',
         'Project_Rejected_By',
+        'is_resubmission',
+        'previous_rejection_reasons',
+        'resubmission_count',
     ];
 
     /**
@@ -79,14 +82,43 @@ class Project extends Model
     
     /**
      * Get the team members for the project.
+     * This returns a proper relationship instance.
      */
+    public function teamMembersRelation()
+    {
+        if ($this->student_ids) {
+            $studentIds = json_decode($this->student_ids, true);
+            if (is_array($studentIds) && !empty($studentIds)) {
+                return $this->hasManyThrough(Student::class, 'students', 'id', 'id', 'Project_ID', 'id')
+                           ->whereIn('students.id', $studentIds);
+            }
+        }
+        // If no student_ids are stored, return only the project owner
+        return $this->hasOne(Student::class, 'id', 'student_id');
+    }
+
+    /**
+     * Get team members as a collection (for backward compatibility).
+     */
+    public function getTeamMembersAttribute()
+    {
+        if ($this->student_ids) {
+            $studentIds = json_decode($this->student_ids, true);
+            if (is_array($studentIds) && !empty($studentIds)) {
+                return Student::whereIn('id', $studentIds)->get();
+            }
+        }
+        // If no student_ids are stored, return only the project owner
+        return Student::where('id', $this->student_id)->get();
+    }
+
     /**
      * Alias for teamMembers() to match Blade usage.
      */
     public function members()
     {
         // Map Student models to simple arrays expected by the form (name, role, email, contact)
-        $students = $this->teamMembers();
+        $students = $this->teamMembers;
         $members = [];
         
         // Get stored member roles if they exist
@@ -141,6 +173,9 @@ class Project extends Model
         return $members;
     }
 
+    /**
+     * Get team members as collection (deprecated - use teamMembers attribute instead).
+     */
     public function teamMembers()
     {
         if ($this->student_ids) {

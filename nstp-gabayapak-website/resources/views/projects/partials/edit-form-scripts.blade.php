@@ -255,7 +255,7 @@ function addActivityRow(stage='', activity='', timeframe='', implementation_date
 }
 
 
- // Handle Cancel Edit with confirmation
+  // Handle Cancel Edit with confirmation - redirect to appropriate page
   safeAddListener('cancelEditBtn', 'click', function() {
     Swal.fire({
       title: 'Cancel Editing?',
@@ -275,8 +275,7 @@ function addActivityRow(stage='', activity='', timeframe='', implementation_date
           timer: 1500,
           showConfirmButton: false
         }).then(() => {
-          // Get the project ID from the current URL or form
-          const projectId = '{{ $project->Project_ID }}';
+          // Always redirect to project show page
           window.location.href = "{{ route('projects.show', $project) }}";
         });
       }
@@ -455,14 +454,35 @@ function validateFormRequirements() {
   const allPointPersons = formData.getAll('point_person[]');
   const allStatuses = formData.getAll('status[]');
 
+  // Filter out duplicates from desktop/mobile views - only get visible inputs
+  const visibleStages = [];
+  const visibleActivities = [];
+  const visibleTimeframes = [];
+  const visibleImplementationDates = [];
+  const visiblePointPersons = [];
+  const visibleStatuses = [];
+  
+  // Get only inputs from visible containers
+  const visibleStageInputs = document.querySelectorAll('input[name="stage[]"], textarea[name="stage[]"]');
+  visibleStageInputs.forEach((input, index) => {
+    if (input.offsetParent !== null) { // Only visible elements
+      visibleStages.push(allStages[index] || '');
+      visibleActivities.push(allActivities[index] || '');
+      visibleTimeframes.push(allTimeframes[index] || '');
+      visibleImplementationDates.push(allImplementationDates[index] || '');
+      visiblePointPersons.push(allPointPersons[index] || '');
+      visibleStatuses.push(allStatuses[index] || 'Planned');
+    }
+  });
+
   let validActivities = 0;
-  for (let i = 0; i < allStages.length; i++) {
-    const stage = allStages[i]?.trim();
-    const activity = allActivities[i]?.trim();
-    const timeframe = allTimeframes[i]?.trim();
-    const implementationDate = allImplementationDates[i]?.trim();
-    const person = allPointPersons[i]?.trim();
-    const status = allStatuses[i]?.trim() || 'Planned'; // Default to 'Planned' if empty
+  for (let i = 0; i < visibleStages.length; i++) {
+    const stage = visibleStages[i]?.trim();
+    const activity = visibleActivities[i]?.trim();
+    const timeframe = visibleTimeframes[i]?.trim();
+    const implementationDate = visibleImplementationDates[i]?.trim();
+    const person = visiblePointPersons[i]?.trim();
+    const status = visibleStatuses[i]?.trim() || 'Planned';
     
     // Check if any activity field has content (indicating this row is being used)
     if (stage || activity || timeframe || implementationDate || person) {
@@ -472,7 +492,6 @@ function validateFormRequirements() {
       if (!timeframe) missingFields.push('Time Frame');
       if (!implementationDate) missingFields.push('Implementation Date');
       if (!person) missingFields.push('Point Persons');
-      // Note: Status is not included in missing fields since it defaults to 'Planned'
       
       if (missingFields.length > 0) {
         errors.push(`Activity ${i+1}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
@@ -828,8 +847,14 @@ function showConfirmationModal() {
   const teamLogoFile = formData.get('Project_Logo');
   const hasExistingLogo = !!document.querySelector('img[alt="Current Logo"]');
   let teamLogoHTML = '<div class="text-sm text-gray-600">No file uploaded</div>';
+  
+  // Check for new file upload
   if (teamLogoFile && teamLogoFile.size > 0) {
-    teamLogoHTML = `<div class="text-sm text-gray-600">${teamLogoFile.name} (${(teamLogoFile.size / 1024).toFixed(2)} KB)</div>`;
+    teamLogoHTML = `<div class="text-sm text-green-600">${teamLogoFile.name} (${(teamLogoFile.size / 1024).toFixed(2)} KB)</div>`;
+  }
+  // Check for existing logo
+  else if (hasExistingLogo) {
+    teamLogoHTML = `<div class="text-sm text-green-600">✓ Logo image is uploaded</div>`;
   }
 
   // If submitting and no uploaded or existing logo, show friendly message and abort

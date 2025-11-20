@@ -278,12 +278,158 @@
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Validate project data before submission
+    function validateProjectData() {
+        const errors = [];
+        
+        // Check required project fields
+        const projectName = @json($project->Project_Name ?? null);
+        const teamName = @json($project->Project_Team_Name ?? null);
+        const component = @json($project->Project_Component ?? null);
+        const section = @json($project->Project_Section ?? null);
+        const problems = @json($project->Project_Problems ?? null);
+        const goals = @json($project->Project_Goals ?? null);
+        const targetCommunity = @json($project->Project_Target_Community ?? null);
+        const solution = @json($project->Project_Solution ?? null);
+        const expectedOutcomes = @json($project->Project_Expected_Outcomes ?? null);
+        const logo = @json($project->Project_Logo ?? null);
+        
+        if (!projectName || !projectName.trim()) {
+            errors.push('The Project Name field is required.');
+        }
+        if (!teamName || !teamName.trim()) {
+            errors.push('The Team Name field is required.');
+        }
+        if (!component || !component.trim()) {
+            errors.push('The Component field is required.');
+        }
+        if (!section || !section.trim()) {
+            errors.push('The NSTP Section field is required.');
+        }
+        if (!problems || !problems.trim()) {
+            errors.push('The Project Problems field is required.');
+        }
+        if (!goals || !goals.trim()) {
+            errors.push('The Project Goals field is required.');
+        }
+        if (!targetCommunity || !targetCommunity.trim()) {
+            errors.push('The Target Community field is required.');
+        }
+        if (!solution || !solution.trim()) {
+            errors.push('The Project Solution field is required.');
+        }
+        if (!expectedOutcomes || !expectedOutcomes.trim()) {
+            errors.push('The Expected Outcomes field is required.');
+        }
+        if (!logo || !logo.trim()) {
+            errors.push('A team logo is required for project submission.');
+        }
+        
+        // Check team members
+        const members = @json($project->members() ?? []);
+        let validMembers = 0;
+        
+        members.forEach((member, index) => {
+            const email = member.email ? member.email.trim() : '';
+            const name = member.name ? member.name.trim() : '';
+            const role = member.role ? member.role.trim() : '';
+            const contact = member.contact ? member.contact.trim() : '';
+            
+            if (email || name || role || contact) {
+                if (!email) errors.push(`Team member ${index + 1}: Email is required.`);
+                if (!name) errors.push(`Team member ${index + 1}: Name is required.`);
+                if (!role) errors.push(`Team member role is required.`);
+                if (!contact) errors.push(`Team member ${index + 1}: Contact is required.`);
+                if (email && name && role && contact) validMembers++;
+            }
+        });
+        
+        if (validMembers === 0) {
+            errors.push('At least one complete team member info is required.');
+        }
+        
+        // Check activities
+        const activities = @json($project->activities ?? []);
+        let validActivities = 0;
+        
+        activities.forEach((activity, index) => {
+            const stage = activity.Stage ? activity.Stage.trim() : '';
+            const specificActivity = activity.Specific_Activity ? activity.Specific_Activity.trim() : '';
+            const timeframe = activity.Time_Frame ? activity.Time_Frame.trim() : '';
+            const implementationDate = activity.Implementation_Date ? activity.Implementation_Date.trim() : '';
+            const pointPersons = activity.Point_Persons ? activity.Point_Persons.trim() : '';
+            const status = activity.status ? activity.status.trim() : 'Planned'; // Default to 'Planned' if empty
+            
+            // Check if any activity field has content (indicating this row is being used)
+            if (stage || specificActivity || timeframe || implementationDate || pointPersons) {
+                const missingFields = [];
+                if (!stage) missingFields.push('Stage');
+                if (!specificActivity) missingFields.push('Specific Activities');
+                if (!timeframe) missingFields.push('Time Frame');
+                if (!implementationDate) missingFields.push('Implementation Date');
+                if (!pointPersons) missingFields.push('Point Persons');
+                // Note: Status is not included in missing fields since it defaults to 'Planned'
+                
+                if (missingFields.length > 0) {
+                    errors.push(`Activity ${index + 1}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
+                } else {
+                    validActivities++;
+                }
+            }
+        });
+        
+        if (validActivities === 0) {
+            errors.push('At least one complete activity is required.');
+        }
+        
+        // Check budget rows (optional but if filled, must be complete)
+        const budgets = @json($project->budgets ?? []);
+        
+        budgets.forEach((budget, index) => {
+            const budgetActivity = budget.Specific_Activity ? budget.Specific_Activity.trim() : '';
+            const resources = budget.Resources_Needed ? budget.Resources_Needed.trim() : '';
+            const partners = budget.Partner_Agencies ? budget.Partner_Agencies.trim() : '';
+            const amount = budget.Amount ? budget.Amount.toString().trim() : '';
+            
+            // If any field in this row is filled, all must be filled
+            if (budgetActivity || resources || partners || amount) {
+                const missingFields = [];
+                if (!budgetActivity) missingFields.push('Activity');
+                if (!resources) missingFields.push('Resources needed');
+                if (!partners) missingFields.push('Partner agencies');
+                if (!amount) missingFields.push('Amount');
+                
+                if (missingFields.length > 0) {
+                    errors.push(`Budget row ${index + 1}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required when budget information is provided.`);
+                }
+            }
+        });
+        
+        return errors;
+    }
+
     // Add SweetAlert2 confirmation to the submit for review button
     const submitForm = document.getElementById('submitForm');
     if (submitForm) {
         submitForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
+            // Validate project data first
+            const errors = validateProjectData();
+            
+            if (errors.length > 0) {
+                const errorList = errors.join('<br>');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error!',
+                    html: `<div class="text-center">${errorList}</div>`,
+                    confirmButtonColor: '#3085d6',
+                    width: '600px'
+                });
+                return;
+            }
+            
+            // If validation passes, show confirmation
             Swal.fire({
                 title: 'Submit for Review?',
                 text: "Are you sure you want to submit this project for review? This action cannot be undone and you won't be able to edit the project after submission.",

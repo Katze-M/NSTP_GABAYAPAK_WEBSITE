@@ -535,6 +535,17 @@ class ProjectController extends Controller
             }
         }
         
+        // Handle simple status updates from show.blade.php (when only Project_Status is sent)
+        $isStatusOnlyUpdate = $request->has('Project_Status') && 
+                             !$request->has('Project_Name') && 
+                             !$request->has('submit_project');
+        
+        if ($isStatusOnlyUpdate && $request->input('Project_Status') === 'pending') {
+            // Simple status update - no need for full validation
+            $project->update(['Project_Status' => 'pending']);
+            return redirect()->route('projects.show', $project)->with('success', 'Project submitted successfully for review!');
+        }
+        
         // Define validation rules based on draft vs submission
         // Determine logo validation: if saving as draft, logo not required; if submitting, require logo when project has no existing logo
         if ($isDraft) {
@@ -685,7 +696,8 @@ class ProjectController extends Controller
         }
         
         // Set status based on submission type
-        $projectStatus = $request->input('submit_project') ? 'pending' : 'draft';
+        // Check both submit_project parameter (from edit forms) and Project_Status parameter (from show page)
+        $projectStatus = $request->input('submit_project') || $request->input('Project_Status') === 'pending' ? 'pending' : 'draft';
         
         // Build member_roles mapping (maps student ID to role based on email order)
         $memberRoles = [];

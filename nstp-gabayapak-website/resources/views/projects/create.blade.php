@@ -423,6 +423,8 @@
 
 
 <script>
+// Track added member emails to prevent duplicates
+let addedMemberEmails = new Set();
 
 /* Helper: safeAddListener */
 function safeAddListener(id, event, handler) {
@@ -572,6 +574,13 @@ function relaxRequiredForDraft(form) {
   });
 }
 
+// Initialize addedMemberEmails from existing inputs
+document.querySelectorAll('input[name="member_email[]"]').forEach(input => {
+  if (input.value && input.value.trim() !== '') {
+    addedMemberEmails.add(input.value.trim());
+  }
+});
+
 // Use event delegation for remove buttons (works for static and dynamic rows)
 document.addEventListener('click', function(e) {
   if (e.target.classList.contains('removeRow')) {
@@ -614,7 +623,17 @@ document.addEventListener('click', function(e) {
       confirmButtonText: 'Yes, remove it!'
     }).then((result) => {
       if (result.isConfirmed) {
-        btn.closest('tr, .proposal-table-row, .activity-row, .budget-row, .member-card').remove();
+        const row = btn.closest('tr, .proposal-table-row, .activity-row, .budget-row, .member-card');
+        if (row) {
+          // If removing member, remove email from tracking set
+          if (row.querySelector && row.querySelector('input[name="member_email[]"]')) {
+            const emailInput = row.querySelector('input[name="member_email[]"]');
+            if (emailInput && emailInput.value) {
+              addedMemberEmails.delete(emailInput.value);
+            }
+          }
+          row.remove();
+        }
         Swal.fire(
           'Removed!',
           'The item has been removed.',
@@ -1215,6 +1234,11 @@ document.addEventListener('click', function(e) {
        
         let html = '';
         students.forEach(student => {
+          // Skip if this member is already added
+          if (addedMemberEmails.has(student.email)) {
+            return;
+          }
+          
           html += `
             <div class="flex items-center justify-between p-2 border border-gray-200 rounded">
               <div class="flex items-center">
@@ -1230,7 +1254,11 @@ document.addEventListener('click', function(e) {
           `;
         });
        
-        memberList.innerHTML = html;
+        if (html === '') {
+          memberList.innerHTML = '<p class="text-center text-gray-500">All students from your section are already added to the team.</p>';
+        } else {
+          memberList.innerHTML = html;
+        }
       })
       .catch(error => {
         console.error('Error fetching students:', error);
@@ -1248,6 +1276,16 @@ document.addEventListener('click', function(e) {
       const memberName = checkbox.dataset.name;
       const memberEmail = checkbox.dataset.email;
       const memberContact = checkbox.dataset.contact || '';
+      
+      // Add to tracking set to prevent future duplicates
+      if (memberEmail) {
+        addedMemberEmails.add(memberEmail);
+      }
+      
+      // Add to tracking set
+      if (memberEmail) {
+        addedMemberEmails.add(memberEmail);
+      }
      
       // Add to desktop table
       const desktopTable = document.querySelector('#memberTable tbody');
@@ -1273,13 +1311,8 @@ document.addEventListener('click', function(e) {
             </button>
           </td>
         `;
-        // Insert new member after the first row (project owner) instead of appending to the end
-        const firstRow = desktopTable.querySelector('tr');
-        if (firstRow && firstRow.nextSibling) {
-          desktopTable.insertBefore(newRow, firstRow.nextSibling);
-        } else {
-          desktopTable.appendChild(newRow);
-        }
+        // Add new member at the end of the table
+        desktopTable.appendChild(newRow);
       }
      
       // Add to mobile view
@@ -1308,13 +1341,8 @@ document.addEventListener('click', function(e) {
             <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Remove</button>
           </div>
         `;
-        // Insert new member card after the first card (project owner) instead of appending to the end
-        const firstCard = mobileContainer.querySelector('.member-card');
-        if (firstCard && firstCard.nextSibling) {
-          mobileContainer.insertBefore(newCard, firstCard.nextSibling);
-        } else {
-          mobileContainer.appendChild(newCard);
-        }
+        // Add new member card at the end of the container
+        mobileContainer.appendChild(newCard);
       }
     });
    

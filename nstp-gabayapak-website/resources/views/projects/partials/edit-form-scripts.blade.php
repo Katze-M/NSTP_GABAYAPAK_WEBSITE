@@ -677,13 +677,8 @@ function addSelectedMembersToForm() {
           </button>
         </td>
       `;
-      // Insert new member after the first row (project owner) instead of appending to the end
-      const firstRow = desktopTable.querySelector('tr');
-      if (firstRow && firstRow.nextSibling) {
-        desktopTable.insertBefore(newRow, firstRow.nextSibling);
-      } else {
-        desktopTable.appendChild(newRow);
-      }
+      // Add new member at the end of the table
+      desktopTable.appendChild(newRow);
     }
    
     // Add to mobile view
@@ -712,13 +707,8 @@ function addSelectedMembersToForm() {
           <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Remove</button>
         </div>
       `;
-      // Insert new member card after the first card (project owner) instead of appending to the end
-      const firstCard = mobileContainer.querySelector('.member-card');
-      if (firstCard && firstCard.nextSibling) {
-        mobileContainer.insertBefore(newCard, firstCard.nextSibling);
-      } else {
-        mobileContainer.appendChild(newCard);
-      }
+      // Add new member card at the end of the container
+      mobileContainer.appendChild(newCard);
     }
   });
  

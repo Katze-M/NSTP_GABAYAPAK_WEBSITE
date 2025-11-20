@@ -260,7 +260,7 @@
           <div class="w-36 px-2 flex-none">
             <input type="date" name="implementation_date[]"
               class=" px-3 py-2 border-2 border-gray-400 rounded-lg text-sm w-full"
-              required value="{{ old('implementation_date.' . $i, $activity->Implementation_Date) }}">
+              required value="{{ old('implementation_date.' . $i, $activity->Implementation_Date ? $activity->Implementation_Date->format('Y-m-d') : '') }}">
           </div>
 
           <!-- Point Person -->

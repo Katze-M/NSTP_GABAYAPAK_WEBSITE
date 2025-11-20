@@ -207,7 +207,7 @@
             <input name="timeframe[]" class="proposal-input w-full" placeholder="e.g., Week 1-2" @if(!$isDraftMode) required @endif value="{{ old('timeframe.' . $i, $activity->Time_Frame) }}">
           </div>
           <div class="w-44 px-2 flex-none">
-            <input type="date" name="implementation_date[]" class="proposal-input w-full" @if(!$isDraftMode) required @endif value="{{ old('implementation_date.' . $i, $activity->Implementation_Date) }}">
+            <input type="date" name="implementation_date[]" class="proposal-input w-full" @if(!$isDraftMode) required @endif value="{{ old('implementation_date.' . $i, $activity->Implementation_Date ? $activity->Implementation_Date->format('Y-m-d') : '') }}">
           </div>
           <div class="flex-1 px-2">
             <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s" @if(!$isDraftMode) required @endif>{{ old('point_person.' . $i, $activity->Point_Persons) }}</textarea>
@@ -265,6 +265,63 @@
     <!-- Mobile Card View -->
 <div class="md:hidden space-y-3">
   <div id="activitiesContainerMobile" class="space-y-3">
+    @foreach($project->activities as $i => $activity)
+    <div class="activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm">
+
+      <div class="space-y-1">
+        <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
+        <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
+          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
+          placeholder="Stage" @if(!$isDraftMode) required @endif value="{{ old('stage.' . $i, $activity->Stage) }}">
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
+        <textarea name="activities[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
+          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
+          rows="2" placeholder="Specific Activities" @if(!$isDraftMode) required @endif>{{ old('activities.' . $i, $activity->Specific_Activity) }}</textarea>
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-xs font-medium text-gray-600">Time Frame <span class="text-red-500">*</span></label>
+        <input name="timeframe[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
+          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
+          placeholder="Time Frame" @if(!$isDraftMode) required @endif value="{{ old('timeframe.' . $i, $activity->Time_Frame) }}">
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-xs font-medium text-gray-600">Implementation Date <span class="text-red-500">*</span></label>
+        <input type="date" name="implementation_date[]" class="w-full rounded-md border-2 border-gray-400 
+          px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
+          @if(!$isDraftMode) required @endif value="{{ old('implementation_date.' . $i, $activity->Implementation_Date ? $activity->Implementation_Date->format('Y-m-d') : '') }}">
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
+        <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
+          focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" 
+          rows="2" placeholder="Point Person/s" @if(!$isDraftMode) required @endif>{{ old('point_person.' . $i, $activity->Point_Persons) }}</textarea>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2">
+        <div class="space-y-1 flex-1">
+          <label class="block text-xs font-medium text-gray-600">Status</label>
+          <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm 
+            focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors">
+            <option {{ old('status.' . $i, $activity->status) == 'Planned' ? 'selected' : '' }}>Planned</option>
+            <option {{ old('status.' . $i, $activity->status) == 'Ongoing' ? 'selected' : '' }}>Ongoing</option>
+          </select>
+        </div>
+
+        <button type="button" 
+          class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 
+          text-xs whitespace-nowrap">
+          Remove
+        </button>
+      </div>
+    </div>
+    @endforeach
+    @if($project->activities->isEmpty())
     <div class="activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm">
 
       <div class="space-y-1">
@@ -319,6 +376,7 @@
         </button>
       </div>
     </div>
+    @endif
   </div>
 </div>
 

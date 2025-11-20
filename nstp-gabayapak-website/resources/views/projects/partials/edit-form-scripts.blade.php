@@ -179,7 +179,7 @@ function removeAllEmptyBudgetRows() {
    Helpers for adding rows (activities & budgets)
    Keep the UI markup similar to your original code.
    -------------------- */
-function addActivityRow(stage='', activity='', timeframe='', implementation_date='', status='Planned') {
+function addActivityRow(stage='', activity='', timeframe='', implementation_date='', point_person='', status='Planned') {
   const desktopContainer = document.getElementById('activitiesContainer');
   if (desktopContainer) {
     const newRow = document.createElement('div');
@@ -198,7 +198,7 @@ function addActivityRow(stage='', activity='', timeframe='', implementation_date
         <input type="date" name="implementation_date[]" class="proposal-input w-full" value="${implementation_date}">
       </div>
       <div class="flex-1 px-2">
-        <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s">${''}</textarea>
+        <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s">${point_person}</textarea>
       </div>
       <div class="w-30 py-3 flex-none">
         <select name="status[]" class="proposal-select w-full">
@@ -236,7 +236,7 @@ function addActivityRow(stage='', activity='', timeframe='', implementation_date
       </div>
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
-        <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm" rows="2" placeholder="Point Person/s"></textarea>
+        <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm" rows="2" placeholder="Point Person/s">${point_person}</textarea>
       </div>
       <div class="flex flex-col sm:flex-row gap-2">
         <div class="space-y-1 flex-1">
@@ -540,7 +540,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Add listeners for add buttons (if they exist)
   const addActivityBtn = document.getElementById('addActivityRow');
   if (addActivityBtn) addActivityBtn.addEventListener('click', function () {
-    addActivityRow();
+    addActivityRow('', '', '', '', '', 'Planned');
     dedupeEmptyActivityRows(); // keep it tidy
   });
 

@@ -549,7 +549,182 @@ document.addEventListener('DOMContentLoaded', function () {
     addBudgetRow();
     dedupeEmptyBudgetRows();
   });
+
+  // Member modal event listeners
+  const openMemberModalBtn = document.getElementById('openMemberModal');
+  if (openMemberModalBtn) {
+    openMemberModalBtn.addEventListener('click', function() {
+      loadMemberList();
+      document.getElementById('memberModal').classList.remove('hidden');
+    });
+  }
+
+  const openMemberModalMobileBtn = document.getElementById('openMemberModalMobile');
+  if (openMemberModalMobileBtn) {
+    openMemberModalMobileBtn.addEventListener('click', function() {
+      loadMemberList();
+      document.getElementById('memberModal').classList.remove('hidden');
+    });
+  }
+
+  const closeMemberModalBtn = document.getElementById('closeMemberModal');
+  if (closeMemberModalBtn) {
+    closeMemberModalBtn.addEventListener('click', function() {
+      document.getElementById('memberModal').classList.add('hidden');
+    });
+  }
+
+  const cancelMemberSelectionBtn = document.getElementById('cancelMemberSelection');
+  if (cancelMemberSelectionBtn) {
+    cancelMemberSelectionBtn.addEventListener('click', function() {
+      document.getElementById('memberModal').classList.add('hidden');
+    });
+  }
+
+  const addSelectedMembersBtn = document.getElementById('addSelectedMembers');
+  if (addSelectedMembersBtn) {
+    addSelectedMembersBtn.addEventListener('click', function() {
+      addSelectedMembersToForm();
+    });
+  }
 });
+
+/* --------------------
+   Member modal functions
+   -------------------- */
+function loadMemberList() {
+  const memberList = document.getElementById('memberList');
+  memberList.innerHTML = '<p class="text-center text-gray-500">Loading members...</p>';
+ 
+  // Fetch students from the same section and component
+  fetch('{{ route("projects.students.same-section") }}')
+    .then(response => response.json())
+    .then(students => {
+      if (students.length === 0) {
+        memberList.innerHTML = '<p class="text-center text-gray-500">No students found in your section and component.</p>';
+        return;
+      }
+     
+      let html = '';
+      students.forEach(student => {
+        // Skip if this member is already added
+        if (addedMemberEmails.has(student.email)) {
+          return;
+        }
+        
+        html += `
+          <div class="flex items-center justify-between p-2 border border-gray-200 rounded">
+            <div class="flex items-center">
+              <input type="checkbox" id="member${student.id}" name="available_members[]" value="${student.id}" class="mr-2" data-name="${student.name}" data-email="${student.email}" data-contact="${student.contact_number || ''}">
+              <label for="member${student.id}" class="text-sm">
+                <span class="font-medium">${student.name}</span> -
+                <span class="text-gray-600">${student.email}</span>
+                <span class="text-gray-500 text-xs block">${student.contact_number || 'No contact number'}</span>
+              </label>
+            </div>
+            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Same Section</span>
+          </div>
+        `;
+      });
+     
+      if (html === '') {
+        memberList.innerHTML = '<p class="text-center text-gray-500">All students from your section are already added to the team.</p>';
+      } else {
+        memberList.innerHTML = html;
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching students:', error);
+      memberList.innerHTML = '<p class="text-center text-red-500">Error loading students. Please try again.</p>';
+    });
+}
+
+function addSelectedMembersToForm() {
+  const selectedMembers = document.querySelectorAll('input[name="available_members[]"]:checked');
+ 
+  selectedMembers.forEach(checkbox => {
+    const memberId = checkbox.value;
+    const memberName = checkbox.dataset.name;
+    const memberEmail = checkbox.dataset.email;
+    const memberContact = checkbox.dataset.contact || '';
+    
+    // Add to tracking set
+    if (memberEmail) {
+      addedMemberEmails.add(memberEmail);
+    }
+   
+    // Add to desktop table
+    const desktopTable = document.querySelector('#memberTable tbody');
+    if (desktopTable) {
+      const newRow = document.createElement('tr');
+      newRow.className = 'hover:bg-gray-50 transition-colors';
+      newRow.innerHTML = `
+        <td class="px-6 py-4">
+          <input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberName}" readonly>
+        </td>
+        <td class="px-6 py-4">
+          <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Member" required>
+        </td>
+        <td class="px-6 py-4">
+          <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
+        </td>
+        <td class="px-6 py-4">
+          <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required>
+        </td>
+        <td class="px-6 py-4 text-center">
+          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+            Remove
+          </button>
+        </td>
+      `;
+      // Insert new member after the first row (project owner) instead of appending to the end
+      const firstRow = desktopTable.querySelector('tr');
+      if (firstRow && firstRow.nextSibling) {
+        desktopTable.insertBefore(newRow, firstRow.nextSibling);
+      } else {
+        desktopTable.appendChild(newRow);
+      }
+    }
+   
+    // Add to mobile view
+    const mobileContainer = document.getElementById('memberContainer');
+    if (mobileContainer) {
+      const newCard = document.createElement('div');
+      newCard.className = 'member-card bg-white p-3 rounded-lg border-2 border-gray-400 shadow-sm space-y-3';
+      newCard.innerHTML = `
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
+          <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberName}" readonly>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
+          <input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Member" required>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
+          <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
+          <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required>
+        </div>
+        <div class="flex justify-end">
+          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Remove</button>
+        </div>
+      `;
+      // Insert new member card after the first card (project owner) instead of appending to the end
+      const firstCard = mobileContainer.querySelector('.member-card');
+      if (firstCard && firstCard.nextSibling) {
+        mobileContainer.insertBefore(newCard, firstCard.nextSibling);
+      } else {
+        mobileContainer.appendChild(newCard);
+      }
+    }
+  });
+ 
+  // Close modal
+  document.getElementById('memberModal').classList.add('hidden');
+}
 
 /* ============================
    Save Project (staff) handler

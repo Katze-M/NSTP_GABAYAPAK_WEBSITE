@@ -424,6 +424,154 @@
 
 <script>
 
+/* Helper: safeAddListener */
+function safeAddListener(id, event, handler) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(event, handler);
+}
+
+/* --------------------
+   Deduplication helpers - keep at most one empty activity/budget row
+   (Safe to call multiple times)
+   -------------------- */
+function dedupeEmptyActivityRows() {
+  try {
+    const desktopContainer = document.getElementById('activitiesContainer');
+    const mobileContainer = document.getElementById('activitiesContainerMobile');
+    function isRowEmpty(row) {
+      if (!row) return true;
+      const inputs = row.querySelectorAll('input, textarea, select');
+      for (let el of inputs) {
+        const t = (el.type || '').toLowerCase();
+        if (t === 'hidden') continue;
+        if (el.name && (el.name === '_token' || el.name === '_method')) continue;
+        if (el.value && el.value.toString().trim() !== '') return false;
+      }
+      return true;
+    }
+
+    if (desktopContainer) {
+      const rows = Array.from(desktopContainer.querySelectorAll('.proposal-table-row, .activity-row'));
+      let emptyFound = false;
+      rows.forEach(r => {
+        if (isRowEmpty(r)) {
+          if (!emptyFound) emptyFound = true; else r.remove();
+        }
+      });
+    }
+
+    if (mobileContainer) {
+      const cards = Array.from(mobileContainer.querySelectorAll('.activity-row'));
+      let emptyFound = false;
+      cards.forEach(c => {
+        if (isRowEmpty(c)) {
+          if (!emptyFound) emptyFound = true; else c.remove();
+        }
+      });
+    }
+  } catch (e) {
+    console.error('dedupeEmptyActivityRows error', e);
+  }
+}
+
+function dedupeEmptyBudgetRows() {
+  try {
+    const desktopContainer = document.getElementById('budgetContainer');
+    const mobileContainer = document.getElementById('budgetContainerMobile');
+
+    function isBudgetRowEmpty(row) {
+      if (!row) return true;
+      const inputs = row.querySelectorAll('input, textarea, select');
+      for (let el of inputs) {
+        const t = (el.type || '').toLowerCase();
+        if (t === 'hidden') continue;
+        if (el.name && (el.name === '_token' || el.name === '_method')) continue;
+        if (el.value && el.value.toString().trim() !== '') return false;
+      }
+      return true;
+    }
+
+    if (desktopContainer) {
+      const rows = Array.from(desktopContainer.querySelectorAll('.proposal-table-row, .budget-row'));
+      const emptyRows = rows.filter(isBudgetRowEmpty);
+      if (emptyRows.length > 1) emptyRows.slice(0, -1).forEach(r => r.remove());
+    }
+
+    if (mobileContainer) {
+      const cards = Array.from(mobileContainer.querySelectorAll('.budget-row'));
+      const emptyRows = cards.filter(isBudgetRowEmpty);
+      if (emptyRows.length > 1) emptyRows.slice(0, -1).forEach(c => c.remove());
+    }
+  } catch (e) {
+    console.error('dedupeEmptyBudgetRows error', e);
+  }
+}
+
+/* removeAllEmptyBudgetRows: for final submit cleanup */
+function removeAllEmptyBudgetRows() {
+  const desktopContainer = document.getElementById('budgetContainer');
+  const mobileContainer = document.getElementById('budgetContainerMobile');
+  function isBudgetRowEmpty(row) {
+    if (!row) return true;
+    const inputs = row.querySelectorAll('input, textarea, select');
+    for (let el of inputs) {
+      const t = (el.type || '').toLowerCase();
+      if (t === 'hidden') continue;
+      if (el.name && (el.name === '_token' || el.name === '_method')) continue;
+      if (el.value && el.value.toString().trim() !== '') return false;
+    }
+    return true;
+  }
+  if (desktopContainer) {
+    const rows = Array.from(desktopContainer.querySelectorAll('.proposal-table-row, .budget-row'));
+    rows.forEach(r => { if (isBudgetRowEmpty(r)) r.remove(); });
+  }
+  if (mobileContainer) {
+    const cards = Array.from(mobileContainer.querySelectorAll('.budget-row'));
+    cards.forEach(c => { if (isBudgetRowEmpty(c)) c.remove(); });
+  }
+}
+
+/* --------------------
+   prepareFormForSubmit: disable inputs that are not visible (so only visible ones get sent)
+   -------------------- */
+function prepareFormForSubmit(form) {
+  // Enable everything first
+  form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = false);
+  // Then disable hidden elements except hidden inputs / csrf / method
+  form.querySelectorAll('input, textarea, select').forEach(el => {
+    try {
+      const t = (el.type || '').toLowerCase();
+      if (t === 'hidden') return;
+      if (el.name && (el.name === '_token' || el.name === '_method')) return;
+      // offsetParent === null indicates hidden by CSS (not in DOM flow)
+      if (el.offsetParent === null) el.disabled = true;
+    } catch (e) { /* ignore */ }
+  });
+}
+
+/* --------------------
+   relaxRequiredForDraft: remove required attributes for draft saving
+   -------------------- */
+function relaxRequiredForDraft(form) {
+  const selectors = [
+    'input[name^="member_"]',
+    'input[name^="stage"]',
+    'textarea[name^="activities"]',
+    'input[name^="timeframe"]',
+    'textarea[name^="point_person"]',
+    'select[name^="status"]',
+    'textarea[name^="budget_"]',
+    'input[name^="budget_amount[]"]',
+    'input[name="Project_Logo"]'
+  ];
+  selectors.forEach(sel => {
+    form.querySelectorAll(sel).forEach(el => {
+      if (el.hasAttribute && el.hasAttribute('required')) el.removeAttribute('required');
+    });
+  });
+}
+
 // Use event delegation for remove buttons (works for static and dynamic rows)
 document.addEventListener('click', function(e) {
   if (e.target.classList.contains('removeRow')) {
@@ -616,52 +764,80 @@ document.addEventListener('click', function(e) {
   });
 
 
-  // Handle Save as Draft
-  document.getElementById('saveDraftBtn').addEventListener('click', function() {
-    // For save as draft, we don't require all fields to be filled
-    // Just show a simple confirmation and save
-    Swal.fire({
-      title: 'Save as Draft?',
-      text: "Your project will be saved as a draft and can be edited later.",
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Yes, save as draft!'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        document.getElementById('saveDraftInput').value = '1';
-        document.getElementById('submitProjectInput').value = '0';
-        // Disable inputs that are hidden (desktop/mobile duplicates) so only visible ones are submitted
-        prepareFormForSubmit(document.getElementById('projectForm'));
-        document.getElementById('projectForm').submit();
-      }
-    })
-  });
+  // Enhanced Save as Draft with proper handling
+  (function() {
+    let isSavingDraft = false;
+    safeAddListener('saveDraftBtn', 'click', function (e) {
+      e.preventDefault();
+      if (isSavingDraft) return;
+      const form = document.getElementById('projectForm');
+      if (!form) return;
+
+      Swal.fire({
+        title: 'Save as Draft?',
+        text: "Your project will be saved as a draft and can be edited later.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, save as draft!'
+      }).then((result) => {
+        if (!result.isConfirmed) return;
+        isSavingDraft = true;
+
+        // Relax required attributes (so draft can be saved without required fields)
+        relaxRequiredForDraft(form);
+
+        // Only remove completely empty rows, but preserve partial budget data for drafts
+        dedupeEmptyActivityRows();
+        dedupeEmptyBudgetRows(); // This only removes completely empty rows
+
+        // DO NOT remove budget rows with partial data in draft mode
+        // removeAllEmptyBudgetRows(); // Commented out for draft saving
+
+        
+        //prepare visible fields only
+        prepareFormForSubmit(form);
+
+        // Debug: Log budget data being submitted for draft
+        console.log('Draft - Budget Activities:', form.querySelectorAll('input[name="budget_activity[]"]:not([disabled])').length);
+        console.log('Draft - Budget Amounts:', form.querySelectorAll('input[name="budget_amount[]"]:not([disabled])').length);
+
+        const saveDraftInput = document.getElementById('saveDraftInput');
+        const submitProjectInput = document.getElementById('submitProjectInput');
+        if (saveDraftInput) saveDraftInput.value = '1';
+        if (submitProjectInput) submitProjectInput.value = '0';
+
+        // final submit
+        form.submit();
+        // reset flag after short delay to prevent double-click issues (form navigation will usually occur)
+        setTimeout(() => { isSavingDraft = false; }, 2000);
+      });
+    });
+  })();
 
 
-  // Handle Submit Project with confirmation
-  document.getElementById('submitProjectBtn').addEventListener('click', function() {
-    // Validate minimum requirements before submitting
+  // Enhanced Submit Project with safeAddListener
+  safeAddListener('submitProjectBtn', 'click', function (e) {
+    e.preventDefault();
+    // Validate minimum requirements
     if (!validateFormRequirements()) return;
-    
-    // Show confirmation modal with project summary
+    // Show review / confirmation modal
     showConfirmationModal();
   });
 
 
   // Show confirmation modal with detailed project information
   function showConfirmationModal() {
-    // Get form data
     const form = document.getElementById('projectForm');
     const formData = new FormData(form);
-    
+
     // Team Information
     const projectName = formData.get('Project_Name') || 'N/A';
     const teamName = formData.get('Project_Team_Name') || 'N/A';
     const component = formData.get('Project_Component') || 'N/A';
     const section = formData.get('nstp_section') || 'N/A';
-    
+
     // Get team logo file and detect existing logo (if any)
     const teamLogoFile = formData.get('Project_Logo');
     const hasExistingLogo = !!document.querySelector('img[alt="Current Logo"]');
@@ -680,30 +856,26 @@ document.addEventListener('click', function(e) {
       });
       return;
     }
-    
+
     // Project Details
     const problems = formData.get('Project_Problems') || 'N/A';
     const goals = formData.get('Project_Goals') || 'N/A';
     const targetCommunity = formData.get('Project_Target_Community') || 'N/A';
     const solution = formData.get('Project_Solution') || 'N/A';
     const outcomes = formData.get('Project_Expected_Outcomes') || 'N/A';
-    
-    // Members - Filter out empty entries and avoid desktop/mobile duplicates
+
+    // Members - take unique (avoid duplicates from mobile/desktop)
     const allMemberNames = formData.getAll('member_name[]');
     const allMemberRoles = formData.getAll('member_role[]');
     const allMemberEmails = formData.getAll('member_email[]');
     const allMemberContacts = formData.getAll('member_contact[]');
-    
-    // Only collect unique members - desktop and mobile views have the same data
-    // We'll take only the first half to avoid duplicates
     const uniqueMemberCount = Math.ceil(allMemberNames.length / 2);
-    
-    // Only get non-empty members from the first half (unique members)
+
     const memberNames = [];
     const memberRoles = [];
     const memberEmails = [];
     const memberContacts = [];
-    
+
     for (let idx = 0; idx < uniqueMemberCount; idx++) {
       const name = allMemberNames[idx];
       if (name && name.trim() !== '') {
@@ -713,7 +885,8 @@ document.addEventListener('click', function(e) {
         memberContacts.push(allMemberContacts[idx] || '');
       }
     }
-    
+
+    // Build members HTML for modal display
     let membersHTML = '<div class="text-left max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">';
     memberNames.forEach((name, idx) => {
       membersHTML += `
@@ -736,21 +909,20 @@ document.addEventListener('click', function(e) {
         </div>`;
     });
     membersHTML += '</div>';
-    
-    // Activities - Filter out empty entries from hidden mobile/desktop duplicates
+
+    // Activities - collect non-empty entries
     const allStages = formData.getAll('stage[]');
     const allActivities = formData.getAll('activities[]');
     const allTimeframes = formData.getAll('timeframe[]');
     const allPointPersons = formData.getAll('point_person[]');
     const allStatuses = formData.getAll('status[]');
-    
-    // Only get non-empty activities
+
     const stages = [];
     const activities = [];
     const timeframes = [];
     const pointPersons = [];
     const statuses = [];
-    
+
     allStages.forEach((stage, idx) => {
       if (stage && stage.trim() !== '') {
         stages.push(stage);
@@ -760,7 +932,8 @@ document.addEventListener('click', function(e) {
         statuses.push(allStatuses[idx] || 'Planned');
       }
     });
-    
+
+    // Build activities HTML
     let activitiesHTML = '<div class="text-left max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">';
     stages.forEach((stage, idx) => {
       const statusColors = {
@@ -791,46 +964,44 @@ document.addEventListener('click', function(e) {
         </div>`;
     });
     activitiesHTML += '</div>';
-    
-    // Budget - Filter out empty entries from hidden mobile/desktop duplicates
+
+    // Budget processing
     const allBudgetActivities = formData.getAll('budget_activity[]');
     const allBudgetResources = formData.getAll('budget_resources[]');
     const allBudgetPartners = formData.getAll('budget_partners[]');
     const allBudgetAmounts = formData.getAll('budget_amount[]');
-    
-    // Only get non-empty budget items
+
     const budgetActivities = [];
     const budgetResources = [];
     const budgetPartners = [];
     const budgetAmounts = [];
-    
+
     allBudgetActivities.forEach((activity, idx) => {
-      // Include if at least one field has data
-      if ((activity && activity.trim() !== '') || 
-          (allBudgetResources[idx] && allBudgetResources[idx].trim() !== '') || 
-          (allBudgetPartners[idx] && allBudgetPartners[idx].trim() !== '') || 
+      if ((activity && activity.trim() !== '') ||
+          (allBudgetResources[idx] && allBudgetResources[idx].trim() !== '') ||
+          (allBudgetPartners[idx] && allBudgetPartners[idx].trim() !== '') ||
           (allBudgetAmounts[idx] && allBudgetAmounts[idx].trim() !== '')) {
-        budgetActivities.push(activity || '');
+        // If only amount is filled, provide a default activity name
+        const activityName = activity || (allBudgetAmounts[idx] && allBudgetAmounts[idx].trim() !== '' ? 'Budget Item' : '');
+        budgetActivities.push(activityName);
         budgetResources.push(allBudgetResources[idx] || '');
         budgetPartners.push(allBudgetPartners[idx] || '');
         budgetAmounts.push(allBudgetAmounts[idx] || '');
       }
     });
-    
+
+    // Build budget HTML
     let budgetHTML = '<div class="text-left max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">';
     let totalBudget = 0;
-    
+
     budgetActivities.forEach((activity, idx) => {
       if (activity || budgetResources[idx] || budgetPartners[idx] || budgetAmounts[idx]) {
-        // Extract numeric value from amount (remove peso sign and commas)
         let amountValue = budgetAmounts[idx] || '0';
         amountValue = amountValue.replace(/[₱,]/g, '').trim();
         const numericAmount = parseFloat(amountValue) || 0;
         totalBudget += numericAmount;
-        
-        // Format display amount with peso sign
         const displayAmount = numericAmount > 0 ? `₱ ${numericAmount.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '₱ 0.00';
-        
+
         budgetHTML += `
           <div class="mb-3 pb-3 ${idx < budgetActivities.length - 1 ? 'border-b border-gray-300' : ''}">
             <div class="flex items-start justify-between mb-2">
@@ -850,8 +1021,7 @@ document.addEventListener('click', function(e) {
           </div>`;
       }
     });
-    
-    // Add total budget at the bottom if there are budget items
+
     if (budgetActivities.length > 0 && totalBudget > 0) {
       const formattedTotal = `₱ ${totalBudget.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
       budgetHTML += `
@@ -862,9 +1032,8 @@ document.addEventListener('click', function(e) {
           </div>
         </div>`;
     }
-    
     budgetHTML += '</div>';
-    
+
     // First Modal: Review all details
     Swal.fire({
       title: '<div class="text-2xl font-bold text-gray-800">📋 Review Project Proposal</div>',
@@ -900,7 +1069,6 @@ document.addEventListener('click', function(e) {
               </div>
             </div>
           </div>
-          
           <!-- Members -->
           <div class="bg-purple-50 rounded-lg p-4 border-l-4 border-purple-500">
             <h3 class="font-bold text-purple-700 mb-3 text-lg flex items-center gap-2">
@@ -909,7 +1077,6 @@ document.addEventListener('click', function(e) {
             </h3>
             ${membersHTML}
           </div>
-          
           <!-- Project Details -->
           <div class="bg-green-50 rounded-lg p-4 border-l-4 border-green-500">
             <h3 class="font-bold text-green-700 mb-3 text-lg flex items-center gap-2">
@@ -938,7 +1105,6 @@ document.addEventListener('click', function(e) {
               </div>
             </div>
           </div>
-          
           <!-- Activities -->
           <div class="bg-orange-50 rounded-lg p-4 border-l-4 border-orange-500">
             <h3 class="font-bold text-orange-700 mb-3 text-lg flex items-center gap-2">
@@ -947,7 +1113,6 @@ document.addEventListener('click', function(e) {
             </h3>
             ${activitiesHTML}
           </div>
-          
           <!-- Budget -->
           <div class="bg-yellow-50 rounded-lg p-4 border-l-4 border-yellow-500">
             <h3 class="font-bold text-yellow-700 mb-3 text-lg flex items-center gap-2">
@@ -985,12 +1150,26 @@ document.addEventListener('click', function(e) {
           reverseButtons: true
         }).then((confirmResult) => {
           if (confirmResult.isConfirmed) {
-            // Set the submit flag and submit the form
-            document.getElementById('saveDraftInput').value = '0';
-            document.getElementById('submitProjectInput').value = '1';
-              // Disable inputs that are hidden so only visible ones are submitted
-              prepareFormForSubmit(form);
-              form.submit();
+            // Final: set flags, clean up and submit
+            const saveDraftInput = document.getElementById('saveDraftInput');
+            const submitProjectInput = document.getElementById('submitProjectInput');
+            if (saveDraftInput) saveDraftInput.value = '0';
+            if (submitProjectInput) submitProjectInput.value = '1';
+
+            // cleanup duplicate/empty rows
+            dedupeEmptyActivityRows();
+            dedupeEmptyBudgetRows();
+            removeAllEmptyBudgetRows();
+
+            // disable hidden inputs so only visible values are submitted
+            prepareFormForSubmit(form);
+
+            // Debug: Log budget data being submitted
+            console.log('Budget Activities:', formData.getAll('budget_activity[]'));
+            console.log('Budget Amounts:', formData.getAll('budget_amount[]'));
+
+            // submit
+            form.submit();
           }
         });
       }
@@ -998,28 +1177,6 @@ document.addEventListener('click', function(e) {
   }
 
 
-    // Disable inputs inside elements that are not displayed so duplicate hidden inputs don't get submitted
-    function prepareFormForSubmit(form) {
-      // Re-enable everything first (in case function run multiple times)
-      form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = false);
-
-      // Disable elements that are not visible (offsetParent === null typically means display:none)
-      // But DO NOT disable hidden inputs such as CSRF `_token` or `_method` — they are required by Laravel.
-      form.querySelectorAll('input, textarea, select').forEach(el => {
-        try {
-          const t = (el.type || '').toLowerCase();
-          // Keep server-required hidden inputs enabled
-          if (t === 'hidden') return;
-          if (el.name && (el.name === '_token' || el.name === '_method')) return;
-
-          if (el.offsetParent === null) {
-            el.disabled = true;
-          }
-        } catch (e) {
-          // ignore elements that throw
-        }
-      });
-    }
 
 
   // Member selection modal
@@ -1116,7 +1273,13 @@ document.addEventListener('click', function(e) {
             </button>
           </td>
         `;
-        desktopTable.appendChild(newRow);
+        // Insert new member after the first row (project owner) instead of appending to the end
+        const firstRow = desktopTable.querySelector('tr');
+        if (firstRow && firstRow.nextSibling) {
+          desktopTable.insertBefore(newRow, firstRow.nextSibling);
+        } else {
+          desktopTable.appendChild(newRow);
+        }
       }
      
       // Add to mobile view
@@ -1145,7 +1308,13 @@ document.addEventListener('click', function(e) {
             <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Remove</button>
           </div>
         `;
-        mobileContainer.appendChild(newCard);
+        // Insert new member card after the first card (project owner) instead of appending to the end
+        const firstCard = mobileContainer.querySelector('.member-card');
+        if (firstCard && firstCard.nextSibling) {
+          mobileContainer.insertBefore(newCard, firstCard.nextSibling);
+        } else {
+          mobileContainer.appendChild(newCard);
+        }
       }
     });
    
@@ -1158,42 +1327,161 @@ document.addEventListener('click', function(e) {
   // initial remove buttons
 
 
-  // Validate minimum requirements for form submission
+  // Enhanced validation function with comprehensive error checking
   function validateFormRequirements() {
-    // Check minimum one member (count both desktop table rows and mobile cards)
-    const memberTableRows = document.querySelectorAll('#memberTable tbody tr').length;
-    const memberCardRows = document.querySelectorAll('.member-card').length;
-    const totalMemberRows = memberTableRows + memberCardRows;
+    const form = document.getElementById('projectForm');
+    if (!form) {
+      console.error('Project form not found');
+      return false;
+    }
     
-    if (totalMemberRows < 1) {
+    const formData = new FormData(form);
+    const errors = [];
+    
+    // Validate basic project fields
+    const projectName = formData.get('Project_Name')?.trim();
+    const teamName = formData.get('Project_Team_Name')?.trim();
+    const component = formData.get('Project_Component')?.trim();
+    const section = formData.get('nstp_section')?.trim();
+    const problems = formData.get('Project_Problems')?.trim();
+    const goals = formData.get('Project_Goals')?.trim();
+    const targetCommunity = formData.get('Project_Target_Community')?.trim();
+    const solution = formData.get('Project_Solution')?.trim();
+    const outcomes = formData.get('Project_Expected_Outcomes')?.trim();
+    
+    if (!projectName) errors.push('The Project Name field is required.');
+    if (!teamName) errors.push('The Team Name field is required.');
+    if (!component) errors.push('The Component field is required.');
+    if (!section) errors.push('The NSTP Section field is required.');
+    if (!problems) errors.push('The Project Problems field is required.');
+    if (!goals) errors.push('The Project Goals field is required.');
+    if (!targetCommunity) errors.push('The Target Community field is required.');
+    if (!solution) errors.push('The Project Solution field is required.');
+    if (!outcomes) errors.push('The Expected Outcomes field is required.');
+    
+    // Validate team logo
+    const logoFile = formData.get('Project_Logo');
+    const hasExistingLogo = !!document.querySelector('img[alt="Current Logo"]');
+    if (!hasExistingLogo && (!logoFile || logoFile.size === 0)) {
+      errors.push('A team logo is required for project submission.');
+    }
+
+    // Validate team members
+    const allMemberNames = formData.getAll('member_name[]');
+    const allMemberRoles = formData.getAll('member_role[]');
+    const allMemberEmails = formData.getAll('member_email[]');
+    const allMemberContacts = formData.getAll('member_contact[]');
+
+    // Filter out duplicates and empty entries (from desktop/mobile views)
+    const uniqueMembers = [];
+    const processedEmails = new Set();
+    
+    for (let i = 0; i < allMemberNames.length; i++) {
+      const name = allMemberNames[i]?.trim();
+      const role = allMemberRoles[i]?.trim();
+      const email = allMemberEmails[i]?.trim();
+      const contact = allMemberContacts[i]?.trim();
+      
+      // Only process if there's actual data and email hasn't been processed
+      if ((name || role || email || contact) && (!email || !processedEmails.has(email))) {
+        if (email) processedEmails.add(email);
+        uniqueMembers.push({ name, role, email, contact, index: uniqueMembers.length + 1 });
+      }
+    }
+
+    let validMembers = 0;
+    uniqueMembers.forEach((member) => {
+      const missingFields = [];
+      if (!member.name) missingFields.push('Name');
+      if (!member.role) missingFields.push('Role');
+      if (!member.email) missingFields.push('Email');
+      if (!member.contact) missingFields.push('Contact');
+      
+      if (missingFields.length > 0) {
+        errors.push(`Team member ${member.index}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
+      } else {
+        validMembers++;
+      }
+    });
+    if (validMembers === 0) errors.push('At least one complete team member info is required.');
+
+    // Validate activities
+    const allStages = formData.getAll('stage[]');
+    const allActivities = formData.getAll('activities[]');
+    const allTimeframes = formData.getAll('timeframe[]');
+    const allImplementationDates = formData.getAll('implementation_date[]');
+    const allPointPersons = formData.getAll('point_person[]');
+    const allStatuses = formData.getAll('status[]');
+
+    let validActivities = 0;
+    for (let i = 0; i < allStages.length; i++) {
+      const stage = allStages[i]?.trim();
+      const activity = allActivities[i]?.trim();
+      const timeframe = allTimeframes[i]?.trim();
+      const implementationDate = allImplementationDates[i]?.trim();
+      const person = allPointPersons[i]?.trim();
+      const status = allStatuses[i]?.trim() || 'Planned'; // Default to 'Planned' if empty
+      
+      // Check if any activity field has content (indicating this row is being used)
+      if (stage || activity || timeframe || implementationDate || person) {
+        const missingFields = [];
+        if (!stage) missingFields.push('Stage');
+        if (!activity) missingFields.push('Specific Activities');
+        if (!timeframe) missingFields.push('Time Frame');
+        if (!implementationDate) missingFields.push('Implementation Date');
+        if (!person) missingFields.push('Point Persons');
+        // Note: Status is not included in missing fields since it defaults to 'Planned'
+        
+        if (missingFields.length > 0) {
+          errors.push(`Activity ${i+1}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
+        } else {
+          validActivities++;
+        }
+      }
+    }
+    if (validActivities === 0) errors.push('At least one complete activity is required.');
+
+    // Validate budget rows (optional, but if partially filled must be complete)
+    const allBudgetActivities = formData.getAll('budget_activity[]');
+    const allBudgetResources = formData.getAll('budget_resources[]');
+    const allBudgetPartners = formData.getAll('budget_partners[]');
+    const allBudgetAmounts = formData.getAll('budget_amount[]');
+
+    for (let i = 0; i < allBudgetActivities.length; i++) {
+      const act = allBudgetActivities[i]?.trim();
+      const res = allBudgetResources[i]?.trim();
+      const part = allBudgetPartners[i]?.trim();
+      const amt = allBudgetAmounts[i]?.trim();
+      
+      if (act || res || part || amt) {
+        const missingFields = [];
+        if (!act) missingFields.push('Activity');
+        if (!res) missingFields.push('Resources needed');
+        if (!part) missingFields.push('Partner agencies');
+        if (!amt) missingFields.push('Amount');
+        
+        if (missingFields.length > 0) {
+          errors.push(`Budget row ${i+1}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
+        }
+      }
+    }
+
+    // Show errors if any
+    if (errors.length > 0) {
+      const errorList = errors.join('<br>');
       Swal.fire({
         icon: 'error',
-        title: 'Validation Error',
-        text: 'At least one team member is required.',
-        confirmButtonColor: '#3085d6'
+        title: 'Validation Error!',
+        html: `<div class="text-center">${errorList}</div>`,
+        confirmButtonColor: '#3085d6',
+        width: '600px'
       });
       return false;
     }
-
-    // Check minimum one activity
-    const activityRows = document.querySelectorAll('.activity-row').length;
-    if (activityRows < 1) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Validation Error',
-        text: 'At least one activity is required.',
-        confirmButtonColor: '#3085d6'
-      });
-      return false;
-    }
-
+    
     return true;
   }
 
-  // Ensure hidden inputs are disabled on any form submit (defensive)
-  document.getElementById('projectForm').addEventListener('submit', function(e) {
-    prepareFormForSubmit(this);
-  });
 </script>
 @endsection
 

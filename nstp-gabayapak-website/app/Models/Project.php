@@ -120,6 +120,24 @@ class Project extends Model
             ];
         }
 
+        // Sort members to put Leaders/Project Leaders first
+        usort($members, function($a, $b) {
+            $aRole = strtolower(trim($a['role'] ?? ''));
+            $bRole = strtolower(trim($b['role'] ?? ''));
+            
+            // Check if role contains "leader" or "project leader"
+            $aIsLeader = strpos($aRole, 'leader') !== false || strpos($aRole, 'project leader') !== false;
+            $bIsLeader = strpos($bRole, 'leader') !== false || strpos($bRole, 'project leader') !== false;
+            
+            // If both are leaders or both are not leaders, maintain original order
+            if ($aIsLeader === $bIsLeader) {
+                return 0;
+            }
+            
+            // Put leaders first
+            return $aIsLeader ? -1 : 1;
+        });
+
         return $members;
     }
 

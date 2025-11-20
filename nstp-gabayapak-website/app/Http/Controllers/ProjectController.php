@@ -367,14 +367,11 @@ class ProjectController extends Controller
                     $activity->save();
                     
                     // Create budget for this activity if provided
-                    // Fix: Check if budget data exists at this index and has at least one non-empty field
-                    if (isset($validatedData['budget_activity']) && 
-                        is_array($validatedData['budget_activity']) && 
-                        isset($validatedData['budget_activity'][$i]) && 
-                        (!empty($validatedData['budget_activity'][$i]) || 
-                         !empty($validatedData['budget_resources'][$i] ?? '') || 
-                         !empty($validatedData['budget_partners'][$i] ?? '') || 
-                         !empty($validatedData['budget_amount'][$i] ?? ''))) {
+                    // Check if this budget row has any content (any field filled)
+                    if (!empty($validatedData['budget_activity'][$i] ?? '') || 
+                        !empty($validatedData['budget_resources'][$i] ?? '') || 
+                        !empty($validatedData['budget_partners'][$i] ?? '') || 
+                        !empty($validatedData['budget_amount'][$i] ?? '')) {
                         
                         // Create budget directly associated with the project instead of through activity
                         Budget::create([
@@ -802,14 +799,11 @@ class ProjectController extends Controller
                     ]);
                     
                     // Create budget for this activity if provided
-                    // Fix: Check if budget data exists at this index and has at least one non-empty field
-                    if (isset($validatedData['budget_activity']) && 
-                        is_array($validatedData['budget_activity']) && 
-                        isset($validatedData['budget_activity'][$i]) && 
-                        (!empty($validatedData['budget_activity'][$i]) || 
-                         !empty($validatedData['budget_resources'][$i] ?? '') || 
-                         !empty($validatedData['budget_partners'][$i] ?? '') || 
-                         !empty($validatedData['budget_amount'][$i] ?? ''))) {
+                    // Check if this budget row has any content (any field filled)
+                    if (!empty($validatedData['budget_activity'][$i] ?? '') || 
+                        !empty($validatedData['budget_resources'][$i] ?? '') || 
+                        !empty($validatedData['budget_partners'][$i] ?? '') || 
+                        !empty($validatedData['budget_amount'][$i] ?? '')) {
                         
                         // Create budget directly associated with the project instead of through activity
                         Budget::create([

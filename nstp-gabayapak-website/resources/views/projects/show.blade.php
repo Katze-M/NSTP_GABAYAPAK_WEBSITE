@@ -71,7 +71,7 @@
                             $badgeClasses = 'bg-gray-100 text-gray-800';
                             $badgeStyle = 'background-color:#E5E7EB;color:#1F2937;';
                             if ($status === 'draft') { $badgeClasses = 'bg-yellow-500 text-white'; $badgeStyle = 'background-color:#F59E0B;color:#ffffff;'; }
-                            elseif ($status === 'submitted') { $badgeClasses = 'bg-indigo-100 text-indigo-800'; $badgeStyle = 'background-color:#E0E7FF;color:#3730A3;'; }
+                            elseif ($status === 'pending') { $badgeClasses = 'bg-indigo-100 text-indigo-800'; $badgeStyle = 'background-color:#E0E7FF;color:#3730A3;'; }
                             elseif ($status === 'pending') { $badgeClasses = 'bg-purple-100 text-purple-800'; $badgeStyle = 'background-color:#F3E8FF;color:#6D28D9;'; }
                             elseif ($status === 'current') { $badgeClasses = 'bg-green-600 text-white'; $badgeStyle = 'background-color:#16A34A;color:#ffffff;'; }
                             elseif ($status === 'rejected') { $badgeClasses = 'bg-red-600 text-white'; $badgeStyle = 'background-color:#DC2626;color:#ffffff;'; }
@@ -176,16 +176,16 @@
                                     <p class="text-gray-600 mt-2">Implementation Date: {{ \Carbon\Carbon::parse($activity->Implementation_Date)->format('F j, Y') }}</p>
                                 @endif
                                 
-                                <!-- Proof Picture (if exists) - Only when project is submitted or current -->
-                                @if(($project->Project_Status === 'submitted' || $project->Project_Status === 'current') && $activity->proof_picture)
+                                <!-- Proof Picture (if exists) - Only when project is current or archived -->
+                                @if(($project->Project_Status === 'current' || $project->Project_Status === 'archived') && $activity->proof_picture)
                                     <div class="mt-3">
                                         <p class="text-sm text-gray-500">Proof of Activity</p>
                                         <img src="{{ asset('storage/' . $activity->proof_picture) }}" alt="Proof" class="max-w-xs h-auto rounded-lg mt-2">
                                     </div>
                                 @endif
                                 
-                                <!-- Edit Activity Button (for project owner) - Only when project is submitted or current -->
-                                @if(Auth::user()->isStudent() && Auth::user()->student && Auth::user()->student->id === $project->student_id && ($project->Project_Status === 'submitted' || $project->Project_Status === 'current'))
+                                <!-- Edit Activity Button (for project owner) - Only when project is current -->
+                                @if(Auth::user()->isStudent() && Auth::user()->student && Auth::user()->student->id === $project->student_id && $project->Project_Status === 'current')
                                     <div class="mt-3">
                                         <a href="{{ route('activities.edit', $activity) }}" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
                                             Edit Status & Proof
@@ -261,7 +261,7 @@
                             <form action="{{ route('projects.update', $project) }}" method="POST" class="inline-block" id="submitForm">
                                 @csrf
                                 @method('PUT')
-                                <input type="hidden" name="Project_Status" value="submitted">
+                                <input type="hidden" name="Project_Status" value="pending">
                                 <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">
                                     Submit for Review
                                 </button>

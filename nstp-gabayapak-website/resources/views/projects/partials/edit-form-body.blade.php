@@ -442,6 +442,5 @@
   </div>
 </div>
 
-<!-- Refine 'Save as Draft' functionality to enforce confirmation and prevent blank rows -->
 
 

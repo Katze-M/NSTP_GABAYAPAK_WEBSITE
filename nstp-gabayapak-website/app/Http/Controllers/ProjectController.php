@@ -31,8 +31,8 @@ class ProjectController extends Controller
         }
 
         // Only allow approving pending projects
-        if ($project->Project_Status !== 'pending' && $project->Project_Status !== 'submitted') {
-            return redirect()->back()->with('error', 'Only pending/submitted projects can be approved.');
+        if ($project->Project_Status !== 'pending') {
+            return redirect()->back()->with('error', 'Only pending projects can be approved.');
         }
 
         $project->Project_Status = 'current';
@@ -55,8 +55,8 @@ class ProjectController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        if ($project->Project_Status !== 'pending' && $project->Project_Status !== 'submitted') {
-            return redirect()->back()->with('error', 'Only pending/submitted projects can be rejected.');
+        if ($project->Project_Status !== 'pending') {
+            return redirect()->back()->with('error', 'Only pending projects can be rejected.');
         }
 
         $data = $request->validate([
@@ -110,14 +110,14 @@ class ProjectController extends Controller
             }
         }
 
-        // If this is a submission, ensure the student doesn't already have a submitted/pending project
+        // If this is a submission, ensure the student doesn't already have a pending project
         if (!$isDraft) {
             $existingSubmitted = Project::where('student_id', Auth::user()->student->id)
-                ->whereIn('Project_Status', ['submitted', 'pending'])
+                ->where('Project_Status', 'pending')
                 ->first();
 
             if ($existingSubmitted) {
-                return redirect()->back()->with('error', 'You already have a project submitted for review. You can only have one submitted project at a time.');
+                return redirect()->back()->with('error', 'You already have a project pending for review. You can only have one pending project at a time.');
             }
         }
         
@@ -172,6 +172,32 @@ class ProjectController extends Controller
                 'status' => 'required|array|min:1',
                 'status.*' => 'required|string|in:Planned,Ongoing,Completed',
             ]);
+
+            // Custom validation: If any budget row is partially filled, require all fields for that row
+            $requestBudgetActivity = $request->input('budget_activity', []);
+            $requestBudgetResources = $request->input('budget_resources', []);
+            $requestBudgetPartners = $request->input('budget_partners', []);
+            $requestBudgetAmount = $request->input('budget_amount', []);
+            $budgetCount = max(
+                count($requestBudgetActivity),
+                count($requestBudgetResources),
+                count($requestBudgetPartners),
+                count($requestBudgetAmount)
+            );
+            for ($i = 0; $i < $budgetCount; $i++) {
+                $hasActivity = !empty($requestBudgetActivity[$i]);
+                $hasResources = !empty($requestBudgetResources[$i]);
+                $hasPartners = !empty($requestBudgetPartners[$i]);
+                $hasAmount = !empty($requestBudgetAmount[$i]) && $requestBudgetAmount[$i] !== '0';
+                
+                // If any field in this budget row is filled, require all fields
+                if ($hasActivity || $hasResources || $hasPartners || $hasAmount) {
+                    $rules["budget_activity.$i"] = 'required|string';
+                    $rules["budget_resources.$i"] = 'required|string';
+                    $rules["budget_partners.$i"] = 'required|string';
+                    $rules["budget_amount.$i"] = 'required|numeric|min:0';
+                }
+            }
         } else {
             // Lenient validation for drafts - only require arrays to exist and have minimum counts
             $rules = array_merge($rules, [
@@ -208,8 +234,29 @@ class ProjectController extends Controller
             ]);
         }
         
+        // Custom validation messages
+        $messages = [
+            'Project_Name.required' => 'The project name field is required.',
+            'Project_Team_Name.required' => 'The project team name field is required.',
+            'Project_Component.required' => 'The project component field is required.',
+            'nstp_section.required' => 'The NSTP section field is required.',
+            'stage.*.required' => 'The stage field is required.',
+            'activities.*.required' => 'The activities field is required.',
+            'timeframe.*.required' => 'The timeframe field is required.',
+            'point_person.*.required' => 'The point person field is required.',
+            'status.*.required' => 'The status field is required.',
+        ];
+        
+        // Add budget validation messages dynamically
+        for ($i = 0; $i < 20; $i++) {
+            $messages["budget_activity.$i.required"] = 'The activity field is required when budget information is provided.';
+            $messages["budget_resources.$i.required"] = 'The resources needed field is required when budget information is provided.';
+            $messages["budget_partners.$i.required"] = 'The partner agencies field is required when budget information is provided.';
+            $messages["budget_amount.$i.required"] = 'The amount field is required when budget information is provided.';
+        }
+        
         // Validate the request
-        $validatedData = $request->validate($rules);
+        $validatedData = $request->validate($rules, $messages);
         
         // Handle file upload
         if ($request->hasFile('Project_Logo')) {
@@ -278,7 +325,7 @@ class ProjectController extends Controller
         $memberRolesJson = json_encode($memberRoles);
 
         // Set status based on submission type
-        $validatedData['Project_Status'] = $request->input('submit_project') ? 'submitted' : 'draft';
+        $validatedData['Project_Status'] = $request->input('submit_project') ? 'pending' : 'draft';
         $validatedData['Project_Section'] = $request->input('nstp_section');
         
         // Create the project
@@ -365,7 +412,7 @@ class ProjectController extends Controller
         }
         
         // Redirect with appropriate message
-        $message = $validatedData['Project_Status'] === 'submitted' 
+        $message = $validatedData['Project_Status'] === 'pending' 
             ? 'Project submitted successfully for review!' 
             : 'Project saved as draft!';
             
@@ -408,9 +455,9 @@ class ProjectController extends Controller
                 abort(403, 'Unauthorized action.');
             }
 
-            // Prevent editing of submitted projects by student owner
-            if ($project->Project_Status === 'submitted') {
-                return redirect()->route('projects.show', $project)->with('error', 'Submitted projects cannot be edited. You can only update activity status and upload proof for submitted projects.');
+            // Prevent editing of pending projects by student owner
+            if ($project->Project_Status === 'pending') {
+                return redirect()->route('projects.show', $project)->with('error', 'Pending projects cannot be edited. You can only update activity status and upload proof for pending projects.');
             }
         }
 
@@ -425,7 +472,7 @@ class ProjectController extends Controller
         // Choose the correct edit blade based on project status
         if ($project->Project_Status === 'draft') {
             return view('projects.edit-draft', ['project' => $project, 'isDraft' => true]);
-        } elseif ($project->Project_Status === 'submitted') {
+        } elseif ($project->Project_Status === 'pending') {
             return view('projects.edit-submitted', ['project' => $project, 'isDraft' => false]);
         } else {
             // Fallback to original edit view for other statuses
@@ -450,9 +497,9 @@ class ProjectController extends Controller
                 abort(403, 'Unauthorized action.');
             }
 
-            // Prevent updating submitted projects by student owner
-            if ($project->Project_Status === 'submitted') {
-                return redirect()->route('projects.show', $project)->with('error', 'Submitted projects cannot be edited. You can only update activity status and upload proof for submitted projects.');
+            // Prevent updating pending projects by student owner
+            if ($project->Project_Status === 'pending') {
+                return redirect()->route('projects.show', $project)->with('error', 'Pending projects cannot be edited. You can only update activity status and upload proof for pending projects.');
             }
         }
 
@@ -476,15 +523,15 @@ class ProjectController extends Controller
             }
         }
 
-        // If this request is transitioning to a submission, ensure the student doesn't already have another submitted/pending project
+        // If this request is transitioning to a submission, ensure the student doesn't already have another pending project
         if (!$isDraft) {
             $existingSubmittedOther = Project::where('student_id', Auth::user()->student->id)
-                ->whereIn('Project_Status', ['submitted', 'pending'])
+                ->where('Project_Status', 'pending')
                 ->where('Project_ID', '!=', $project->Project_ID)
                 ->first();
 
             if ($existingSubmittedOther) {
-                return redirect()->back()->with('error', 'You already have another project submitted for review. You can only have one submitted project at a time.');
+                return redirect()->back()->with('error', 'You already have another project pending for review. You can only have one pending project at a time.');
             }
         }
         
@@ -546,6 +593,32 @@ class ProjectController extends Controller
                 'status' => 'required|array|min:1',
                 'status.*' => 'required|string|in:Planned,Ongoing,Completed',
             ]);
+
+            // Custom validation: If any budget row is partially filled, require all fields for that row
+            $requestBudgetActivity = $request->input('budget_activity', []);
+            $requestBudgetResources = $request->input('budget_resources', []);
+            $requestBudgetPartners = $request->input('budget_partners', []);
+            $requestBudgetAmount = $request->input('budget_amount', []);
+            $budgetCount = max(
+                count($requestBudgetActivity),
+                count($requestBudgetResources),
+                count($requestBudgetPartners),
+                count($requestBudgetAmount)
+            );
+            for ($i = 0; $i < $budgetCount; $i++) {
+                $hasActivity = !empty($requestBudgetActivity[$i]);
+                $hasResources = !empty($requestBudgetResources[$i]);
+                $hasPartners = !empty($requestBudgetPartners[$i]);
+                $hasAmount = !empty($requestBudgetAmount[$i]) && $requestBudgetAmount[$i] !== '0';
+                
+                // If any field in this budget row is filled, require all fields
+                if ($hasActivity || $hasResources || $hasPartners || $hasAmount) {
+                    $rules["budget_activity.$i"] = 'required|string';
+                    $rules["budget_resources.$i"] = 'required|string';
+                    $rules["budget_partners.$i"] = 'required|string';
+                    $rules["budget_amount.$i"] = 'required|numeric|min:0';
+                }
+            }
         } else {
             // Lenient validation for drafts - only require arrays to exist and have minimum counts
             $rules = array_merge($rules, [
@@ -582,8 +655,29 @@ class ProjectController extends Controller
             ]);
         }
         
+        // Custom validation messages
+        $messages = [
+            'Project_Name.required' => 'The project name field is required.',
+            'Project_Team_Name.required' => 'The project team name field is required.',
+            'Project_Component.required' => 'The project component field is required.',
+            'nstp_section.required' => 'The NSTP section field is required.',
+            'stage.*.required' => 'The stage field is required.',
+            'activities.*.required' => 'The activities field is required.',
+            'timeframe.*.required' => 'The timeframe field is required.',
+            'point_person.*.required' => 'The point person field is required.',
+            'status.*.required' => 'The status field is required.',
+        ];
+        
+        // Add budget validation messages dynamically
+        for ($i = 0; $i < 20; $i++) {
+            $messages["budget_activity.$i.required"] = 'The activity field is required when budget information is provided.';
+            $messages["budget_resources.$i.required"] = 'The resources needed field is required when budget information is provided.';
+            $messages["budget_partners.$i.required"] = 'The partner agencies field is required when budget information is provided.';
+            $messages["budget_amount.$i.required"] = 'The amount field is required when budget information is provided.';
+        }
+        
         // Validate the request
-        $validatedData = $request->validate($rules);
+        $validatedData = $request->validate($rules, $messages);
         
         // Handle file upload
         if ($request->hasFile('Project_Logo')) {
@@ -591,7 +685,7 @@ class ProjectController extends Controller
         }
         
         // Set status based on submission type
-        $projectStatus = $request->input('submit_project') ? 'submitted' : 'draft';
+        $projectStatus = $request->input('submit_project') ? 'pending' : 'draft';
         
         // Build member_roles mapping (maps student ID to role based on email order)
         $memberRoles = [];
@@ -741,7 +835,7 @@ class ProjectController extends Controller
         }
         
         // Redirect with appropriate message
-        $message = $projectStatus === 'submitted' 
+        $message = $projectStatus === 'pending' 
             ? 'Project submitted successfully for review!' 
             : 'Project updated successfully!';
             

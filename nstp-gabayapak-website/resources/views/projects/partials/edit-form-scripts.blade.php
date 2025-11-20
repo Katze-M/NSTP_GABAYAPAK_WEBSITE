@@ -652,13 +652,13 @@ safeAddListener('submitProjectBtn', 'click', function() {
     });
   }
 
-  // Save Project handler for editing submitted/current projects (staff)
+  // Save Project handler for editing pending/current projects (staff)
   const saveProjectBtn = document.getElementById('saveProjectBtn');
   if (saveProjectBtn) {
     saveProjectBtn.addEventListener('click', function() {
       const form = document.getElementById('projectForm');
       const currentStatus = this.dataset.currentStatus || '';
-      if (currentStatus === 'submitted') {
+      if (currentStatus === 'pending') {
         document.getElementById('submitProjectInput').value = '1';
       } else {
         document.getElementById('submitProjectInput').value = '0';
@@ -1266,13 +1266,13 @@ safeAddListener('submitProjectBtn', 'click', function() {
     });
   }
 
-  // Save Project handler for editing submitted/current projects (staff)
+  // Save Project handler for editing pending/current projects (staff)
   const saveProjectBtn = document.getElementById('saveProjectBtn');
   if (saveProjectBtn) {
     saveProjectBtn.addEventListener('click', function() {
       const form = document.getElementById('projectForm');
       const currentStatus = this.dataset.currentStatus || '';
-      if (currentStatus === 'submitted') {
+      if (currentStatus === 'pending') {
         document.getElementById('submitProjectInput').value = '1';
       } else {
         document.getElementById('submitProjectInput').value = '0';

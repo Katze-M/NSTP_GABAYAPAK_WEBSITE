@@ -540,14 +540,39 @@ function removeAllEmptyBudgetRows() {
 function prepareFormForSubmit(form) {
   // Enable everything first
   form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = false);
-  // Then disable hidden elements except hidden inputs / csrf / method / member inputs
+  
+  // Handle member inputs specially - only keep visible view's inputs
+  const desktopMemberTable = document.getElementById('memberTable');
+  const mobileContainer = document.getElementById('memberContainer');
+  
+  // Check which view is visible
+  const desktopVisible = desktopMemberTable && desktopMemberTable.offsetParent !== null;
+  const mobileVisible = mobileContainer && mobileContainer.offsetParent !== null;
+  
+  // Disable member inputs from the hidden view
+  if (desktopVisible && !mobileVisible) {
+    // Desktop is visible, disable mobile member inputs
+    if (mobileContainer) {
+      mobileContainer.querySelectorAll('input[name^="member_"], select[name^="member_"], textarea[name^="member_"]').forEach(el => {
+        el.disabled = true;
+      });
+    }
+  } else if (mobileVisible && !desktopVisible) {
+    // Mobile is visible, disable desktop member inputs
+    if (desktopMemberTable) {
+      desktopMemberTable.querySelectorAll('input[name^="member_"], select[name^="member_"], textarea[name^="member_"]').forEach(el => {
+        el.disabled = true;
+      });
+    }
+  }
+  
+  // Then disable other hidden elements except hidden inputs / csrf / method
   form.querySelectorAll('input, textarea, select').forEach(el => {
     try {
       const t = (el.type || '').toLowerCase();
       if (t === 'hidden') return;
       if (el.name && (el.name === '_token' || el.name === '_method')) return;
-      // Don't disable member inputs - we need both desktop and mobile views to submit
-      if (el.name && el.name.startsWith('member_')) return;
+      if (el.disabled) return; // Already disabled by member input logic above
       // offsetParent === null indicates hidden by CSS (not in DOM flow)
       if (el.offsetParent === null) el.disabled = true;
     } catch (e) { /* ignore */ }

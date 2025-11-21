@@ -71,12 +71,14 @@
         </div>
         @endif
 
+        @if(Auth::user()->isStudent())
         <a href="{{ route('projects.create') }}" class="flex items-center gap-3 p-2 rounded hover:bg-red-500" data-route="projects.create">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2m-4-4l-4-4m0 0l-4 4m4-4v12"/>
             </svg>
             <span class="sidebar-text">Upload Project</span>
         </a>
+        @endif
 
         @if(Auth::user()->isStaff())
         <a href="#" class="flex items-center gap-3 p-2 rounded hover:bg-red-500">

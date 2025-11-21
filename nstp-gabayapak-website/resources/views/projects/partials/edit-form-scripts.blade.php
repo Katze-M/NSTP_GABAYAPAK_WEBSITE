@@ -632,21 +632,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const closeMemberModalBtn = document.getElementById('closeMemberModal');
   if (closeMemberModalBtn) {
-    closeMemberModalBtn.addEventListener('click', function() {
+    closeMemberModalBtn.addEventListener('click', function(event) {
+      event.preventDefault();
       document.getElementById('memberModal').classList.add('hidden');
     });
   }
 
   const cancelMemberSelectionBtn = document.getElementById('cancelMemberSelection');
   if (cancelMemberSelectionBtn) {
-    cancelMemberSelectionBtn.addEventListener('click', function() {
+    cancelMemberSelectionBtn.addEventListener('click', function(event) {
+      event.preventDefault();
       document.getElementById('memberModal').classList.add('hidden');
+      // Show cancel confirmation
+      Swal.fire({
+        icon: 'info',
+        title: 'Cancelled',
+        text: 'Member selection has been cancelled.',
+        timer: 1500,
+        showConfirmButton: false
+      });
     });
   }
 
   const addSelectedMembersBtn = document.getElementById('addSelectedMembers');
   if (addSelectedMembersBtn) {
-    addSelectedMembersBtn.addEventListener('click', function() {
+    addSelectedMembersBtn.addEventListener('click', function(event) {
+      event.preventDefault();
       addSelectedMembersToForm();
     });
   }
@@ -704,6 +715,18 @@ function loadMemberList() {
 
 function addSelectedMembersToForm() {
   const selectedMembers = document.querySelectorAll('input[name="available_members[]"]:checked');
+ 
+  // Check if any members are selected
+  if (selectedMembers.length === 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'No Members Selected',
+      text: 'Please select at least one member to add to your team.',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#3b82f6'
+    });
+    return;
+  }
  
   selectedMembers.forEach(checkbox => {
     const memberId = checkbox.value;
@@ -779,6 +802,15 @@ function addSelectedMembersToForm() {
  
   // Close modal
   document.getElementById('memberModal').classList.add('hidden');
+  
+  // Show success message
+  Swal.fire({
+    icon: 'success',
+    title: 'Members Added Successfully!',
+    text: `${selectedMembers.length} member(s) have been added to your team.`,
+    timer: 2000,
+    showConfirmButton: false
+  });
 }
 
 /* ============================

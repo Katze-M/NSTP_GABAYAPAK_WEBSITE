@@ -75,7 +75,7 @@
 						<th class="px-6 py-4 text-sm font-semibold text-gray-700 uppercase tracking-wider text-center">Action</th>
 					</tr>
 				</thead>
-				<tbody class="divide-y divide-gray-400">
+				<tbody id="memberTableBody" class="divide-y divide-gray-400">
 					@foreach($project->members() as $i => $member)
 						<tr class="hover:bg-gray-50 transition-colors">
 							<td class="px-6 py-4">
@@ -94,7 +94,7 @@
 								<input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" @if(!$isDraftMode) required @endif value="{{ old('member_contact.' . $i, $member['contact']) }}">
 							</td>
 							<td class="px-6 py-4 text-center">
-								<button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm" {{ $i === 0 ? 'disabled' : '' }}>Remove</button>
+								<button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">Remove</button>
 							</td>
 						</tr>
 					@endforeach
@@ -131,7 +131,7 @@
 					<input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" @if(!$isDraftMode) required @endif value="{{ old('member_contact.' . $i, $member['contact']) }}">
 				</div>
 				<div class="flex justify-end">
-					<button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs" {{ $i === 0 ? 'disabled' : '' }}>Remove</button>
+					<button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Remove</button>
 				</div>
 			</div>
 		@endforeach
@@ -482,7 +482,7 @@
   <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-lg font-bold">Select Team Members</h3>
-      <button id="closeMemberModal" class="text-gray-500 hover:text-gray-700">
+      <button type="button" id="closeMemberModal" class="text-gray-500 hover:text-gray-700">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
@@ -496,10 +496,10 @@
       <!-- Members will be loaded here dynamically -->
     </div>
     <div class="flex justify-end space-x-3">
-      <button id="cancelMemberSelection" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+      <button type="button" id="cancelMemberSelection" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
         Cancel
       </button>
-      <button id="addSelectedMembers" class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600">
+      <button type="button" id="addSelectedMembers" class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600">
         Add Selected Members
       </button>
     </div>

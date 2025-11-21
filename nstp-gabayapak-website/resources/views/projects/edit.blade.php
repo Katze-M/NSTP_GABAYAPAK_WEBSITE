@@ -377,7 +377,7 @@
   <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-lg font-bold">Select Team Members</h3>
-      <button id="closeMemberModal" class="text-gray-500 hover:text-gray-700">
+      <button type="button" id="closeMemberModal" class="text-gray-500 hover:text-gray-700">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
@@ -391,10 +391,10 @@
       <!-- Members will be loaded here dynamically -->
     </div>
     <div class="flex justify-end space-x-3">
-      <button id="cancelMemberSelection" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+      <button type="button" id="cancelMemberSelection" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
         Cancel
       </button>
-      <button id="addSelectedMembers" class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600">
+      <button type="button" id="addSelectedMembers" class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600">
         Add Selected Members
       </button>
     </div>
@@ -1398,12 +1398,22 @@
   }
 
   // Member selection modal
-  document.getElementById('closeMemberModal').addEventListener('click', function() {
+  document.getElementById('closeMemberModal').addEventListener('click', function(event) {
+    event.preventDefault();
     document.getElementById('memberModal').classList.add('hidden');
   });
 
-  document.getElementById('cancelMemberSelection').addEventListener('click', function() {
+  document.getElementById('cancelMemberSelection').addEventListener('click', function(event) {
+    event.preventDefault();
     document.getElementById('memberModal').classList.add('hidden');
+    // Show cancel confirmation
+    Swal.fire({
+      icon: 'info',
+      title: 'Cancelled',
+      text: 'Member selection has been cancelled.',
+      timer: 1500,
+      showConfirmButton: false
+    });
   });
 
   // Load member list from same section and component
@@ -1465,8 +1475,21 @@
   }
 
   // Add selected members to the form
-  document.getElementById('addSelectedMembers').addEventListener('click', function() {
+  document.getElementById('addSelectedMembers').addEventListener('click', function(event) {
+    event.preventDefault();
     const selectedMembers = document.querySelectorAll('input[name="available_members[]"]:checked');
+   
+    // Check if any members are selected
+    if (selectedMembers.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No Members Selected',
+        text: 'Please select at least one member to add to your team.',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
    
     selectedMembers.forEach(checkbox => {
       const memberId = checkbox.value;
@@ -1541,6 +1564,15 @@
    
     // Close modal
     document.getElementById('memberModal').classList.add('hidden');
+    
+    // Show success message
+    Swal.fire({
+      icon: 'success',
+      title: 'Members Added Successfully!',
+      text: `${selectedMembers.length} member(s) have been added to your team.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
   });
 
   // initial remove buttons (only if data hasn't been populated yet)
@@ -1687,7 +1719,7 @@
   // Validate minimum requirements for form submission
   function validateFormRequirements() {
     // Check minimum one member (count both desktop table rows and mobile cards)
-    const memberTableRows = document.querySelectorAll('#memberTable tbody tr').length;
+    const memberTableRows = document.querySelectorAll('#memberTableBody tr').length;
     const memberCardRows = document.querySelectorAll('.member-card').length;
     const totalMemberRows = memberTableRows + memberCardRows;
     

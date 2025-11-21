@@ -402,6 +402,9 @@
 </div>
 
 <script>
+  // Project data - passed from Laravel
+  const projectOwnerStudentId = @json($project->student_id ?? null);
+  
   // Keep track of added member emails to prevent duplicates
   let addedMemberEmails = new Set();
   // Keep track of whether data has already been populated to prevent duplicates
@@ -426,6 +429,20 @@
       btn.onclick = function() {
         // Check if this is an attempt to remove the last member
         if (btn.closest('#memberTableBody tr') || btn.closest('.member-card')) {
+          const memberRow = btn.closest('tr, .member-card');
+          const studentIdInput = memberRow.querySelector('input[name="member_student_id[]"]');
+          
+          // Check if this member is the project owner
+          if (studentIdInput && studentIdInput.value && studentIdInput.value == projectOwnerStudentId) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Cannot Remove',
+              text: 'Project Owner is not allowed to be removed.',
+              confirmButtonColor: '#3085d6'
+            });
+            return;
+          }
+          
           const memberTableRows = document.querySelectorAll('#memberTableBody tr').length;
           const memberCardRows = document.querySelectorAll('#memberContainer .member-card').length;
           const totalMemberRows = memberTableRows + memberCardRows;
@@ -441,7 +458,6 @@
           }
           
           // Remove member email from addedMemberEmails set when removing a member
-          const memberRow = btn.closest('tr, .member-card');
           const emailInput = memberRow.querySelector('input[name="member_email[]"]');
           if (emailInput && emailInput.value) {
             addedMemberEmails.delete(emailInput.value);
@@ -1737,7 +1753,7 @@
           <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" ${isOwner ? 'readonly' : 'required'}>
         </td>
         <td class="px-6 py-4 text-center">
-          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm" ${isOwner ? 'disabled' : ''}>
+          <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
             Remove
           </button>
         </td>
@@ -1768,7 +1784,7 @@
           <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" ${isOwner ? 'readonly' : 'required'}>
         </div>
         <div class="flex justify-end">
-          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs" ${isOwner ? 'disabled' : ''}>Remove</button>
+          <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Remove</button>
         </div>
       `;
       mobileContainer.appendChild(newCard);

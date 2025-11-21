@@ -3,6 +3,9 @@
    Consolidated Project Form JS
    ============================ */
 
+/* Project data - passed from Laravel */
+const projectOwnerStudentId = @json($project->student_id ?? null);
+
 /* Single source of truth for member emails and data-population state */
 let addedMemberEmails = new Set();
 let dataPopulated = false;
@@ -26,8 +29,22 @@ function attachRemoveButtons() {
 
     e.preventDefault();
 
-    // If removing member, ensure at least one remains
+    // If removing member, check if it's the project owner
     if (btn.closest('#memberTable tbody tr') || btn.closest('.member-card')) {
+      const memberRow = btn.closest('tr, .member-card');
+      const studentIdInput = memberRow.querySelector('input[name="member_student_id[]"]');
+      
+      // Check if this member is the project owner
+      if (studentIdInput && studentIdInput.value && studentIdInput.value == projectOwnerStudentId) {
+        Swal.fire({ 
+          icon: 'error', 
+          title: 'Cannot Remove', 
+          text: 'Project Owner is not allowed to be removed.', 
+          confirmButtonColor: '#3085d6' 
+        });
+        return;
+      }
+      
       const memberTableRows = document.querySelectorAll('#memberTable tbody tr').length;
       const memberCardRows = document.querySelectorAll('.member-card').length;
       const totalMemberRows = memberTableRows + memberCardRows;

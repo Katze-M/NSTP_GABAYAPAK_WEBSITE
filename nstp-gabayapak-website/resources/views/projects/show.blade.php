@@ -251,6 +251,13 @@
                         <h3 class="text-xl font-bold text-blue-800">Total Budget</h3>
                         <p class="text-2xl font-bold text-green-600">₱{{ number_format($project->total_budget ?? 0, 2) }}</p>
                     </div>
+                    @if($project->student_id && $project->student && $project->student->user)
+                        <div class="mt-3 pt-3 border-t border-blue-200">
+                            <p class="text-sm text-blue-700">
+                                <span class="font-medium">Submitted by:</span> {{ $project->student->user->user_Name }}
+                            </p>
+                        </div>
+                    @endif
                 </div>
                 
                 @if($project->Project_Status === 'rejected')

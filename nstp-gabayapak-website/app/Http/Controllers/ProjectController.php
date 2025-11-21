@@ -122,7 +122,7 @@ class ProjectController extends Controller
         }
         
         // Determine if this is a draft or submission
-        $isDraft = !$request->input('submit_project', false);
+        $isDraft = $request->input('save_draft', false) == '1' || !$request->input('submit_project', false);
         
         // Check if student already has a draft (only one draft allowed per student)
         if ($isDraft) {
@@ -177,6 +177,8 @@ class ProjectController extends Controller
                 // Member data - at least one member required with all fields
                 'member_name' => 'required|array|min:1',
                 'member_name.*' => 'required|string|max:255',
+                'member_student_id' => 'required|array|min:1',
+                'member_student_id.*' => 'required|integer|exists:students,id',
                 'member_role' => 'required|array|min:1',
                 'member_role.*' => 'required|string|max:255',
                 'member_email' => 'required|array|min:1',
@@ -291,6 +293,26 @@ class ProjectController extends Controller
         // Add student_id to the validated data
         $validatedData['student_id'] = Auth::user()->student->id;
         
+        // Manual validation for member_student_id (missing from validation rules)
+        if ($request->has('member_student_id')) {
+            $validatedData['member_student_id'] = $request->input('member_student_id');
+        }
+        
+        // Debug logging for member data - both raw request and validated
+        \Log::info('Raw request data for member fields:', [
+            'member_name' => $request->input('member_name'),
+            'member_email' => $request->input('member_email'),
+            'member_student_id' => $request->input('member_student_id'),
+            'member_role' => $request->input('member_role')
+        ]);
+        
+        \Log::info('Validated data for member fields:', [
+            'member_name' => $validatedData['member_name'] ?? 'not set',
+            'member_email' => $validatedData['member_email'] ?? 'not set',
+            'member_student_id' => $validatedData['member_student_id'] ?? 'not set',
+            'member_role' => $validatedData['member_role'] ?? 'not set'
+        ]);
+        
         // Build member_roles mapping (maps student ID to role based on email order)
         $memberRoles = [];
         $studentIds = [$validatedData['student_id']]; // Always include the project owner
@@ -346,8 +368,14 @@ class ProjectController extends Controller
             }
         }
         
-        $validatedData['student_ids'] = json_encode($studentIds);
-        $memberRolesJson = json_encode($memberRoles);
+        $validatedData['student_ids'] = $studentIds; // Let casting handle JSON conversion
+        $validatedData['member_roles'] = $memberRoles; // Let casting handle JSON conversion
+        
+        // Debug logging for final member data
+        \Log::info('Final member data to be stored:', [
+            'student_ids' => $studentIds,
+            'member_roles' => $memberRoles
+        ]);
 
         // Set status based on submission type
         $validatedData['Project_Status'] = $request->input('submit_project') ? 'pending' : 'draft';
@@ -367,7 +395,7 @@ class ProjectController extends Controller
             'Project_Status' => $validatedData['Project_Status'],
             'student_id' => $validatedData['student_id'],
             'student_ids' => $validatedData['student_ids'],
-            'member_roles' => $memberRolesJson,
+            'member_roles' => $validatedData['member_roles'],
             'Project_Section' => $validatedData['Project_Section'] ?? '',
         ]);
         
@@ -625,6 +653,8 @@ class ProjectController extends Controller
                 // Member data - at least one member required with all fields
                 'member_name' => 'required|array|min:1',
                 'member_name.*' => 'required|string|max:255',
+                'member_student_id' => 'required|array|min:1',
+                'member_student_id.*' => 'required|integer|exists:students,id',
                 'member_role' => 'required|array|min:1',
                 'member_role.*' => 'required|string|max:255',
                 'member_email' => 'required|array|min:1',
@@ -731,6 +761,11 @@ class ProjectController extends Controller
         // Validate the request
         $validatedData = $request->validate($rules, $messages);
         
+        // Manual validation for member_student_id (missing from validation rules) - UPDATE METHOD
+        if ($request->has('member_student_id')) {
+            $validatedData['member_student_id'] = $request->input('member_student_id');
+        }
+        
         // Handle file upload
         if ($request->hasFile('Project_Logo')) {
             $validatedData['Project_Logo'] = $request->file('Project_Logo')->store('project_logos', 'public');
@@ -795,10 +830,7 @@ class ProjectController extends Controller
             }
         }
         
-        $studentIdsJson = json_encode($studentIds);
-        $memberRolesJson = json_encode($memberRoles);
-        
-        // Prepare update data
+        // Prepare update data - pass arrays directly, model casting will handle JSON conversion
         $updateData = [
             'Project_Name' => $validatedData['Project_Name'],
             'Project_Team_Name' => $validatedData['Project_Team_Name'],
@@ -811,8 +843,8 @@ class ProjectController extends Controller
             'Project_Problems' => $validatedData['Project_Problems'] ?? $project->Project_Problems,
             'Project_Status' => $projectStatus,
             'Project_Section' => $request->input('nstp_section') ?? $project->Project_Section,
-            'student_ids' => $studentIdsJson,
-            'member_roles' => $memberRolesJson,
+            'student_ids' => $studentIds,
+            'member_roles' => $memberRoles,
         ];
         
         // Handle resubmission tracking
@@ -1172,13 +1204,20 @@ class ProjectController extends Controller
         $section = $student->student_section;
         $component = $student->student_component;
         
+        // Debug logging
+        \Log::info('Student filtering criteria:', [
+            'current_student_id' => $student->id,
+            'section' => $section,
+            'component' => $component
+        ]);
+        
         // Get existing member emails from the request to exclude them
         $existingMemberEmails = $request->input('existing_members', []);
         
         // Get all students from the same section and component (excluding the current user and existing members)
         $students = Student::where('student_section', $section)
             ->where('student_component', $component)
-            ->where('user_id', '!=', $student->user_id)
+            ->where('id', '!=', $student->id)
             ->whereDoesntHave('user', function ($query) use ($existingMemberEmails) {
                 $query->whereIn('user_Email', $existingMemberEmails);
             })
@@ -1186,12 +1225,18 @@ class ProjectController extends Controller
             ->get()
             ->map(function ($student) {
                 return [
-                    'id' => $student->user_id,
+                    'id' => $student->id,
                     'name' => $student->user->user_Name,
                     'email' => $student->user->user_Email,
                     'contact_number' => $student->student_contact_number,
                 ];
             });
+        
+        // Debug logging
+        \Log::info('Students found for selection:', [
+            'count' => $students->count(),
+            'students' => $students->take(5)->toArray() // Log first 5 students only
+        ]);
         
         return response()->json($students);
     }

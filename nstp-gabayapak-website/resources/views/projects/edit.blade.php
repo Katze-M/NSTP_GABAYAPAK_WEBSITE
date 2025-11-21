@@ -1647,8 +1647,8 @@
     
     // Populate existing team members
     @if(isset($project->student_ids) && $project->student_ids)
-      const studentIds = {!! json_encode(json_decode($project->student_ids, true)) !!};
-      const memberRoles = {!! json_encode(json_decode($project->member_roles, true) ?? []) !!};
+      const studentIds = {!! json_encode($project->student_ids) !!};
+      const memberRoles = {!! json_encode($project->member_roles ?? []) !!};
       if (Array.isArray(studentIds) && studentIds.length > 0) {
         // Add all members
         studentIds.forEach((studentId, index) => {
@@ -1796,8 +1796,8 @@
     
     // First try to populate with existing project member data
     @if(isset($project->student_ids) && $project->student_ids)
-      const projectStudentIds = {!! json_encode(json_decode($project->student_ids, true)) !!};
-      const projectMemberRoles = {!! json_encode(json_decode($project->member_roles, true) ?? []) !!};
+      const projectStudentIds = {!! json_encode($project->student_ids) !!};
+      const projectMemberRoles = {!! json_encode($project->member_roles ?? []) !!};
       
       console.log('Project student IDs:', projectStudentIds);
       console.log('Project member roles:', projectMemberRoles);

@@ -540,12 +540,14 @@ function removeAllEmptyBudgetRows() {
 function prepareFormForSubmit(form) {
   // Enable everything first
   form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = false);
-  // Then disable hidden elements except hidden inputs / csrf / method
+  // Then disable hidden elements except hidden inputs / csrf / method / member inputs
   form.querySelectorAll('input, textarea, select').forEach(el => {
     try {
       const t = (el.type || '').toLowerCase();
       if (t === 'hidden') return;
       if (el.name && (el.name === '_token' || el.name === '_method')) return;
+      // Don't disable member inputs - we need both desktop and mobile views to submit
+      if (el.name && el.name.startsWith('member_')) return;
       // offsetParent === null indicates hidden by CSS (not in DOM flow)
       if (el.offsetParent === null) el.disabled = true;
     } catch (e) { /* ignore */ }
@@ -821,6 +823,9 @@ document.addEventListener('click', function(e) {
         // Debug: Log budget data being submitted for draft
         console.log('Draft - Budget Activities:', form.querySelectorAll('input[name="budget_activity[]"]:not([disabled])').length);
         console.log('Draft - Budget Amounts:', form.querySelectorAll('input[name="budget_amount[]"]:not([disabled])').length);
+        console.log('Draft - Member names:', form.querySelectorAll('input[name="member_name[]"]:not([disabled])').length);
+        console.log('Draft - Member emails:', form.querySelectorAll('input[name="member_email[]"]:not([disabled])').length);
+        console.log('Draft - Member student IDs:', form.querySelectorAll('input[name="member_student_id[]"]:not([disabled])').length);
 
         const saveDraftInput = document.getElementById('saveDraftInput');
         const submitProjectInput = document.getElementById('submitProjectInput');
@@ -1295,6 +1300,7 @@ document.addEventListener('click', function(e) {
         newRow.innerHTML = `
           <td class="px-6 py-4">
             <input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberName}" readonly>
+            <input type="hidden" name="member_student_id[]" value="${memberId}">
           </td>
           <td class="px-6 py-4">
             <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Member" required>
@@ -1324,6 +1330,7 @@ document.addEventListener('click', function(e) {
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Name <span class="text-red-500">*</span></label>
             <input name="member_name[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberName}" readonly>
+            <input type="hidden" name="member_student_id[]" value="${memberId}">
           </div>
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>

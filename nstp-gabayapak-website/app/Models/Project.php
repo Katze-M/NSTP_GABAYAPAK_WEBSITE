@@ -49,6 +49,14 @@ class Project extends Model
     ];
 
     /**
+     * The attributes that should be cast.
+     */
+    protected $casts = [
+        'student_ids' => 'array',
+        'member_roles' => 'array',
+    ];
+
+    /**
      * Get the student that owns the project.
      */
     public function student()
@@ -86,12 +94,9 @@ class Project extends Model
      */
     public function teamMembersRelation()
     {
-        if ($this->student_ids) {
-            $studentIds = json_decode($this->student_ids, true);
-            if (is_array($studentIds) && !empty($studentIds)) {
-                return $this->hasManyThrough(Student::class, 'students', 'id', 'id', 'Project_ID', 'id')
-                           ->whereIn('students.id', $studentIds);
-            }
+        if ($this->student_ids && is_array($this->student_ids) && !empty($this->student_ids)) {
+            return $this->hasManyThrough(Student::class, 'students', 'id', 'id', 'Project_ID', 'id')
+                       ->whereIn('students.id', $this->student_ids);
         }
         // If no student_ids are stored, return only the project owner
         return $this->hasOne(Student::class, 'id', 'student_id');
@@ -102,14 +107,19 @@ class Project extends Model
      */
     public function getTeamMembersAttribute()
     {
-        if ($this->student_ids) {
-            $studentIds = json_decode($this->student_ids, true);
-            if (is_array($studentIds) && !empty($studentIds)) {
-                return Student::whereIn('id', $studentIds)->get();
+        if ($this->student_ids && is_array($this->student_ids) && !empty($this->student_ids)) {
+            // Get students with their user relationship loaded
+            $students = Student::with('user')->whereIn('id', $this->student_ids)->get();
+            
+            // If no students found, fall back to project owner
+            if ($students->isEmpty()) {
+                return Student::with('user')->where('id', $this->student_id)->get();
             }
+            
+            return $students;
         }
         // If no student_ids are stored, return only the project owner
-        return Student::where('id', $this->student_id)->get();
+        return Student::with('user')->where('id', $this->student_id)->get();
     }
 
     /**
@@ -122,7 +132,7 @@ class Project extends Model
         $members = [];
         
         // Get stored member roles if they exist
-        $memberRoles = $this->member_roles ? json_decode($this->member_roles, true) : [];
+        $memberRoles = $this->member_roles && is_array($this->member_roles) ? $this->member_roles : [];
         
         foreach ($students as $student) {
             $user = $student->user ?? null;
@@ -178,11 +188,8 @@ class Project extends Model
      */
     public function teamMembers()
     {
-        if ($this->student_ids) {
-            $studentIds = json_decode($this->student_ids, true);
-            if (is_array($studentIds) && !empty($studentIds)) {
-                return Student::whereIn('id', $studentIds)->get();
-            }
+        if ($this->student_ids && is_array($this->student_ids) && !empty($this->student_ids)) {
+            return Student::whereIn('id', $this->student_ids)->get();
         }
         // If no student_ids are stored, return only the project owner
         return Student::where('id', $this->student_id)->get();

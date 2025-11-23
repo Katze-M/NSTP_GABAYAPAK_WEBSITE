@@ -81,7 +81,7 @@
         @endif
 
         @if(Auth::user()->isStaff())
-        <a href="#" class="flex items-center gap-3 p-2 rounded hover:bg-red-500">
+        <a href="{{ route('reports.index') }}" class="flex items-center gap-3 p-2 rounded hover:bg-red-500" data-route="reports">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="18" height="18" rx="3" ry="3" />
                 <line x1="3" y1="9" x2="21" y2="9" />

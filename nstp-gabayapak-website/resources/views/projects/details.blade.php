@@ -56,7 +56,7 @@
                                     Section A
                                 </span>
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Approved
+                                    Current
                                 </span>
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                     Ongoing
@@ -114,7 +114,7 @@
                                 <label class="block text-base md:text-lg font-medium text-gray-700">Status</label>
                                 <div class="flex flex-wrap gap-2 mt-1">
                                     <span class="inline-block px-3 py-1 rounded-full text-xs md:text-sm font-medium bg-green-100 text-green-800">
-                                        Approved
+                                        Current
                                     </span>
                                     <span class="inline-block px-3 py-1 rounded-full text-xs md:text-sm font-medium bg-blue-100 text-blue-800">
                                         Ongoing

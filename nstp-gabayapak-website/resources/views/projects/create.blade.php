@@ -10,6 +10,52 @@
   <!-- Main Heading -->
   <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6 flex items-center gap-2">Project Proposal</h1>
  
+  @php
+    use App\Models\Project;
+    $student = Auth::user()->student ?? null;
+    $existingDraft = null;
+    $hasPending = false;
+    $hasRejected = false;
+    $existingRejected = null;
+    $existingPending = null;
+    if ($student) {
+        $existingDraft = Project::where('student_id', $student->id)->where('Project_Status', 'draft')->first();
+        $hasPending = Project::where('student_id', $student->id)->where('Project_Status', 'pending')->exists();
+        $hasRejected = Project::where('student_id', $student->id)->where('Project_Status', 'rejected')->exists();
+      $existingRejected = Project::where('student_id', $student->id)->where('Project_Status', 'rejected')->first();
+      $existingPending = Project::where('student_id', $student->id)->where('Project_Status', 'pending')->first();
+    }
+    $disableDraftBtn = ($hasPending || $hasRejected);
+    $disableSubmit = (bool) ($existingDraft || $hasPending || $hasRejected);
+  @endphp
+
+  @if($existingDraft)
+    <div class="mb-4 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="font-semibold text-blue-800">You already have a saved draft project</p>
+          <p class="text-sm text-blue-700">Continue editing your draft or submit it when ready.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="{{ route('projects.edit', $existingDraft) }}" class="inline-block bg-blue-600 text-white px-3 py-2 rounded-lg">Open Draft</a>
+        </div>
+      </div>
+    </div>
+  @endif
+
+  @if(!$existingDraft && ($hasPending || $hasRejected))
+    <div class="mb-4 rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">
+      <p class="font-semibold text-yellow-800">Notice</p>
+      <p class="text-sm text-yellow-700">You already have a {{ $hasPending ? 'pending' : '' }}{{ $hasPending && $hasRejected ? ' and ' : '' }}{{ $hasRejected ? 'rejected' : '' }} project. You cannot create a new draft while that project exists.</p>
+      @if($hasRejected && $existingRejected)
+        <p class="text-sm mt-2">If your project was rejected, you may <a href="{{ route('projects.edit', $existingRejected) }}" class="text-blue-600 underline">edit the rejected project to resubmit</a>.</p>
+      @endif
+      @if($hasPending && $existingPending)
+        <p class="text-sm mt-2">You have a pending project under review. Check <a href="{{ route('projects.my') }}" class="text-blue-600 underline">My Projects</a> for details.</p>
+      @endif
+    </div>
+  @endif
+
   <form id="projectForm" action="{{ route('projects.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6 md:space-y-8">
     @csrf
    
@@ -380,9 +426,15 @@
 
 
     <!-- SUBMIT and SAVE BUTTONS -->
-    <div class="flex flex-col sm:flex-row gap-3 justify-end pt-6">
-      <button type="button" id="saveDraftBtn" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors">Save as Draft</button>
-      <button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Submit Project</button>
+      <div class="flex flex-col sm:flex-row gap-3 justify-end pt-6">
+      @if($existingDraft)
+        <a href="{{ route('projects.edit', $existingDraft) }}" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors">Open Draft</a>
+      @else
+        <button type="button" id="saveDraftBtn" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors" @if($disableDraftBtn) disabled title="You cannot save a draft while you have a pending or rejected project." @endif>Save as Draft</button>
+      @endif
+      @if(!$disableSubmit)
+        <button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Submit Project</button>
+      @endif
     </div>
   </form>
   </div>
@@ -538,6 +590,48 @@ function removeAllEmptyBudgetRows() {
    prepareFormForSubmit: disable inputs that are not visible (so only visible ones get sent)
    -------------------- */
 function prepareFormForSubmit(form) {
+  // Sanitize budget amount inputs before submit: temporarily replace display values like "15,000" or "₱15,000.00"
+  // with normalized numeric strings (e.g. "15000.00") so server receives a consistent format.
+  function sanitizeBudgetAmountsForSubmit(formEl) {
+    const inputs = Array.from(formEl.querySelectorAll('input[name="budget_amount[]"]'));
+    inputs.forEach(input => {
+      try {
+        const orig = input.value || '';
+        input.dataset._orig = orig;
+        // Remove currency symbols, spaces and commas, keep digits, dot and minus
+        let cleaned = orig.replace(/[₱\s,]/g, '');
+        // Strip any other non-numeric except dot and minus
+        cleaned = cleaned.replace(/[^0-9.\-]/g, '');
+        // If multiple dots, join extras
+        const parts = cleaned.split('.');
+        if (parts.length > 2) {
+          cleaned = parts.shift() + '.' + parts.join('');
+        }
+        if (cleaned !== '' && !isNaN(Number(cleaned))) {
+          // Force two decimal places for consistency
+          cleaned = Number(cleaned).toFixed(2);
+        }
+        input.value = cleaned;
+      } catch (e) { /* ignore */ }
+    });
+    // Restore originals shortly after submit attempt in case the page doesn't navigate
+    setTimeout(() => restoreBudgetAmounts(formEl), 1500);
+  }
+
+  function restoreBudgetAmounts(formEl) {
+    const inputs = Array.from(formEl.querySelectorAll('input[name="budget_amount[]"]'));
+    inputs.forEach(input => {
+      try {
+        if (input.dataset && input.dataset._orig !== undefined) {
+          input.value = input.dataset._orig;
+          delete input.dataset._orig;
+        }
+      } catch (e) { /* ignore */ }
+    });
+  }
+  // Sanitize budget amounts before disabling hidden inputs so the values posted are normalized
+  try { sanitizeBudgetAmountsForSubmit(form); } catch (e) { /* ignore */ }
+
   // Enable everything first
   form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = false);
   
@@ -1282,11 +1376,11 @@ document.addEventListener('click', function(e) {
           html += `
             <div class="flex items-center justify-between p-2 border border-gray-200 rounded">
               <div class="flex items-center">
-                <input type="checkbox" id="member${student.id}" name="available_members[]" value="${student.id}" class="mr-2" data-name="${student.name}" data-email="${student.email}" data-contact="${student.contact_number || ''}">
+                <input type="checkbox" id="member${student.id}" name="available_members[]" value="${student.id}" class="mr-2" data-name="${student.name}" data-email="${student.email}" data-contact="${student.contact || ''}">
                 <label for="member${student.id}" class="text-sm">
                   <span class="font-medium">${student.name}</span> -
                   <span class="text-gray-600">${student.email}</span>
-                  <span class="text-gray-500 text-xs block">${student.contact_number || 'No contact number'}</span>
+                  <span class="text-gray-500 text-xs block">${student.contact || 'No contact number'}</span>
                 </label>
               </div>
               <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Same Section</span>

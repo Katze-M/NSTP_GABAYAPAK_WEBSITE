@@ -24,11 +24,19 @@
                     @method('PUT')
                     
                     <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Activity Status</label>
-                        <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
-                            <option value="planned" {{ $activity->status == 'planned' ? 'selected' : '' }}>Planned</option>
-                            <option value="ongoing" {{ $activity->status == 'ongoing' ? 'selected' : '' }}>Ongoing</option>
-                            <option value="completed" {{ $activity->status == 'completed' ? 'selected' : '' }}>Completed</option>
+                        @php $curStatus = strtolower((string)($activity->status ?? '')) @endphp
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Activity Status <span class="text-red-500">*</span></label>
+                        <select id="statusSelect" name="status" data-initial-status="{{ $curStatus }}" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" @if($curStatus === 'completed') disabled @endif>
+                            @if($curStatus === 'planned')
+                                {{-- Keep the current value but hide it so the form still submits the existing status if unchanged --}}
+                                <option value="planned" selected hidden>Planned (current)</option>
+                                <option value="ongoing">Ongoing</option>
+                                <option value="completed">Completed</option>
+                            @else
+                                <option value="planned" {{ $curStatus == 'planned' ? 'selected' : '' }}>Planned</option>
+                                <option value="ongoing" {{ $curStatus == 'ongoing' ? 'selected' : '' }}>Ongoing</option>
+                                <option value="completed" {{ $curStatus == 'completed' ? 'selected' : '' }}>Completed</option>
+                            @endif
                         </select>
                     </div>
                     
@@ -36,7 +44,7 @@
                         @php
                             $hasExistingProof = $activity->proof_picture;
                         @endphp
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Proof Picture @if(!$hasExistingProof) <span class="text-red-500">*</span> @endif</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Proof Picture <span class="text-red-500">*</span></label>
                         
                         {{-- Upload Box Container: h-64 ensures space, overflow-hidden contains the placeholder/preview --}}
                         <div class="mt-1 flex justify-center px-6 pt-5 pb-8 border-2 border-gray-300 border-dashed rounded-md relative h-64 overflow-hidden">
@@ -49,11 +57,12 @@
                                 <div class="flex text-sm text-gray-600">
                                     <label for="proof_picture" class="relative cursor-pointer bg-white rounded-md font-medium text-red-600 hover:text-red-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-red-500">
                                         <span>Upload a file</span>
-                                        <input id="proof_picture" name="proof_picture" type="file" class="sr-only" accept="image/*" @if(!$hasExistingProof) required @endif>
+                                        <input id="proof_picture" name="proof_picture" type="file" class="sr-only" accept="image/*" @if(!$hasExistingProof) required @endif @if($curStatus === 'completed') disabled @endif>
                                     </label>
                                     <p class="pl-1">or drag and drop</p>
                                 </div>
                                 <p class="text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
+                                <p id="proofRequiredNote" class="text-xs text-red-600 mt-1" style="display: none;">A proof picture is required when you change the activity status.</p>
                             </div>
                             
                             <div id="imagePreview" class="absolute inset-0 flex items-center justify-center hidden bg-white rounded-md p-4">
@@ -76,8 +85,8 @@
                     @if($activity->proof_picture)
                     <div class="mb-6 overflow-hidden">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Current Proof Picture</label>
-                        {{-- Image is constrained to w-40 (160px wide) and display: block --}}
-                        <img src="{{ asset('storage/' . $activity->proof_picture) }}" alt="Proof" class="block w-40 h-auto rounded-lg">
+                        {{-- Increased size: changed from w-40 to w-48 for a slightly larger display --}}
+                        <img src="{{ asset('storage/' . $activity->proof_picture) }}" alt="Proof" class="block w-48 h-auto rounded-lg">
                     </div>
                     @endif
                     
@@ -85,7 +94,7 @@
                         <a href="{{ route('projects.show', $activity->project) }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
                             Cancel
                         </a>
-                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">
+                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg" @if($curStatus === 'completed') disabled @endif>
                             Update Activity
                         </button>
                     </div>
@@ -100,10 +109,30 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('activityForm');
     const fileInput = document.getElementById('proof_picture');
+    const statusSelect = document.getElementById('statusSelect');
+    const initialStatus = statusSelect ? (statusSelect.dataset.initialStatus || '') : '';
+    const hasExistingProof = @json($hasExistingProof ? true : false);
     const imagePreview = document.getElementById('imagePreview');
     const previewImage = imagePreview.querySelector('img');
     const uploadIcon = document.querySelector('.space-y-1.text-center');
     const removeImageBtn = document.getElementById('removeImage');
+    const proofRequiredNote = document.getElementById('proofRequiredNote');
+    // If the activity was already completed, inform the user and ensure status select stays disabled
+    if ((initialStatus || '').toLowerCase() === 'completed') {
+        try {
+            Swal.fire({
+                title: 'Activity Completed',
+                text: 'This activity is already marked as completed. Status and proof picture cannot be changed anymore.',
+                icon: 'info',
+                confirmButtonText: 'OK'
+            });
+        } catch (e) {
+            // ignore if Swal is not available
+        }
+        if (statusSelect) {
+            statusSelect.disabled = true;
+        }
+    }
     
     // Handle file input change for preview
     fileInput.addEventListener('change', function(e) {
@@ -133,6 +162,26 @@ document.addEventListener('DOMContentLoaded', function() {
         removeImageBtn.classList.add('hidden');
     });
     
+    // Toggle required attribute on file input when status changes
+    if (statusSelect) {
+        // Ensure initial required state
+        if (!hasExistingProof) {
+            fileInput.required = true;
+        }
+
+        statusSelect.addEventListener('change', function() {
+            const newStatus = (statusSelect.value || '').toLowerCase();
+            const changed = newStatus !== (initialStatus || '').toLowerCase();
+            if (changed) {
+                fileInput.required = true;
+                if (proofRequiredNote) proofRequiredNote.style.display = 'block';
+            } else {
+                fileInput.required = !hasExistingProof;
+                if (proofRequiredNote) proofRequiredNote.style.display = 'none';
+            }
+        });
+    }
+    
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -151,23 +200,5 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-
-// If activity is completed, disable form and show message
-@if($activity->status == 'completed')
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('activityForm');
-    const inputs = form.querySelectorAll('input, select, button, textarea');
-    inputs.forEach(input => {
-        if (input.type !== 'button' && input.type !== 'hidden') {
-            input.disabled = true;
-        }
-    });
-    // Show reminder message
-    const reminder = document.createElement('div');
-    reminder.className = 'mb-4 p-4 bg-yellow-100 text-yellow-800 rounded';
-    reminder.innerText = 'You cannot edit an activity\'s status or proof once it is set to completed.';
-    form.parentNode.insertBefore(reminder, form);
-});
-@endif
 </script>
 @endsection

@@ -1,7 +1,12 @@
 <div class="flex-1 p-6">
     <!-- Header and Back button -->
+    @unless(isset($hideHeader) && $hideHeader)
     <div class="flex items-center justify-between mb-4">
         <div class="flex items-center space-x-4">
+            @php
+                $hideBackButton = isset($section) && in_array($section, ['My Projects', 'Pending Projects', 'Archived Projects']);
+            @endphp
+            @unless($hideBackButton)
             <button onclick="history.back()" 
                     class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-100 
                            text-gray-700 font-medium rounded-lg shadow transition">
@@ -24,14 +29,16 @@
                 </svg>
                 Back
             </button>
+            @endunless
             <h1 class="text-2xl font-bold">
-                {{ $section ?? 'Projects' }} @if(isset($currentSection) && $section !== 'ROTC') - Section {{ $currentSection }} @endif
+                {{ $section ?? 'Projects' }} @if(isset($currentSection) && (isset($section) && $section !== 'ROTC')) - Section {{ $currentSection }} @endif
             </h1>
         </div>
     </div>
+    @endunless
 
     <!-- Section Selection for LTS and CWTS (ROTC shows projects directly) -->
-    @if(in_array($section, ['LTS', 'CWTS']))
+    @if(isset($section) && in_array($section, ['LTS', 'CWTS']))
     <div class="mb-6">
         <h3 class="text-lg font-semibold mb-2">Sections:</h3>
         <div class="flex flex-wrap gap-2">
@@ -54,23 +61,39 @@
         @if(isset($projects) && $projects->isNotEmpty())
             <!-- Debug: Projects count: {{ $projects->count() }} -->
             @foreach($projects as $project)
-                <div class="bg-white p-4 rounded-lg shadow-md text-center relative">
-                    @if($project->Project_Status === 'draft')
-                        <span class="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded">Draft</span>
-                    @elseif($project->Project_Status === 'rejected')
-                        <span class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">Rejected</span>
-                    @elseif($project->Project_Status === 'pending')
-                        @if($project->is_resubmission)
-                            <span class="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">Resubmission #{{ $project->resubmission_count ?? 1 }}</span>
-                        @else
-                            <span class="absolute top-2 right-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded" style="background-color:#F3E8FF;color:#6D28D9;">Pending</span>
+                <div class="bg-white p-4 pt-10 rounded-lg shadow-md text-center relative">
+                    {{-- Status badge row above the title (right-aligned) to avoid overlap --}}
+                    <div class="w-full flex justify-end mb-2">
+                        @if($project->Project_Status === 'draft')
+                            @include('components.status-badge', ['status' => 'draft'])
+                        @elseif($project->Project_Status === 'rejected')
+                            @include('components.status-badge', ['status' => 'rejected'])
+                        @elseif(in_array(strtolower(trim((string)($project->Project_Status ?? ''))), ['pending','submitted','under review']))
+                            @include('components.status-badge', ['status' => 'pending', 'extraClass' => 'bg-orange-500 text-white'])
+                        @elseif($project->Project_Status === 'approved' || $project->Project_Status === 'current')
+                            @include('components.status-badge', ['status' => 'current'])
+                        @elseif($project->Project_Status === 'archived')
+                            @include('components.status-badge', ['status' => 'archived'])
                         @endif
-                    @elseif($project->Project_Status === 'current')
-                        <span class="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">Current</span>
-                    @elseif($project->Project_Status === 'archived')
-                        <span class="absolute top-2 right-2 bg-slate-400 text-white text-xs px-2 py-1 rounded">Archived</span>
-                    @endif
-                    <h2 class="text-lg font-semibold">{{ $project->Project_Name }}</h2>
+                    </div>
+                    @php
+                        // compute resub status once so we can show the count beside the title
+                        $isResub = ($project->is_resubmission ?? false) || (($project->resubmission_count ?? 0) > 0) || !empty($project->previous_rejection_reasons);
+                        $resubCount = $project->resubmission_count ?? 0;
+                        if (!$resubCount && !empty($project->previous_rejection_reasons)) {
+                            try {
+                                $decoded = json_decode($project->previous_rejection_reasons, true) ?: [];
+                                $resubCount = count($decoded);
+                            } catch (\Exception $e) {
+                                $resubCount = $resubCount ?? 0;
+                            }
+                        }
+                    @endphp
+                    <div class="flex flex-col items-center mb-2 min-w-0">
+                        <h2 class="text-lg font-semibold truncate text-center" title="{{ $project->Project_Name }}">{{ $project->Project_Name }}</h2>
+
+                        {{-- Resubmission count removed from card list (kept in show view) --}}
+                    </div>
                     <div class="w-16 h-16 mx-auto my-4">
                         @if($project->Project_Logo)
                             <img src="{{ asset('storage/' . $project->Project_Logo) }}" alt="{{ $project->Project_Name }} Logo" class="w-full h-full object-contain">
@@ -135,7 +158,7 @@
                             </form>
                         @endif
                         
-                        @if($isStaff && $project->Project_Status === 'current')
+                        @if($isStaff && in_array($project->Project_Status, ['current','approved']))
                             <a href="{{ route('projects.edit', $project) }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition-colors duration-200 view-btn" style="background-color:#4f46e5;color:#ffffff;">Edit</a>
 
                             <form action="{{ route('projects.archive', $project) }}" method="POST" class="inline-block archive-form">
@@ -171,7 +194,7 @@
         @else
             <!-- Empty state message -->
             <div class="col-span-full text-center py-12">
-                <p class="text-gray-500 text-lg">No projects found @if($section !== 'ROTC') in this section @endif.</p>
+                <p class="text-gray-500 text-lg">No projects found @if(!isset($section) || $section !== 'ROTC') in this section @endif.</p>
             </div>
         @endif
     </div>

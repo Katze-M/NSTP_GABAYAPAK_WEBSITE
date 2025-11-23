@@ -100,6 +100,11 @@ function dedupeEmptyActivityRows() {
     const mobileContainer = document.getElementById('activitiesContainerMobile');
     function isRowEmpty(row) {
       if (!row) return true;
+      // If this row represents an existing activity (has an id), consider it non-empty
+      try {
+        const existingId = row.querySelector('input[name="activity_id[]"]');
+        if (existingId && existingId.value && existingId.value.toString().trim() !== '') return false;
+      } catch (e) { /* ignore */ }
       const inputs = row.querySelectorAll('input, textarea, select');
       for (let el of inputs) {
         const t = (el.type || '').toLowerCase();
@@ -141,6 +146,11 @@ function dedupeEmptyBudgetRows() {
 
     function isBudgetRowEmpty(row) {
       if (!row) return true;
+      // If this row represents an existing budget (has an id), consider it non-empty
+      try {
+        const existingId = row.querySelector('input[name="budget_id[]"]');
+        if (existingId && existingId.value && existingId.value.toString().trim() !== '') return false;
+      } catch (e) { /* ignore */ }
       const inputs = row.querySelectorAll('input, textarea, select');
       for (let el of inputs) {
         const t = (el.type || '').toLowerCase();
@@ -196,7 +206,7 @@ function removeAllEmptyBudgetRows() {
    Helpers for adding rows (activities & budgets)
    Keep the UI markup similar to your original code.
    -------------------- */
-function addActivityRow(stage='', activity='', timeframe='', implementation_date='', point_person='', status='Planned') {
+function addActivityRow(stage='', activity='', timeframe='', implementation_date='', point_person='', status='Planned', activityId = '') {
   const desktopContainer = document.getElementById('activitiesContainer');
   if (desktopContainer) {
     const newRow = document.createElement('div');
@@ -204,6 +214,7 @@ function addActivityRow(stage='', activity='', timeframe='', implementation_date
     newRow.innerHTML = `
       <div class="w-20 flex-none">
         <input name="stage[]" class="proposal-input w-full" placeholder="e.g., 1" value="${stage}" >
+        <input type="hidden" name="activity_id[]" value="${activityId || ''}">
       </div>
       <div class="flex-1 px-2">
         <textarea name="activities[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe specific activities...">${activity}</textarea>
@@ -238,6 +249,7 @@ function addActivityRow(stage='', activity='', timeframe='', implementation_date
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
         <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm" placeholder="Stage" value="${stage}">
+        <input type="hidden" name="activity_id[]" value="${activityId || ''}">
       </div>
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
@@ -299,12 +311,13 @@ function addActivityRow(stage='', activity='', timeframe='', implementation_date
     })
   });
 
-function addBudgetRow(activity = '', resources = '', partners = '', amount = '') {
+function addBudgetRow(activity = '', resources = '', partners = '', amount = '', budgetId = '') {
   const desktopContainer = document.getElementById('budgetContainer');
   if (desktopContainer) {
     const newRow = document.createElement('div');
     newRow.className = 'proposal-table-row grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start budget-row';
     newRow.innerHTML = `
+      <input type="hidden" name="budget_id[]" value="${budgetId || ''}">
       <textarea name="budget_activity[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe the activity...">${activity || ''}</textarea>
       <textarea name="budget_resources[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="List resources needed...">${resources || ''}</textarea>
       <textarea name="budget_partners[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Partner organizations...">${partners || ''}</textarea>
@@ -322,6 +335,7 @@ function addBudgetRow(activity = '', resources = '', partners = '', amount = '')
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Activity</label>
         <textarea name="budget_activity[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm" rows="2">${activity || ''}</textarea>
+        <input type="hidden" name="budget_id[]" value="${budgetId || ''}">
       </div>
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Resources Needed</label>
@@ -347,6 +361,48 @@ function addBudgetRow(activity = '', resources = '', partners = '', amount = '')
    prepareFormForSubmit: disable inputs that are not visible (so only visible ones get sent)
    -------------------- */
 function prepareFormForSubmit(form) {
+  // Sanitize budget amount inputs before submit: temporarily replace display values like "15,000" or "₱15,000.00"
+  // with normalized numeric strings (e.g. "15000.00") so server receives a consistent format.
+  function sanitizeBudgetAmountsForSubmit(formEl) {
+    const inputs = Array.from(formEl.querySelectorAll('input[name="budget_amount[]"]'));
+    inputs.forEach(input => {
+      try {
+        const orig = input.value || '';
+        input.dataset._orig = orig;
+        // Remove currency symbols, spaces and commas, keep digits, dot and minus
+        let cleaned = orig.replace(/[₱\s,]/g, '');
+        // Strip any other non-numeric except dot and minus
+        cleaned = cleaned.replace(/[^0-9.\-]/g, '');
+        // If multiple dots, join extras
+        const parts = cleaned.split('.');
+        if (parts.length > 2) {
+          cleaned = parts.shift() + '.' + parts.join('');
+        }
+        if (cleaned !== '' && !isNaN(Number(cleaned))) {
+          // Force two decimal places for consistency
+          cleaned = Number(cleaned).toFixed(2);
+        }
+        input.value = cleaned;
+      } catch (e) { /* ignore */ }
+    });
+    // Restore originals shortly after submit attempt in case the page doesn't navigate
+    setTimeout(() => restoreBudgetAmounts(formEl), 1500);
+  }
+
+  function restoreBudgetAmounts(formEl) {
+    const inputs = Array.from(formEl.querySelectorAll('input[name="budget_amount[]"]'));
+    inputs.forEach(input => {
+      try {
+        if (input.dataset && input.dataset._orig !== undefined) {
+          input.value = input.dataset._orig;
+          delete input.dataset._orig;
+        }
+      } catch (e) { /* ignore */ }
+    });
+  }
+  // Sanitize budget amounts before disabling hidden inputs so the values posted are normalized
+  try { sanitizeBudgetAmountsForSubmit(form); } catch (e) { /* ignore */ }
+
   // Enable everything first
   form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = false);
   
@@ -460,13 +516,15 @@ function validateFormRequirements() {
   // Filter out duplicates and empty entries (from desktop/mobile views)
   const uniqueMembers = [];
   const processedEmails = new Set();
-  
-  for (let i = 0; i < allMemberNames.length; i++) {
-    const name = allMemberNames[i]?.trim();
-    const role = allMemberRoles[i]?.trim();
-    const email = allMemberEmails[i]?.trim();
-    const contact = allMemberContacts[i]?.trim();
-    
+
+  // Use max length across arrays to ensure dynamically added rows in desktop/mobile are captured
+  const maxMemberEntries = Math.max(allMemberNames.length, allMemberRoles.length, allMemberEmails.length, allMemberContacts.length);
+  for (let i = 0; i < maxMemberEntries; i++) {
+    const name = (allMemberNames[i] || '').trim();
+    const role = (allMemberRoles[i] || '').trim();
+    const email = (allMemberEmails[i] || '').trim();
+    const contact = (allMemberContacts[i] || '').trim();
+
     // Only process if there's actual data and email hasn't been processed
     if ((name || role || email || contact) && (!email || !processedEmails.has(email))) {
       if (email) processedEmails.add(email);
@@ -490,45 +548,26 @@ function validateFormRequirements() {
   });
   if (validMembers === 0) errors.push('At least one complete team member info is required.');
 
-  // Validate activities
-  const allStages = formData.getAll('stage[]');
-  const allActivities = formData.getAll('activities[]');
-  const allTimeframes = formData.getAll('timeframe[]');
-  const allImplementationDates = formData.getAll('implementation_date[]');
-  const allPointPersons = formData.getAll('point_person[]');
-  const allStatuses = formData.getAll('status[]');
-
-  // Filter out duplicates from desktop/mobile views - only get visible inputs
-  const visibleStages = [];
-  const visibleActivities = [];
-  const visibleTimeframes = [];
-  const visibleImplementationDates = [];
-  const visiblePointPersons = [];
-  const visibleStatuses = [];
-  
-  // Get only inputs from visible containers
-  const visibleStageInputs = document.querySelectorAll('input[name="stage[]"], textarea[name="stage[]"]');
-  visibleStageInputs.forEach((input, index) => {
-    if (input.offsetParent !== null) { // Only visible elements
-      visibleStages.push(allStages[index] || '');
-      visibleActivities.push(allActivities[index] || '');
-      visibleTimeframes.push(allTimeframes[index] || '');
-      visibleImplementationDates.push(allImplementationDates[index] || '');
-      visiblePointPersons.push(allPointPersons[index] || '');
-      visibleStatuses.push(allStatuses[index] || 'Planned');
-    }
-  });
+  // Validate activities: build rows from visible DOM rows to avoid duplicate mobile/desktop inputs
+  const activityRowNodes = Array.from(document.querySelectorAll('.proposal-table-row.activity-row, .activity-row'))
+    .filter(r => r && r.offsetParent !== null);
 
   let validActivities = 0;
-  for (let i = 0; i < visibleStages.length; i++) {
-    const stage = visibleStages[i]?.trim();
-    const activity = visibleActivities[i]?.trim();
-    const timeframe = visibleTimeframes[i]?.trim();
-    const implementationDate = visibleImplementationDates[i]?.trim();
-    const person = visiblePointPersons[i]?.trim();
-    const status = visibleStatuses[i]?.trim() || 'Planned';
-    
-    // Check if any activity field has content (indicating this row is being used)
+  activityRowNodes.forEach((rowNode, idx) => {
+    const stageEl = rowNode.querySelector('input[name="stage[]"], textarea[name="stage[]"]');
+    const activityEl = rowNode.querySelector('textarea[name="activities[]"]');
+    const timeframeEl = rowNode.querySelector('input[name="timeframe[]"]');
+    const implementationDateEl = rowNode.querySelector('input[name="implementation_date[]"]');
+    const personEl = rowNode.querySelector('textarea[name="point_person[]"]');
+    const statusEl = rowNode.querySelector('select[name="status[]"]');
+
+    const stage = stageEl ? (stageEl.value || '').trim() : '';
+    const activity = activityEl ? (activityEl.value || '').trim() : '';
+    const timeframe = timeframeEl ? (timeframeEl.value || '').trim() : '';
+    const implementationDate = implementationDateEl ? (implementationDateEl.value || '').trim() : '';
+    const person = personEl ? (personEl.value || '').trim() : '';
+    const status = statusEl ? (statusEl.value || 'Planned') : 'Planned';
+
     if (stage || activity || timeframe || implementationDate || person) {
       const missingFields = [];
       if (!stage) missingFields.push('Stage');
@@ -536,40 +575,44 @@ function validateFormRequirements() {
       if (!timeframe) missingFields.push('Time Frame');
       if (!implementationDate) missingFields.push('Implementation Date');
       if (!person) missingFields.push('Point Persons');
-      
+
       if (missingFields.length > 0) {
-        errors.push(`Activity ${i+1}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
+        errors.push(`Activity ${idx+1}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
       } else {
         validActivities++;
       }
     }
-  }
+  });
   if (validActivities === 0) errors.push('At least one complete activity is required.');
 
   // Validate budget rows (optional, but if partially filled must be complete)
-  const allBudgetActivities = formData.getAll('budget_activity[]');
-  const allBudgetResources = formData.getAll('budget_resources[]');
-  const allBudgetPartners = formData.getAll('budget_partners[]');
-  const allBudgetAmounts = formData.getAll('budget_amount[]');
+  // Validate budget rows by reading visible budget-row DOM nodes so indices match visible UI
+  const budgetRowNodes = Array.from(document.querySelectorAll('.proposal-table-row.budget-row, .budget-row'))
+    .filter(r => r && r.offsetParent !== null);
 
-  for (let i = 0; i < allBudgetActivities.length; i++) {
-    const act = allBudgetActivities[i]?.trim();
-    const res = allBudgetResources[i]?.trim();
-    const part = allBudgetPartners[i]?.trim();
-    const amt = allBudgetAmounts[i]?.trim();
-    
+  budgetRowNodes.forEach((rowNode, idx) => {
+    const actEl = rowNode.querySelector('textarea[name="budget_activity[]"]');
+    const resEl = rowNode.querySelector('textarea[name="budget_resources[]"]');
+    const partEl = rowNode.querySelector('textarea[name="budget_partners[]"]');
+    const amtEl = rowNode.querySelector('input[name="budget_amount[]"]');
+
+    const act = actEl ? (actEl.value || '').trim() : '';
+    const res = resEl ? (resEl.value || '').trim() : '';
+    const part = partEl ? (partEl.value || '').trim() : '';
+    const amt = amtEl ? (amtEl.value || '').trim() : '';
+
     if (act || res || part || amt) {
       const missingFields = [];
       if (!act) missingFields.push('Activity');
       if (!res) missingFields.push('Resources needed');
       if (!part) missingFields.push('Partner agencies');
       if (!amt) missingFields.push('Amount');
-      
+
       if (missingFields.length > 0) {
-        errors.push(`Budget row ${i+1}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
+        errors.push(`Budget row ${idx+1}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
       }
     }
-  }
+  });
 
   // Show errors if any
   if (errors.length > 0) {
@@ -659,6 +702,18 @@ document.addEventListener('DOMContentLoaded', function () {
     addSelectedMembersBtn.addEventListener('click', function(event) {
       event.preventDefault();
       addSelectedMembersToForm();
+    });
+  }
+
+  // Attach submit button handler here to ensure the element exists
+  const submitProjectBtn = document.getElementById('submitProjectBtn');
+  if (submitProjectBtn) {
+    submitProjectBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      // Validate minimum requirements
+      if (!validateFormRequirements()) return;
+      // Show review / confirmation modal
+      showConfirmationModal();
     });
   }
 });
@@ -895,17 +950,12 @@ if (saveProjectBtn) {
 })();
 
 /* ============================
-   Submit with Review Details Modal
-   - Shows full review modal (user provided implementation)
-   - On confirm, runs final submit flow
-   ============================ */
-safeAddListener('submitProjectBtn', 'click', function (e) {
-  e.preventDefault();
-  // Validate minimum requirements
-  if (!validateFormRequirements()) return;
-  // Show review / confirmation modal
-  showConfirmationModal();
-});
+  Submit with Review Details Modal
+  - The listener is attached on DOMContentLoaded to ensure the button exists
+  - Shows full review modal (user provided implementation)
+  - On confirm, runs final submit flow
+  ============================ */
+// Listener will be attached inside DOMContentLoaded below
 
 /* --------------------
    showConfirmationModal implementation (as provided by you)
@@ -953,27 +1003,42 @@ function showConfirmationModal() {
   const solution = formData.get('Project_Solution') || 'N/A';
   const outcomes = formData.get('Project_Expected_Outcomes') || 'N/A';
 
-  // Members - take unique (avoid duplicates from mobile/desktop)
-  const allMemberNames = formData.getAll('member_name[]');
-  const allMemberRoles = formData.getAll('member_role[]');
-  const allMemberEmails = formData.getAll('member_email[]');
-  const allMemberContacts = formData.getAll('member_contact[]');
-  const uniqueMemberCount = Math.ceil(allMemberNames.length / 2);
+  // Members - collect visible member rows directly from the DOM (desktop table or mobile cards)
+  // This ensures freshly added desktop rows with roles are captured reliably.
+  const memberRows = Array.from(document.querySelectorAll('#memberTable tbody tr, .member-card'))
+    .filter(r => r && r.offsetParent !== null);
 
   const memberNames = [];
   const memberRoles = [];
   const memberEmails = [];
   const memberContacts = [];
 
-  for (let idx = 0; idx < uniqueMemberCount; idx++) {
-    const name = allMemberNames[idx];
-    if (name && name.trim() !== '') {
+  const seen = new Set();
+  memberRows.forEach((row) => {
+    try {
+      const nameEl = row.querySelector('input[name="member_name[]"], input[name="member_name[]"]');
+      const roleEl = row.querySelector('input[name="member_role[]"], input[name="member_role[]"]');
+      const emailEl = row.querySelector('input[name="member_email[]"], input[name="member_email[]"]');
+      const contactEl = row.querySelector('input[name="member_contact[]"], input[name="member_contact[]"]');
+
+      const name = nameEl ? (nameEl.value || '').toString().trim() : '';
+      const role = roleEl ? (roleEl.value || '').toString().trim() : '';
+      const email = emailEl ? (emailEl.value || '').toString().trim() : '';
+      const contact = contactEl ? (contactEl.value || '').toString().trim() : '';
+
+      // dedupe by email if present otherwise name+contact
+      const key = email ? `email:${email.toLowerCase()}` : `name:${(name||'').toLowerCase()}:contact:${(contact||'').toLowerCase()}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      if (!name && !role && !email && !contact) return;
+
       memberNames.push(name);
-      memberRoles.push(allMemberRoles[idx] || '');
-      memberEmails.push(allMemberEmails[idx] || '');
-      memberContacts.push(allMemberContacts[idx] || '');
-    }
-  }
+      memberRoles.push(role);
+      memberEmails.push(email);
+      memberContacts.push(contact);
+    } catch (e) { /* ignore malformed rows */ }
+  });
 
   let membersHTML = '<div class="text-left max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">';
   memberNames.forEach((name, idx) => {
@@ -999,26 +1064,60 @@ function showConfirmationModal() {
   membersHTML += '</div>';
 
   // Activities - collect non-empty entries
+  // Prefer edited versions when both original and edited inputs exist for the same activity_id.
   const allStages = formData.getAll('stage[]');
   const allActivities = formData.getAll('activities[]');
   const allTimeframes = formData.getAll('timeframe[]');
   const allPointPersons = formData.getAll('point_person[]');
   const allStatuses = formData.getAll('status[]');
+  const allActivityIds = formData.getAll('activity_id[]');
 
+  // Map by activity_id (if present) so later occurrences override earlier ones (edited wins).
+  const activityMap = new Map();
+  const newActivityRows = [];
+
+  for (let idx = 0; idx < allStages.length; idx++) {
+    const id = (allActivityIds[idx] || '').toString().trim();
+    const s = (allStages[idx] || '').toString().trim();
+    const a = (allActivities[idx] || '').toString().trim();
+    const t = (allTimeframes[idx] || '').toString().trim();
+    const p = (allPointPersons[idx] || '').toString().trim();
+    const st = (allStatuses[idx] || 'Planned').toString().trim();
+
+    // Skip fully empty rows
+    if (!s && !a && !t && !p) continue;
+
+    const rowObj = { stage: s, activity: a, timeframe: t, pointPerson: p, status: st || 'Planned' };
+
+    if (id) {
+      // store/override by id; last occurrence will remain (edited version should be last)
+      activityMap.set(id, rowObj);
+    } else {
+      // new rows without id
+      newActivityRows.push(rowObj);
+    }
+  }
+
+  // Build final arrays: first include mapped existing (ordered by insertion), then new rows
   const stages = [];
   const activities = [];
   const timeframes = [];
   const pointPersons = [];
   const statuses = [];
 
-  allStages.forEach((stage, idx) => {
-    if (stage && stage.trim() !== '') {
-      stages.push(stage);
-      activities.push(allActivities[idx] || '');
-      timeframes.push(allTimeframes[idx] || '');
-      pointPersons.push(allPointPersons[idx] || '');
-      statuses.push(allStatuses[idx] || 'Planned');
-    }
+  for (const rowObj of activityMap.values()) {
+    stages.push(rowObj.stage);
+    activities.push(rowObj.activity);
+    timeframes.push(rowObj.timeframe);
+    pointPersons.push(rowObj.pointPerson);
+    statuses.push(rowObj.status);
+  }
+  newActivityRows.forEach(rowObj => {
+    stages.push(rowObj.stage);
+    activities.push(rowObj.activity);
+    timeframes.push(rowObj.timeframe);
+    pointPersons.push(rowObj.pointPerson);
+    statuses.push(rowObj.status);
   });
 
   let activitiesHTML = '<div class="text-left max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">';
@@ -1057,37 +1156,44 @@ function showConfirmationModal() {
   const allBudgetResources = formData.getAll('budget_resources[]');
   const allBudgetPartners = formData.getAll('budget_partners[]');
   const allBudgetAmounts = formData.getAll('budget_amount[]');
+  const allBudgetIds = formData.getAll('budget_id[]');
 
-  const budgetActivities = [];
-  const budgetResources = [];
-  const budgetPartners = [];
-  const budgetAmounts = [];
+  // Map budgets by budget_id so edited rows override originals; preserve new rows without id
+  const budgetMap = new Map();
+  const newBudgetRows = [];
 
-  allBudgetActivities.forEach((activity, idx) => {
-    if ((activity && activity.trim() !== '') ||
-        (allBudgetResources[idx] && allBudgetResources[idx].trim() !== '') ||
-        (allBudgetPartners[idx] && allBudgetPartners[idx].trim() !== '') ||
-        (allBudgetAmounts[idx] && allBudgetAmounts[idx].trim() !== '')) {
-      budgetActivities.push(activity || '');
-      budgetResources.push(allBudgetResources[idx] || '');
-      budgetPartners.push(allBudgetPartners[idx] || '');
-      budgetAmounts.push(allBudgetAmounts[idx] || '');
+  for (let idx = 0; idx < allBudgetActivities.length; idx++) {
+    const id = (allBudgetIds[idx] || '').toString().trim();
+    const act = (allBudgetActivities[idx] || '').toString().trim();
+    const res = (allBudgetResources[idx] || '').toString().trim();
+    const par = (allBudgetPartners[idx] || '').toString().trim();
+    const amt = (allBudgetAmounts[idx] || '').toString().trim();
+
+    if (!act && !res && !par && !amt) continue;
+
+    const rowObj = { activity: act, resources: res, partners: par, amount: amt };
+    if (id) {
+      budgetMap.set(id, rowObj);
+    } else {
+      newBudgetRows.push(rowObj);
     }
-  });
+  }
 
   let budgetHTML = '<div class="text-left max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">';
   let totalBudget = 0;
 
-  budgetActivities.forEach((activity, idx) => {
-    if (activity || budgetResources[idx] || budgetPartners[idx] || budgetAmounts[idx]) {
-      let amountValue = budgetAmounts[idx] || '0';
-      amountValue = amountValue.replace(/[₱,]/g, '').trim();
-      const numericAmount = parseFloat(amountValue) || 0;
-      totalBudget += numericAmount;
-      const displayAmount = numericAmount > 0 ? `₱ ${numericAmount.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '₱ 0.00';
+  const dedupedBudgetRows = Array.from(budgetMap.values()).concat(newBudgetRows);
+  dedupedBudgetRows.forEach((row, idx) => {
+    const activity = row.activity || '';
+    const resources = row.resources || '';
+    const partners = row.partners || '';
+    let amountValue = (row.amount || '0').toString().replace(/[₱,]/g, '').trim();
+    const numericAmount = parseFloat(amountValue) || 0;
+    totalBudget += numericAmount;
+    const displayAmount = numericAmount > 0 ? `₱ ${numericAmount.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '₱ 0.00';
 
-      budgetHTML += `
-        <div class="mb-3 pb-3 ${idx < budgetActivities.length - 1 ? 'border-b border-gray-300' : ''}">
+    budgetHTML += `
+        <div class="mb-3 pb-3 ${idx < dedupedBudgetRows.length - 1 ? 'border-b border-gray-300' : ''}">
           <div class="flex items-start justify-between mb-2">
             <div class="font-bold text-gray-800">${activity || 'Activity ' + (idx + 1)}</div>
             <div class="bg-green-100 text-green-800 px-3 py-1 rounded-lg font-bold text-sm">${displayAmount}</div>
@@ -1095,18 +1201,17 @@ function showConfirmationModal() {
           <div class="space-y-1 text-xs">
             <div class="flex items-start gap-2">
               <span class="text-gray-500 font-medium min-w-[80px]">📦 Resources:</span>
-              <span class="text-gray-700 whitespace-pre-wrap">${budgetResources[idx] || 'N/A'}</span>
+              <span class="text-gray-700 whitespace-pre-wrap">${resources || 'N/A'}</span>
             </div>
             <div class="flex items-start gap-2">
               <span class="text-gray-500 font-medium min-w-[80px]">🤝 Partners:</span>
-              <span class="text-gray-700 whitespace-pre-wrap">${budgetPartners[idx] || 'N/A'}</span>
+              <span class="text-gray-700 whitespace-pre-wrap">${partners || 'N/A'}</span>
             </div>
           </div>
         </div>`;
-    }
   });
 
-  if (budgetActivities.length > 0 && totalBudget > 0) {
+  if (typeof dedupedBudgetRows !== 'undefined' && dedupedBudgetRows.length > 0 && totalBudget > 0) {
     const formattedTotal = `₱ ${totalBudget.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     budgetHTML += `
       <div class="mt-3 pt-3 border-t-2 border-yellow-300">

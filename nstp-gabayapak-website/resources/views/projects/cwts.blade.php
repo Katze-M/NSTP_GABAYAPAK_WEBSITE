@@ -5,6 +5,6 @@
 @section('content')
 <!-- Main Content -->
 <main id="content" class="flex-1 p-6 transition-all duration-300 bg-white min-h-screen">
-    <x-all-projects :section="'CWTS'" :current-section="$section ?? 'A'" :projects="$projects" />
+    <x-all-projects :section="'CWTS'" :current-section="$currentSection ?? 'A'" :projects="$projects" />
 </main>
 @endsection

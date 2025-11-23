@@ -100,12 +100,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password');
     
     // Project routes
-    Route::get('/dashboard', [ProjectController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     
     // All Projects routes (Staff only)
     Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::get('/projects/current', [ProjectController::class, 'current'])->name('projects.current');
     Route::get('/projects/pending', [ProjectController::class, 'pending'])->name('projects.pending')->middleware('staff');
+    Route::get('/projects/rejected', [ProjectController::class, 'rejected'])->name('projects.rejected')->middleware('staff');
     Route::get('/projects/archived', [ProjectController::class, 'archived'])->name('projects.archived')->middleware('staff');
     // Approve / Reject actions for staff
     Route::post('/projects/{project}/approve', [ProjectController::class, 'approve'])->name('projects.approve')->middleware('staff');
@@ -135,12 +136,14 @@ Route::middleware('auth')->group(function () {
     
     // Get students by section and component (Student only)
     Route::get('/projects/students/same-section', [ProjectController::class, 'getStudentsBySectionAndComponent'])->name('projects.students.same-section')->middleware('student');
+    Route::get('/projects/students/for-staff', [ProjectController::class, 'getStudentsForStaff'])->name('projects.students.for-staff')->middleware('staff');
     
     // Get user's pending project count (Student only)
     Route::get('/projects/user/pending-count', [ProjectController::class, 'getUserPendingCount'])->name('projects.user.pending-count')->middleware('student');
     
     // Get student details by IDs (Student only)
     Route::post('/api/students/details', [ProjectController::class, 'getStudentDetails'])->name('api.students.details')->middleware('student');
+    Route::post('/api/students/details-staff', [ProjectController::class, 'getStudentDetailsForStaff'])->name('api.students.details-staff')->middleware('staff');
     
     // Activity routes
     Route::get('/activities/{activity}/edit', [ActivityController::class, 'edit'])->name('activities.edit');

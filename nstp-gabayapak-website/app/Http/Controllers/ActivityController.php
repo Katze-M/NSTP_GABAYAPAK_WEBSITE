@@ -49,16 +49,34 @@ class ActivityController extends Controller
         if ($activity->project->Project_Status !== 'submitted' && $activity->project->Project_Status !== 'current') {
             return redirect()->route('projects.show', $activity->project)->with('error', 'Activity status and proof can only be updated for submitted or current projects.');
         }
+
+        // Prevent changing status once activity is already completed
+        if (strtolower((string)$activity->status) === 'completed') {
+            $requestedStatus = strtolower((string)$request->input('status', ''));
+            if ($requestedStatus !== '' && $requestedStatus !== 'completed') {
+                return redirect()->route('projects.show', $activity->project)->with('error', 'Activity status cannot be changed after it has been marked as completed. You may still upload proof.');
+            }
+        }
         
         // Check if activity already has a proof picture
-        $hasExistingProof = $activity->proof_picture;
-        
+        $hasExistingProof = (bool) $activity->proof_picture;
+
+        // Determine if the status is being changed by the user
+        $newStatus = $request->input('status', '');
+        $statusChanged = strtolower((string)$newStatus) !== strtolower((string)$activity->status);
+
+        // If the student is changing the status, require a new proof picture.
+        // Otherwise, require a picture only if none exists yet.
+        $proofRule = ($statusChanged || ! $hasExistingProof)
+            ? 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
+            : 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048';
+
         // Validate the request
         $validatedData = $request->validate([
             // accept common casings, we'll normalize before saving
             'status' => 'required|string|in:Planned,Ongoing,Completed,planned,ongoing,completed',
             'Implementation_Date' => 'nullable|date',
-            'proof_picture' => $hasExistingProof ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048' : 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'proof_picture' => $proofRule,
         ]);
         
         // Handle file upload if a new file is provided

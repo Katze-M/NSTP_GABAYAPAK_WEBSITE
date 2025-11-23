@@ -59,27 +59,27 @@
               <input type="date" name="date" value="{{ request('date') }}" class="w-full rounded-lg border px-3 py-2" />
             </div>
             <div class="md:col-span-2 flex gap-2 items-center min-w-0">
-              <select id="filter-section" name="section" class="rounded-lg border px-3 py-2 md:w-3/5 min-w-0">
+              <select id="filter-section" name="section" class="rounded-lg border px-3 py-2 md:w-3/3 shrink-0 min-w-40">
                 <option value="">All Sections</option>
                 @foreach($sections ?? collect() as $s)
                   {{-- Store values in the same format as DB (e.g. 'Section A') but show the short letter to users --}}
                   <option value="Section {{ $s }}" @if(request('section') == 'Section ' . $s) selected @endif>{{ $s }}</option>
                 @endforeach
               </select>
-              <select name="component" class="rounded-lg border px-3 py-2 md:w-3/3 min-w-0">
+              <select name="component" class="rounded-lg border px-3 py-2 md:w-3/3 shrink-0 min-w-40">
                 <option value="">All Components</option>
                 @foreach($components ?? collect() as $c)
                   <option value="{{ $c }}" @if(request('component') == $c) selected @endif>{{ $c }}</option>
                 @endforeach
               </select>
-              </div>
-            <div class="md:col-span-1 flex items-center justify-end gap-2">
-              <select name="activity_status" class="rounded-lg border px-3 py-2" id="filter-status">
+              <select name="activity_status" class="rounded-lg border px-3 py-2 md:w-3/3 shrink-0 min-w-40" id="filter-status">
                 <option value="">All Statuses</option>
                 <option value="planned" @if(request('activity_status') == 'planned') selected @endif>Planned</option>
                 <option value="ongoing" @if(request('activity_status') == 'ongoing') selected @endif>Ongoing</option>
                 <option value="completed" @if(request('activity_status') == 'completed') selected @endif>Completed</option>
               </select>
+              </div>
+            <div class="md:col-span-1 flex items-center justify-end gap-2">
               <a href="{{ route('dashboard') }}" class="px-3 py-2 rounded-lg border text-sm shrink-0">Clear</a>
             </div>
           </form>
@@ -217,10 +217,10 @@
                                 $status = strtolower($activity['status'] ?? '');
                                   $statusClass = 'bg-slate-100 text-gray-800';
                                   // Use only the activity table's `status` value.
-                                  // Map exactly: planned -> yellow, ongoing -> blue, completed -> red
+                                  // Map exactly: planned -> yellow, ongoing -> blue, completed -> green
                                   if ($status === 'planned') { $statusClass = 'bg-yellow-100 text-yellow-800'; }
                                   elseif ($status === 'ongoing') { $statusClass = 'bg-blue-100 text-blue-800'; }
-                                  elseif ($status === 'completed') { $statusClass = 'bg-red-100 text-red-800'; }
+                                  elseif ($status === 'completed') { $statusClass = 'bg-green-100 text-green-800'; }
                               @endphp
                               <p class="mt-1 text-sm md:text-base">
                                 <span class="inline-flex items-center bg-yellow-100 text-gray-800 px-2 py-0.5 rounded font-bold">{{ $activity['date'] }}</span>
@@ -347,7 +347,7 @@
                             // Use only the activity table's `status` value here as well
                             if ($status === 'planned') { $statusClass = 'bg-yellow-100 text-yellow-800'; }
                             elseif ($status === 'ongoing') { $statusClass = 'bg-blue-100 text-blue-800'; }
-                            elseif ($status === 'completed') { $statusClass = 'bg-red-100 text-red-800'; }
+                            elseif ($status === 'completed') { $statusClass = 'bg-green-100 text-green-800'; }
                           @endphp
                               <p class="mt-1 text-sm md:text-base">
                                 <span class="inline-flex items-center bg-yellow-100 text-gray-800 px-3 py-1 rounded font-bold">{{ $activity['date'] }}</span>

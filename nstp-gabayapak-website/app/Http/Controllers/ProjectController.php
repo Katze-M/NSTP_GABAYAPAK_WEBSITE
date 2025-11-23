@@ -295,7 +295,8 @@ class ProjectController extends Controller
         //   students editing a rejected project should be able to save draft edits without changing its
         //   status from 'rejected'. This preserves rejection state while allowing updates.
         if ($user->isStaff() && $request->input('staff_save')) {
-            $projectStatus = $project->Project_Status === 'approved' ? 'current' : $project->Project_Status;
+            // Preserve existing status when staff saves; do not convert 'approved' -> 'current'.
+            $projectStatus = $project->Project_Status;
         } else {
             if (!$user->isStaff() && $project->Project_Status === 'rejected') {
                 // Preserve rejected status for student edits
@@ -418,12 +419,7 @@ class ProjectController extends Controller
             $projectStatus = 'pending';
         }
 
-        // If staff is editing and we would preserve 'approved', normalize it to 'current'
-        // to avoid leaving projects in 'approved' state after staff edits.
-        if ($user->isStaff() && $projectStatus === 'approved') {
-            Log::debug('Mapping staff-edited approved -> current', ['project' => $project->Project_ID ?? null]);
-            $projectStatus = 'current';
-        }
+        // Preserve 'approved' as approved; do not normalize to 'current'.
 
         // Build member arrays
         $memberResult = $this->buildMemberArraysForUpdate($request, $project);
@@ -1154,6 +1150,7 @@ class ProjectController extends Controller
     public function approve(Request $request, Project $project)
     {
         if (!Auth::user()->isStaff()) abort(403);
+        // Keep 'approved' as the canonical approved state
         $project->update(['Project_Status' => 'approved']);
         return redirect()->back()->with('success', 'Project approved successfully.');
     }

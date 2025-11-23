@@ -123,6 +123,8 @@ if (typeof window.staff_loadMemberList !== 'function') {
 
 // Function to add an activity row with data
 function addActivityRow(stage = '', activity = '', timeframe = '', implementationDate = '', pointPerson = '', status = 'Planned', markDirty = true, activityId = '') {
+  // Normalize status for consistent comparisons (case-insensitive)
+  const s = String(status || '').trim().toLowerCase();
   const desktopContainer = document.getElementById('activitiesContainer');
   if (desktopContainer) {
     const newRow = document.createElement('div');
@@ -145,9 +147,10 @@ function addActivityRow(stage = '', activity = '', timeframe = '', implementatio
         <textarea name="point_person[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Responsible person/s">${pointPerson}</textarea>
       </div>
       <div class="w-30 py-3 flex-none">
-        <select name="status[]" class="proposal-select w-full">
-          <option ${status === 'Planned' ? 'selected' : ''}>Planned</option>
-          <option ${status === 'Ongoing' ? 'selected' : ''}>Ongoing</option>
+        <select name="status[]" ${s === 'completed' ? 'disabled title="Locked — completed by student"' : ''} class="proposal-select w-full ${s === 'completed' ? 'opacity-60 cursor-not-allowed' : ''}">
+          <option value="Planned" ${s === 'planned' ? 'selected' : ''}>Planned</option>
+          <option value="Ongoing" ${s === 'ongoing' ? 'selected' : ''}>Ongoing</option>
+          <option value="Completed" ${s === 'completed' ? 'selected' : ''}>Completed</option>
         </select>
       </div>
       <div class="w-20 py-3 flex-none">
@@ -185,12 +188,13 @@ function addActivityRow(stage = '', activity = '', timeframe = '', implementatio
         <label class="block text-xs font-medium text-gray-600">Point Person/s <span class="text-red-500">*</span></label>
         <textarea name="point_person[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm" rows="2" placeholder="Point Person/s">${pointPerson}</textarea>
       </div>
-      <div class="flex flex-col sm:flex-row gap-2">
+        <div class="flex flex-col sm:flex-row gap-2">
         <div class="space-y-1 flex-1">
           <label class="block text-xs font-medium text-gray-600">Status</label>
-          <select name="status[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm">
-            <option ${status === 'Planned' ? 'selected' : ''}>Planned</option>
-            <option ${status === 'Ongoing' ? 'selected' : ''}>Ongoing</option>
+          <select name="status[]" ${s === 'completed' ? 'disabled title="Locked — completed by student"' : ''} class="proposal-select w-full ${s === 'completed' ? 'opacity-60 cursor-not-allowed' : ''}">
+            <option value="Planned" ${s === 'planned' ? 'selected' : ''}>Planned</option>
+            <option value="Ongoing" ${s === 'ongoing' ? 'selected' : ''}>Ongoing</option>
+            <option value="Completed" ${s === 'completed' ? 'selected' : ''}>Completed</option>
           </select>
         </div>
         <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs whitespace-nowrap">Remove</button>
@@ -1173,6 +1177,8 @@ window.staff_emergencySubmit = staff_emergencySubmit;
 // Function to add an activity row with data
 function staff_addActivityRow(stage, specificActivity, timeframe, implementationDate, pointPerson, status, addToMobile = true, activityId = '') {
   console.log('Adding activity row:', stage, specificActivity);
+  // Normalize status for consistent, case-insensitive comparisons
+  const s = String(status || '').trim().toLowerCase();
   
   // Desktop table view
   const desktopContainer = document.getElementById('activitiesContainer');
@@ -1197,12 +1203,11 @@ function staff_addActivityRow(stage, specificActivity, timeframe, implementation
         <input name="point_person[]" type="text" class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500" placeholder="Point Person" value="${pointPerson || ''}">
       </div>
       <div>
-        <select name="status[]" class="w-full px-2 py-1 border border-gray-300 rounded text-sm bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500">
-          <option value="Planned" ${status === 'Planned' ? 'selected' : ''}>Planned</option>
-          <option value="In Progress" ${status === 'In Progress' ? 'selected' : ''}>In Progress</option>
-          <option value="Completed" ${status === 'Completed' ? 'selected' : ''}>Completed</option>
-          <option value="On Hold" ${status === 'On Hold' ? 'selected' : ''}>On Hold</option>
-        </select>
+        <select name="status[]" ${s === 'completed' ? 'disabled title="Locked — completed by student"' : ''} class="proposal-select w-full ${s === 'completed' ? 'opacity-60 cursor-not-allowed' : ''}">
+            <option value="Planned" ${s === 'planned' ? 'selected' : ''}>Planned</option>
+            <option value="Ongoing" ${s === 'ongoing' ? 'selected' : ''}>Ongoing</option>
+            <option value="Completed" ${s === 'completed' ? 'selected' : ''}>Completed</option>
+          </select>
       </div>
       <div>
         <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">Remove</button>
@@ -1241,11 +1246,10 @@ function staff_addActivityRow(stage, specificActivity, timeframe, implementation
         </div>
         <div class="space-y-1">
           <label class="block text-xs font-medium text-gray-600">Status</label>
-          <select name="status[]" class="w-full px-2 py-1 border border-gray-300 rounded text-sm bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-500">
-            <option value="Planned" ${status === 'Planned' ? 'selected' : ''}>Planned</option>
-            <option value="In Progress" ${status === 'In Progress' ? 'selected' : ''}>In Progress</option>
-            <option value="Completed" ${status === 'Completed' ? 'selected' : ''}>Completed</option>
-            <option value="On Hold" ${status === 'On Hold' ? 'selected' : ''}>On Hold</option>
+          <select name="status[]" ${s === 'completed' ? 'disabled title="Locked — completed by student"' : ''} class="proposal-select w-full ${s === 'completed' ? 'opacity-60 cursor-not-allowed' : ''}">
+            <option value="Planned" ${s === 'planned' ? 'selected' : ''}>Planned</option>
+            <option value="Ongoing" ${s === 'ongoing' ? 'selected' : ''}>Ongoing</option>
+            <option value="Completed" ${s === 'completed' ? 'selected' : ''}>Completed</option>
           </select>
         </div>
         <div class="flex justify-end">

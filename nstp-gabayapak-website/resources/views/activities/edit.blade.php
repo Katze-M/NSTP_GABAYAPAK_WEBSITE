@@ -24,9 +24,13 @@
                     @method('PUT')
                     
                     <div class="mb-6">
-                        @php $curStatus = strtolower((string)($activity->status ?? '')) @endphp
+                        @php
+                            $curStatus = strtolower((string)($activity->status ?? ''));
+                            $projectStatus = strtolower((string)($activity->project->Project_Status ?? ''));
+                        @endphp
                         <label class="block text-sm font-medium text-gray-700 mb-2">Activity Status <span class="text-red-500">*</span></label>
-                        <select id="statusSelect" name="status" data-initial-status="{{ $curStatus }}" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" @if($curStatus === 'completed') disabled @endif>
+                        {{-- Allow editing only when the parent project's status is 'approved' or 'current' and the activity is not already completed --}}
+                        <select id="statusSelect" name="status" data-initial-status="{{ $curStatus }}" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" @if($curStatus === 'completed' || !in_array($projectStatus, ['approved','current'])) disabled @endif>
                             @if($curStatus === 'planned')
                                 {{-- Keep the current value but hide it so the form still submits the existing status if unchanged --}}
                                 <option value="planned" selected hidden>Planned (current)</option>
@@ -57,12 +61,15 @@
                                 <div class="flex text-sm text-gray-600">
                                     <label for="proof_picture" class="relative cursor-pointer bg-white rounded-md font-medium text-red-600 hover:text-red-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-red-500">
                                         <span>Upload a file</span>
-                                        <input id="proof_picture" name="proof_picture" type="file" class="sr-only" accept="image/*" @if(!$hasExistingProof) required @endif @if($curStatus === 'completed') disabled @endif>
+                                        <input id="proof_picture" name="proof_picture" type="file" class="sr-only" accept="image/*" @if(!$hasExistingProof) required @endif @if($curStatus === 'completed' || !in_array($projectStatus, ['approved','current'])) disabled @endif>
                                     </label>
                                     <p class="pl-1">or drag and drop</p>
                                 </div>
                                 <p class="text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
                                 <p id="proofRequiredNote" class="text-xs text-red-600 mt-1" style="display: none;">A proof picture is required when you change the activity status.</p>
+                                @if(!in_array($projectStatus, ['approved','current']) && $curStatus !== 'completed')
+                                    <p class="mt-2 text-sm text-yellow-700 bg-yellow-50 border border-yellow-100 p-2 rounded">Project is not approved — students cannot edit activity status or upload proof until the project is approved.</p>
+                                @endif
                             </div>
                             
                             <div id="imagePreview" class="absolute inset-0 flex items-center justify-center hidden bg-white rounded-md p-4">
@@ -94,7 +101,7 @@
                         <a href="{{ route('projects.show', $activity->project) }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
                             Cancel
                         </a>
-                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg" @if($curStatus === 'completed') disabled @endif>
+                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg" @if($curStatus === 'completed' || !in_array($projectStatus, ['approved','current'])) disabled @endif>
                             Update Activity
                         </button>
                     </div>

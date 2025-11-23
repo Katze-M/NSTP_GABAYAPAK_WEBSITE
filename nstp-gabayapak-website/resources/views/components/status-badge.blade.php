@@ -17,8 +17,9 @@
             case 'under review':
             case 'approved':
             case 'current':
-            case 'completed':
                 $color = 'bg-green-50 text-green-800'; break;
+            case 'completed':
+                $color = 'bg-blue-50 text-blue-800'; break;
             case 'rejected':
             case 'cancelled':
                 $color = 'bg-red-50 text-red-800'; break;
@@ -38,8 +39,9 @@
             case 'under review':
             case 'approved':
             case 'current':
-            case 'completed':
                 $color = 'bg-green-600 text-white'; break;
+            case 'completed':
+                $color = 'bg-blue-600 text-white'; break;
             case 'rejected':
             case 'cancelled':
                 $color = 'bg-red-600 text-white'; break;

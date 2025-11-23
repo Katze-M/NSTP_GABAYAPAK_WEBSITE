@@ -24,9 +24,10 @@ class DashboardController extends Controller
 
         // Ensure expected keys exist (defaults to 0).
         // Note: some records may use 'approved' or 'current' interchangeably; treat both as "current/approved".
+        // Treat 'approved' and 'completed' as part of the Current/approved group
         $project_status_counts = [
             'pending' => (int) ($projectStatusCounts['pending'] ?? 0),
-            'approved' => (int) (($projectStatusCounts['current'] ?? 0) + ($projectStatusCounts['approved'] ?? 0)),
+            'approved' => (int) (($projectStatusCounts['approved'] ?? 0) + ($projectStatusCounts['completed'] ?? 0)),
             'rejected' => (int) ($projectStatusCounts['rejected'] ?? 0),
         ];
 
@@ -39,18 +40,30 @@ class DashboardController extends Controller
         $filterDate = $request->input('date'); // expected YYYY-MM-DD
         $filterSection = $request->input('section');
         $filterComponent = $request->input('component');
+        // New: allow filtering activities by status (e.g., pending, ongoing, completed)
+        $filterStatus = $request->input('activity_status');
 
         // If component is ROTC and no section specified, default to 'Section A' (DB stores sections with prefix)
         if (empty($filterSection) && !empty($filterComponent) && strtoupper($filterComponent) === 'ROTC') {
             $filterSection = 'Section A';
         }
 
-        // Build an unfiltered upcoming activities list: every activity for projects
-        // whose `Project_Status` is considered active. Include both 'current' and 'approved'.
-        $upcoming_activities = Activity::whereHas('project', function ($q) {
-                $q->whereIn('Project_Status', ['current', 'approved']);
-            })
-            ->with('project')
+        // Build an upcoming activities list for projects whose `Project_Status` is active.
+        // By default exclude activities with status 'completed'. If a status filter is provided,
+        // show only activities that match that status (case-insensitive).
+        $upcomingQuery = Activity::whereHas('project', function ($q) {
+                // Consider both 'approved' and 'completed' as active (unarchived) projects
+                $q->whereIn('Project_Status', ['approved', 'completed']);
+            });
+
+        if (!empty($filterStatus)) {
+            $upcomingQuery->whereRaw('LOWER(`status`) = ?', [strtolower($filterStatus)]);
+        } else {
+            // exclude completed by default
+            $upcomingQuery->whereRaw('LOWER(`status`) <> ?', ['completed']);
+        }
+
+        $upcoming_activities = $upcomingQuery->with('project')
             ->orderBy('Implementation_Date')
             ->take(200)
             ->get()
@@ -78,13 +91,21 @@ class DashboardController extends Controller
         // set of "upcoming" activities (projects with status current/approved).
         // This ensures filters operate on the list users see below.
         $filtered_activities = collect();
-        $hasAnyFilter = !empty($search) || !empty($filterDate) || !empty($filterSection) || !empty($filterComponent);
+        $hasAnyFilter = !empty($search) || !empty($filterDate) || !empty($filterSection) || !empty($filterComponent) || !empty($filterStatus);
 
         if ($hasAnyFilter) {
             $filteredQuery = Activity::with('project')
                 ->whereHas('project', function ($q) {
-                    $q->whereIn('Project_Status', ['current', 'approved']);
+                    // Consider both 'approved' and 'completed' as active projects
+                    $q->whereIn('Project_Status', ['approved', 'completed']);
                 });
+
+            // Apply status filter same as upcoming list: default exclude 'completed', or match provided status
+            if (!empty($filterStatus)) {
+                $filteredQuery->whereRaw('LOWER(`status`) = ?', [strtolower($filterStatus)]);
+            } else {
+                $filteredQuery->whereRaw('LOWER(`status`) <> ?', ['completed']);
+            }
 
             // Debugging: log counts for component-only, section-only, and both
             try {

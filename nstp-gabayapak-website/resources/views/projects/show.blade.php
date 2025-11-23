@@ -33,8 +33,20 @@
                     <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
                         <span class="bg-indigo-50 text-indigo-700 text-sm font-semibold px-3 py-1 rounded-full">{{ $project->Project_Component ?? 'No Component' }}</span>
                         <span class="bg-gray-100 text-gray-800 text-sm font-semibold px-3 py-1 rounded-full">{{ $project->Project_Section ?? 'N/A' }}</span>
-                        @php $st = strtolower(trim((string)($project->Project_Status ?? ''))); @endphp
-                        @if(in_array($st, ['pending','submitted','under review']))
+                        @php
+                            $acts = $project->activities ?? collect();
+                            $allActivitiesCompleted = false;
+                            try {
+                                if ($acts instanceof \Illuminate\Support\Collection) {
+                                    $allActivitiesCompleted = $acts->isNotEmpty() && $acts->filter(function($a){ return strtolower(trim((string)($a->status ?? ''))) !== 'completed'; })->count() === 0;
+                                }
+                            } catch (\Exception $e) { $allActivitiesCompleted = false; }
+
+                            $st = strtolower(trim((string)($project->Project_Status ?? '')));
+                        @endphp
+                        @if($allActivitiesCompleted)
+                            @include('components.status-badge', ['status' => 'completed', 'size' => 'large'])
+                        @elseif(in_array($st, ['pending','submitted','under review']))
                             @include('components.status-badge', ['status' => $project->Project_Status, 'size' => 'large', 'extraClass' => 'bg-orange-500 text-white'])
                         @else
                             @include('components.status-badge', ['status' => $project->Project_Status, 'size' => 'large'])
@@ -170,7 +182,7 @@
                                 @endif
 
                                 {{-- Show Edit button for staff or the project owner when project is submitted/current --}}
-                                @if(Auth::user() && (Auth::user()->isStudent() && Auth::user()->student && Auth::user()->student->id === $project->student_id) && in_array($projStatus, ['submitted','current','completed']))
+                                @if(Auth::user() && (Auth::user()->isStudent() && Auth::user()->student && Auth::user()->student->id === $project->student_id) && in_array($projStatus, ['submitted','approved','current','completed']))
                                     <div class="mt-3 flex justify-end">
                                         @php
                                             // If the activity itself is completed (or similar states), do not navigate to edit — show modal-only button
@@ -185,8 +197,8 @@
                                     </div>
                                 @endif
 
-                                {{-- Activity update & proof history (visible for current projects) --}}
-                                @if($projStatus === 'current')
+                                {{-- Activity update & proof history (visible for approved/current and completed projects) --}}
+                                @if(in_array($projStatus, ['approved','current','completed']))
                                     <div class="mt-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
                                         <h4 class="text-sm font-semibold text-gray-700 mb-2">Update Status and Proof</h4>
                                         <ul class="text-sm text-gray-600 space-y-1">

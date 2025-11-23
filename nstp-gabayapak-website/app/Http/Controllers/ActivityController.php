@@ -23,9 +23,10 @@ class ActivityController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        // Only allow editing activities for submitted or current projects
-        if ($activity->project->Project_Status !== 'submitted' && $activity->project->Project_Status !== 'current') {
-            return redirect()->route('projects.show', $activity->project)->with('error', 'Activity status and proof can only be updated for submitted or current projects.');
+        // Only allow editing activities for approved projects (DB canonical)
+        $projStatus = strtolower(trim((string)($activity->project->Project_Status ?? '')));
+        if ($projStatus !== 'approved') {
+            return redirect()->route('projects.show', $activity->project)->with('warning', 'Activity status and proof can only be updated for approved projects.');
         }
         
         return view('activities.edit', compact('activity'));
@@ -45,9 +46,10 @@ class ActivityController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        // Only allow updating activities for submitted or current projects
-        if ($activity->project->Project_Status !== 'submitted' && $activity->project->Project_Status !== 'current') {
-            return redirect()->route('projects.show', $activity->project)->with('error', 'Activity status and proof can only be updated for submitted or current projects.');
+        // Only allow updating activities for approved projects (DB canonical)
+        $projStatus = strtolower(trim((string)($activity->project->Project_Status ?? '')));
+        if ($projStatus !== 'approved') {
+            return redirect()->route('projects.show', $activity->project)->with('warning', 'Activity status and proof can only be updated for approved projects.');
         }
 
         // Prevent changing status once activity is already completed
@@ -113,11 +115,13 @@ class ActivityController extends Controller
         // Normalize status casing (store with initial capital) and update the activity
         $statusNormalized = ucfirst(strtolower($validatedData['status']));
 
-        $activity->update([
-            'status' => $statusNormalized,
-            'Implementation_Date' => $validatedData['Implementation_Date'] ?? null,
-            // proof_picture is already updated above if a new file was uploaded
-        ]);
+        // Prepare update payload. Preserve existing Implementation_Date when not provided.
+        $updatePayload = ['status' => $statusNormalized];
+        if (array_key_exists('Implementation_Date', $validatedData) && $validatedData['Implementation_Date'] !== null && $validatedData['Implementation_Date'] !== '') {
+            $updatePayload['Implementation_Date'] = $validatedData['Implementation_Date'];
+        }
+        // proof_picture was handled above
+        $activity->update($updatePayload);
         
         return redirect()->route('projects.show', $activity->project)->with('success', 'Activity updated successfully!');
     }

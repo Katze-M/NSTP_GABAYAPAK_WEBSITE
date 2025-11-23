@@ -155,6 +155,8 @@ class ProjectController extends Controller
             // sync activities/budgets for a draft: allow incomplete but skip fully blank rows
             $this->syncActivities($project, $request, true);
             $this->syncBudgets($project, $request, true);
+            // Persist computed completed state if all activities are completed
+            $this->maybePersistCompleted($project);
         });
 
         return redirect()->route('projects.my')->with('success', 'Project saved as draft!');
@@ -220,6 +222,8 @@ class ProjectController extends Controller
             // sync activities and budgets - strict because this is a submission
             $this->syncActivities($project, $request, false);
             $this->syncBudgets($project, $request, false);
+            // Persist computed completed state if all activities are completed
+            $this->maybePersistCompleted($project);
         });
 
         if (!$project) {
@@ -338,6 +342,8 @@ class ProjectController extends Controller
 
             $this->syncActivities($project, $request, true);
             $this->syncBudgets($project, $request, true);
+            // Persist computed completed state if all activities are completed
+            $this->maybePersistCompleted($project);
         });
 
         // If this was a staff-save, return a neutral 'updated' message instead of 'Draft saved'
@@ -461,6 +467,8 @@ class ProjectController extends Controller
 
             $this->syncActivities($project, $request, false);
             $this->syncBudgets($project, $request, false);
+            // Persist computed completed state if all activities are completed
+            $this->maybePersistCompleted($project);
         });
 
         $message = $projectStatus === 'pending'
@@ -668,7 +676,22 @@ class ProjectController extends Controller
                     if (!$hasAny && $allowPartialRows) {
                         continue;
                     }
-                    $existing->update($data);
+                    // Build update payload carefully so we don't clear existing Implementation_Date
+                    $updateData = $data;
+                    // If implementation date is empty in the incoming request, preserve existing value
+                    if (empty($impl) && !is_null($existing->Implementation_Date)) {
+                        unset($updateData['Implementation_Date']);
+                    }
+
+                    // Prevent staff from changing the status if the activity was already marked completed by students
+                    $existingStatus = strtolower(trim((string)($existing->status ?? '')));
+                    $incomingStatus = strtolower(trim((string)($st ?? '')));
+                    if ($existingStatus === 'completed' && $incomingStatus !== 'completed') {
+                        // keep the existing status
+                        $updateData['status'] = $existing->status;
+                    }
+
+                    $existing->update($updateData);
                     $processed[] = $existing->Activity_ID;
                     continue;
                 }
@@ -1105,10 +1128,13 @@ class ProjectController extends Controller
 
     public function current()
     {
-        $projects = Project::whereIn('Project_Status', ['current', 'approved'])
+        // Include completed projects so that unarchived projects marked 'completed'
+        // also appear on the Current Projects listing.
+        $projects = Project::whereIn('Project_Status', ['current', 'approved', 'completed'])
             ->orderByDesc('created_at')
             ->get();
         $projectCount = $projects->count();
+        // Render the projects listing view so the passed $projects (including 'completed') are shown.
         return view('all_projects.current', compact('projects', 'projectCount'));
     }
 
@@ -1189,6 +1215,19 @@ class ProjectController extends Controller
     public function archive(Request $request, Project $project)
     {
         if (!Auth::user()->isStaff()) abort(403);
+        // Prevent archiving if the project's activities are not all completed
+        $acts = $project->activities ?? collect();
+        $allCompleted = false;
+        try {
+            if ($acts instanceof \Illuminate\Support\Collection) {
+                $allCompleted = $acts->isNotEmpty() && $acts->filter(function($a){ return strtolower(trim((string)($a->status ?? ''))) !== 'completed'; })->count() === 0;
+            }
+        } catch (\Exception $e) { $allCompleted = false; }
+
+        if (! $allCompleted) {
+            return redirect()->back()->with('error', 'Project is still in progress and cannot be archived until all activities are completed.');
+        }
+
         $project->update(['Project_Status' => 'archived']);
         return redirect()->back()->with('success', 'Project archived.');
     }
@@ -1196,9 +1235,13 @@ class ProjectController extends Controller
     public function unarchive(Request $request, Project $project)
     {
         if (!Auth::user()->isStaff()) abort(403);
-        // Unarchive to pending by default
-        $project->update(['Project_Status' => 'pending']);
-        return redirect()->back()->with('success', 'Project unarchived.');
+        // When unarchiving, mark project as completed (staff action).
+        // Completed projects are the only ones that can be archived, so when
+        // we unarchive we preserve that completed state.
+        $project->update(['Project_Status' => 'completed']);
+        // Redirect staff to the Current Projects page so the unarchived project
+        // is visible in the listing immediately (Current includes 'completed').
+        return redirect()->route('projects.current')->with('success', 'Project unarchived and marked as completed.');
     }
 
     /**
@@ -1218,7 +1261,7 @@ class ProjectController extends Controller
             });
         }
 
-        $projects = $q->whereIn('Project_Status', ['current', 'approved'])
+        $projects = $q->whereIn('Project_Status', ['current', 'approved', 'completed'])
             ->with(['activities', 'budgets'])
             ->orderByDesc('created_at')
             ->get();
@@ -1232,7 +1275,7 @@ class ProjectController extends Controller
         $letter = $section ?? request()->input('section') ?? 'A';
 
         $projects = Project::where('Project_Component', $component)
-            ->whereIn('Project_Status', ['current', 'approved'])
+            ->whereIn('Project_Status', ['current', 'approved', 'completed'])
             ->where(function($sub) use ($letter) {
                 $sub->where('Project_Section', 'Section ' . $letter)
                     ->orWhere('Project_Section', $letter);
@@ -1251,7 +1294,7 @@ class ProjectController extends Controller
         $letter = $section ?? request()->input('section') ?? 'A';
 
         $projects = Project::where('Project_Component', $component)
-            ->whereIn('Project_Status', ['current', 'approved'])
+            ->whereIn('Project_Status', ['current', 'approved', 'completed'])
             ->where(function($sub) use ($letter) {
                 $sub->where('Project_Section', 'Section ' . $letter)
                     ->orWhere('Project_Section', $letter);
@@ -1401,5 +1444,31 @@ class ProjectController extends Controller
             ];
         });
         return response()->json($students);
+    }
+
+    /**
+     * If a project has at least one activity and all activities' status are 'completed',
+     * persist `Project_Status = 'completed'` to the database.
+     * This ensures computed state is persisted when activities are updated via project flows.
+     */
+    protected function maybePersistCompleted(Project $project)
+    {
+        try {
+            $project->load('activities');
+            $acts = $project->activities ?? collect();
+            if (!($acts instanceof \Illuminate\Support\Collection)) return;
+            if ($acts->isEmpty()) return;
+
+            $notCompleted = $acts->filter(function($a){ return strtolower(trim((string)($a->status ?? ''))) !== 'completed'; })->count();
+            if ($notCompleted === 0) {
+                // All activities completed — persist status
+                if ($project->Project_Status !== 'completed') {
+                    $project->update(['Project_Status' => 'completed']);
+                }
+            }
+        } catch (\Exception $e) {
+            // swallow errors — this is a best-effort persistence
+            Log::warning('maybePersistCompleted failed for project ' . ($project->Project_ID ?? 'unknown') . ': ' . $e->getMessage());
+        }
     }
 }

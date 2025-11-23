@@ -63,6 +63,18 @@
             @foreach($projects as $project)
                 <div class="bg-white p-4 pt-10 rounded-lg shadow-md text-center relative">
                     {{-- Status badge row above the title (right-aligned) to avoid overlap --}}
+                    @php
+                        // Determine if all project activities are completed. If so, show 'completed' badge.
+                        $acts = $project->activities ?? collect();
+                        $allActivitiesCompleted = false;
+                        try {
+                            if ($acts instanceof \Illuminate\Support\Collection) {
+                                $allActivitiesCompleted = $acts->isNotEmpty() && $acts->filter(function($a){ return strtolower(trim((string)($a->status ?? ''))) !== 'completed'; })->count() === 0;
+                            }
+                        } catch (\Exception $e) {
+                            $allActivitiesCompleted = false;
+                        }
+                    @endphp
                     <div class="w-full flex justify-end mb-2">
                         @if($project->Project_Status === 'draft')
                             @include('components.status-badge', ['status' => 'draft'])
@@ -70,6 +82,10 @@
                             @include('components.status-badge', ['status' => 'rejected'])
                         @elseif(in_array(strtolower(trim((string)($project->Project_Status ?? ''))), ['pending','submitted','under review']))
                             @include('components.status-badge', ['status' => 'pending', 'extraClass' => 'bg-orange-500 text-white'])
+                        @elseif($project->Project_Status === 'completed')
+                            @include('components.status-badge', ['status' => 'completed'])
+                        @elseif($allActivitiesCompleted)
+                            @include('components.status-badge', ['status' => 'completed'])
                         @elseif($project->Project_Status === 'approved' || $project->Project_Status === 'current')
                             @include('components.status-badge', ['status' => 'current'])
                         @elseif($project->Project_Status === 'archived')
@@ -158,7 +174,7 @@
                             </form>
                         @endif
                         
-                        @if($isStaff && in_array($project->Project_Status, ['current','approved']))
+                        @if($isStaff && in_array($project->Project_Status, ['current','approved','completed']))
                             <a href="{{ route('projects.edit', $project) }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition-colors duration-200 view-btn" style="background-color:#4f46e5;color:#ffffff;">Edit</a>
 
                             <form action="{{ route('projects.archive', $project) }}" method="POST" class="inline-block archive-form">
@@ -171,6 +187,9 @@
                                 @method('DELETE')
                                 <button type="button" class="delete-btn-staff bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors duration-200" style="background-color:#dc2626;color:#ffffff;">Delete</button>
                             </form>
+                        @endif
+                        @if($project->Project_Status === 'completed')
+                            <p class="text-xs text-gray-600 mt-2">Note: Project marked <strong>Completed</strong>. Activities and proofs are preserved.</p>
                         @endif
                         
                         @if($isStaff && ($section ?? '') === 'Archived Projects')

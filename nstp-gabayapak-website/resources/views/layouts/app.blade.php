@@ -52,6 +52,17 @@
         </script>
     @endif
 
+    @if(session('warning'))
+        <script>
+            Swal.fire({
+                icon: 'warning',
+                title: 'Notice',
+                text: '{{ session('warning') }}',
+                confirmButtonColor: '#3085d6'
+            });
+        </script>
+    @endif
+
     @if($errors->any())
         <script>
             Swal.fire({

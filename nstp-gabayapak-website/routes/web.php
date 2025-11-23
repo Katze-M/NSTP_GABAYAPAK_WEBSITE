@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\AccountController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\ReportsController;
 use App\Models\User;
 use App\Models\Staff;
 
@@ -101,6 +102,8 @@ Route::middleware('auth')->group(function () {
     
     // Project routes
     Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    // Reports route
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
     
     // All Projects routes (Staff only)
     Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');

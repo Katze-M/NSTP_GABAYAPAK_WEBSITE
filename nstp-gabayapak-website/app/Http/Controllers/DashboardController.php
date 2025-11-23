@@ -27,12 +27,15 @@ class DashboardController extends Controller
         // Treat 'approved' and 'completed' as part of the Current/approved group
         $project_status_counts = [
             'pending' => (int) ($projectStatusCounts['pending'] ?? 0),
+            // Treat both 'approved' and 'completed' as current/approved projects so
+            // completed projects are counted among current projects and in totals.
             'approved' => (int) (($projectStatusCounts['approved'] ?? 0) + ($projectStatusCounts['completed'] ?? 0)),
             'rejected' => (int) ($projectStatusCounts['rejected'] ?? 0),
+            'archived' => (int) ($projectStatusCounts['archived'] ?? 0),
         ];
 
         // Total submitted projects should exclude drafts. Count only pending, current/approved, and rejected.
-        $total_projects = $project_status_counts['pending'] + $project_status_counts['approved'] + $project_status_counts['rejected'];
+        $total_projects = $project_status_counts['pending'] + $project_status_counts['approved'] + $project_status_counts['rejected'] + $project_status_counts['archived'];
         $total_students = Student::count();
 
         // Filters from request

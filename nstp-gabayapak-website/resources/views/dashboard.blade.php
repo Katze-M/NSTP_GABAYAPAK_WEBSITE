@@ -50,37 +50,38 @@
             <h3 class="text-xl md:text-2xl font-bold">Upcoming Activities</h3>
           </div>
 
-          <!-- Filters -->
-          <form id="dashboard-filters" method="GET" action="{{ route('dashboard') }}" class="mb-4 grid grid-cols-1 md:grid-cols-6 gap-2">
-            <div class="md:col-span-2">
-              <input type="search" name="q" value="{{ request('q') }}" placeholder="Search activities, projects, teams..." class="w-full rounded-lg border px-3 py-2" />
-            </div>
-            <div class="md:col-span-1">
-              <input type="date" name="date" value="{{ request('date') }}" class="w-full rounded-lg border px-3 py-2" />
-            </div>
-            <div class="md:col-span-2 flex gap-2 items-center min-w-0">
-              <select id="filter-section" name="section" class="rounded-lg border px-3 py-2 md:w-3/3 shrink-0 min-w-40">
+          <!-- Filters: stacked on small screens, single-line on md+ -->
+          <form id="dashboard-filters" method="GET" action="{{ route('dashboard') }}" class="mb-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-end md:flex-nowrap gap-2">
+              <input type="search" name="q" value="{{ request('q') }}" placeholder="Search activities, projects, teams..." class="w-full md:flex-1 min-w-0 rounded-lg border px-3 py-2" />
+
+              <input type="date" name="date" value="{{ request('date') }}" class=" md:flex-1 rounded-lg border px-3 py-2" />
+
+              <select id="filter-section" name="section" class="md:flex-1 rounded-lg border px-3 py-2 whitespace-nowrap md:min-w-40">
                 <option value="">All Sections</option>
                 @foreach($sections ?? collect() as $s)
                   {{-- Store values in the same format as DB (e.g. 'Section A') but show the short letter to users --}}
                   <option value="Section {{ $s }}" @if(request('section') == 'Section ' . $s) selected @endif>{{ $s }}</option>
                 @endforeach
               </select>
-              <select name="component" class="rounded-lg border px-3 py-2 md:w-3/3 shrink-0 min-w-40">
+
+              <select name="component" class="md:flex-1 rounded-lg border px-3 py-2 whitespace-nowrap md:min-w-40">
                 <option value="">All Components</option>
                 @foreach($components ?? collect() as $c)
                   <option value="{{ $c }}" @if(request('component') == $c) selected @endif>{{ $c }}</option>
                 @endforeach
               </select>
-              <select name="activity_status" class="rounded-lg border px-3 py-2 md:w-3/3 shrink-0 min-w-40" id="filter-status">
+
+              <select name="activity_status" class="md:flex-1 rounded-lg border px-3 py-2 whitespace-nowrap md:min-w-40" id="filter-status">
                 <option value="">All Statuses</option>
                 <option value="planned" @if(request('activity_status') == 'planned') selected @endif>Planned</option>
                 <option value="ongoing" @if(request('activity_status') == 'ongoing') selected @endif>Ongoing</option>
                 <option value="completed" @if(request('activity_status') == 'completed') selected @endif>Completed</option>
               </select>
+
+              <div class="flex items-center justify-end">
+                <a href="{{ route('dashboard') }}" class="px-3 py-2 rounded-lg border text-sm shrink-0">Clear</a>
               </div>
-            <div class="md:col-span-1 flex items-center justify-end gap-2">
-              <a href="{{ route('dashboard') }}" class="px-3 py-2 rounded-lg border text-sm shrink-0">Clear</a>
             </div>
           </form>
 
@@ -154,7 +155,7 @@
           </script>
 
           <div class="mb-3">
-            <p class="text-sm text-gray-500">Note: Completed activities are hidden by default. Select <strong>Completed</strong> in the status filter to show them.</p>
+            <p class="text-sm text-gray-500">Note: Completed activities are hidden by default. Select <strong>Completed</strong> in the status filter to show them. Some completed activities may belong to <strong>archived projects</strong>, so they won't appear in the upcoming activities list unless you view archived projects.</p>
           </div>
           @php $hasFilters = request('q') || request('date') || request('section') || request('component') || request('activity_status'); @endphp
 

@@ -4,16 +4,24 @@
 
 @section('content')
 <section id="reports" class="bg-white rounded-2xl shadow-subtle p-4 md:p-8">
+    <style>
+      /* Hide the global sidebar and its overlay when printing/download PDF */
+      @media print {
+        #sidebar, #sidebar-overlay { display: none !important; }
+        /* Avoid capturing interactive controls in print header */
+        .no-print { display: none !important; }
+      }
+    </style>
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 md:mb-6 gap-4">
       <div>
         <h2 class="text-2xl md:text-3xl font-bold">Reports</h2>
         <p class="text-gray-600 text-sm md:text-base">Summary overview of NSTP project submissions and progress</p>
       </div>
-      <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-        <button onclick="downloadCSV()" class="px-3 py-2 md:px-4 md:py-2 bg-nstpBlue text-white rounded-lg text-xs md:text-sm shadow-subtle hover:bg-nstpBlue2 text-center">
+      <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-wrap z-10 items-center">
+        <button onclick="downloadCSV()" class="w-full sm:w-auto px-3 py-2 md:px-4 md:py-2 bg-blue-500 text-white rounded-lg text-xs md:text-sm shadow-subtle hover:bg-blue-600 text-center">
           Export CSV
         </button>
-        <button onclick="downloadPDF()" class="px-3 py-2 md:px-4 md:py-2 bg-nstpMaroon text-white rounded-lg text-xs md:text-sm shadow-subtle hover:bg-red-800 text-center">
+        <button onclick="downloadPDF()" class="w-full sm:w-auto px-3 py-2 md:px-4 md:py-2 bg-red-500 text-white rounded-lg text-xs md:text-sm shadow-subtle  hover:bg-red-600 text-center">
           Download PDF
         </button>
       </div>
@@ -43,23 +51,23 @@
     <!-- Project Proposals Summary -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
       <div class="rounded-xl border bg-white p-3 md:p-4 shadow-subtle text-center">
-        <p class="text-xs md:text-sm text-gray-500">Approved Proposals</p>
+        <p class="text-xs md:text-sm text-black">Approved Proposals</p>
         <p id="approvedProposals" class="text-xl md:text-3xl font-bold text-green-600">{{ $project_proposals['approved'] }}</p>
         <p id="approvedProposalsPct" class="text-xs text-gray-400">{{ $project_proposals['total'] ? round(($project_proposals['approved'] / $project_proposals['total']) * 100, 1) : 0 }}% of total</p>
       </div>
       <div class="rounded-xl border bg-white p-3 md:p-4 shadow-subtle text-center">
-        <p class="text-xs md:text-sm text-gray-500">Pending Proposals</p>
-        <p id="pendingProposals" class="text-xl md:text-3xl font-bold text-yellow-600">{{ $project_proposals['pending'] }}</p>
+        <p class="text-xs md:text-sm text-black">Pending Proposals</p>
+        <p id="pendingProposals" class="text-xl md:text-3xl font-bold text-orange-600">{{ $project_proposals['pending'] }}</p>
         <p id="pendingProposalsPct" class="text-xs text-gray-400">{{ $project_proposals['total'] ? round(($project_proposals['pending'] / $project_proposals['total']) * 100, 1) : 0 }}% of total</p>
       </div>
       <div class="rounded-xl border bg-white p-3 md:p-4 shadow-subtle text-center">
-        <p class="text-xs md:text-sm text-gray-500">Draft Proposals</p>
-        <p id="draftProposals" class="text-xl md:text-3xl font-bold text-gray-600">{{ $project_proposals['draft'] }}</p>
+        <p class="text-xs md:text-sm text-black">Draft Proposals</p>
+        <p id="draftProposals" class="text-xl md:text-3xl font-bold text-yellow-400">{{ $project_proposals['draft'] }}</p>
         <p id="draftProposalsPct" class="text-xs text-gray-400">{{ $project_proposals['total'] ? round(($project_proposals['draft'] / $project_proposals['total']) * 100, 1) : 0 }}% of total</p>
       </div>
       <div class="rounded-xl border bg-white p-3 md:p-4 shadow-subtle text-center">
-        <p class="text-xs md:text-sm text-gray-500">Total Proposals</p>
-        <p id="totalProposals" class="text-xl md:text-3xl font-bold text-nstpBlue">{{ $project_proposals['total'] }}</p>
+        <p class="text-xs md:text-sm text-black">Total Proposals</p>
+        <p id="totalProposals" class="text-xl md:text-3xl font-bold text-black">{{ $project_proposals['total'] }}</p>
       </div>
     </div>
 
@@ -67,16 +75,16 @@
     <h3 class="text-xl md:text-2xl font-bold mt-6 md:mt-8 mb-3 md:mb-4">Project Implementation Status</h3>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
       <div class="rounded-xl border bg-white p-3 md:p-4 shadow-subtle text-center">
-        <p class="text-xs md:text-sm text-gray-500">Ongoing</p>
-        <p id="statusOngoing" class="text-2xl md:text-3xl font-bold text-nstpYellow">{{ $project_status['ongoing'] }}</p>
+        <p class="text-xs md:text-sm text-black">Ongoing</p>
+        <p id="statusOngoing" class="text-2xl md:text-3xl font-bold text-blue-600">{{ $project_status['ongoing'] }}</p>
       </div>
       <div class="rounded-xl border bg-white p-3 md:p-4 shadow-subtle text-center">
-        <p class="text-xs md:text-sm text-gray-500">Completed</p>
+        <p class="text-xs md:text-sm text-black">Completed</p>
         <p id="statusCompleted" class="text-2xl md:text-3xl font-bold text-green-600">{{ $project_status['completed'] }}</p>
       </div>
       <div class="rounded-xl border bg-white p-3 md:p-4 shadow-subtle text-center">
-        <p class="text-xs md:text-sm text-gray-500">Archived</p>
-        <p id="statusArchived" class="text-2xl md:text-3xl font-bold text-gray-600">{{ $project_status['archived'] }}</p>
+        <p class="text-xs md:text-sm text-black">Archived</p>
+        <p id="statusArchived" class="text-2xl md:text-3xl font-bold text-gray-500">{{ $project_status['archived'] }}</p>
       </div>
     </div>
 
@@ -118,6 +126,7 @@
 
 @section('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script>
       // Embed projects data (used for filtering). Expect each project to have at least:
       // { name, component, progress, budget, section?, proposal_status?, status? }
@@ -175,6 +184,10 @@
       const chartLabels = Object.keys(initialCounts);
       const chartValues = Object.values(initialCounts);
       const ctx = document.getElementById('componentChart').getContext('2d');
+      // Register datalabels plugin so labels appear on the chart
+      if (typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+      }
       const componentChart = new Chart(ctx, {
         type: 'pie',
         data: {
@@ -189,7 +202,22 @@
         options: {
           responsive: true,
           maintainAspectRatio: true,
-          plugins: { legend: { position: 'bottom' } }
+          plugins: {
+            legend: { position: 'bottom' },
+            datalabels: {
+              color: '#ffffff',
+              formatter: (value, ctx) => {
+                // show raw count and percentage on separate lines
+                const sum = ctx.chart.data.datasets[0].data.reduce((a,b) => a + b, 0) || 0;
+                const pct = sum ? Math.round((value / sum) * 1000) / 10 : 0;
+                return value + '\n' + pct + '%';
+              },
+              font: { weight: '600', size: 11 },
+              anchor: 'center',
+              align: 'center',
+              clamp: true
+            }
+          }
         }
       });
 
@@ -315,7 +343,20 @@
         const sec = document.getElementById('filterSection');
         if (comp) comp.value = 'All';
         if (sec) sec.value = 'All';
+        // Re-apply filters and ensure chart + progress are refreshed.
         applyFilters();
+        try {
+          if (typeof componentChart !== 'undefined' && componentChart) {
+            componentChart.update();
+          } else {
+            // If chart isn't available for some reason, reload the page as a fallback
+            // so the UI fully resets to server state.
+            window.location.reload();
+          }
+        } catch (e) {
+          // fallback to reload if update fails
+          try { window.location.reload(); } catch(_) {}
+        }
       }
 
       // Initial render using the eligible projects and then apply current filters
@@ -323,40 +364,111 @@
       applyFilters();
 
       function downloadCSV() {
-        const csvData = [
-          ["NSTP Project Management System - Reports Export"],
-          ["Generated on: " + new Date().toLocaleDateString()],
-          [""],
-          ["PROJECT PROPOSALS SUMMARY"],
-          ["Status", "Count", "Percentage"],
-          ["Approved", "{{ $project_proposals['approved'] }}", "{{ $project_proposals['total'] ? round(($project_proposals['approved'] / $project_proposals['total']) * 100, 1) : 0 }}%"],
-          ["Pending", "{{ $project_proposals['pending'] }}", "{{ $project_proposals['total'] ? round(($project_proposals['pending'] / $project_proposals['total']) * 100, 1) : 0 }}%"],
-          ["Draft", "{{ $project_proposals['draft'] }}", "{{ $project_proposals['total'] ? round(($project_proposals['draft'] / $project_proposals['total']) * 100, 1) : 0 }}%"],
-          ["Total", "{{ $project_proposals['total'] }}", "100%"],
-          [""],
-          ["PROJECT IMPLEMENTATION STATUS"],
-          ["Status", "Count"],
-          ["Ongoing", "{{ $project_status['ongoing'] }}"],
-          ["Completed", "{{ $project_status['completed'] }}"],
-          ["Archived", "{{ $project_status['archived'] }}"],
-          [""],
-          ["PROJECTS PER COMPONENT"],
-          ["Component", "Count"],
-          ["ROTC", "{{ $components_breakdown['ROTC'] }}"],
-          ["LTS", "{{ $components_breakdown['LTS'] }}"],
-          ["CWTS", "{{ $components_breakdown['CWTS'] }}"],
-          [""],
-          ["PROJECT PROGRESS DETAILS"],
-          ["Project Name", "Component", "Progress Percentage", "Total Budget"],
-          @foreach($project_progress as $p)
-            ["{{ addslashes($p['name']) }}", "{{ $p['component'] }}", "{{ $p['progress'] }}%", "{{ number_format($p['budget'], 2) }}"],
-          @endforeach
-        ];
+        // Build CSV using visible DOM values so the file exactly matches the report page
+        const compFilter = (document.getElementById('filterComponent') || {}).value || 'All';
+        const secEl = document.getElementById('filterSection');
+        const secFilter = secEl ? secEl.value : 'All';
 
-        const csvContent = "data:text/csv;charset=utf-8," + csvData.map(e => e.join(",")).join("\n");
-        const link = document.createElement("a");
+        // Read visible summary numbers from DOM (these represent what's on the page)
+        const approved = document.getElementById('approvedProposals')?.textContent.trim() || '0';
+        const pending = document.getElementById('pendingProposals')?.textContent.trim() || '0';
+        const draft = document.getElementById('draftProposals')?.textContent.trim() || '0';
+        const total = document.getElementById('totalProposals')?.textContent.trim() || '0';
+
+        const ongoing = document.getElementById('statusOngoing')?.textContent.trim() || '0';
+        const completed = document.getElementById('statusCompleted')?.textContent.trim() || '0';
+        const archived = document.getElementById('statusArchived')?.textContent.trim() || '0';
+
+        // Component breakdown: prefer Chart data if available, otherwise compute from DOM/list
+        let compRows = [];
+        if (window.componentChart && componentChart.data && Array.isArray(componentChart.data.labels)) {
+          componentChart.data.labels.forEach((label, i) => {
+            const val = (componentChart.data.datasets && componentChart.data.datasets[0] && componentChart.data.datasets[0].data && componentChart.data.datasets[0].data[i]) || 0;
+            compRows.push([label, String(val)]);
+          });
+        } else {
+          // Fallback: compute from currentFilteredProjects
+          const compCounts = {};
+          (Array.isArray(currentFilteredProjects) ? currentFilteredProjects : []).forEach(p => { const k = p.component || 'Unknown'; compCounts[k] = (compCounts[k] || 0) + 1; });
+          ['ROTC','LTS','CWTS'].forEach(k => compRows.push([k, String(compCounts[k] || 0)]));
+        }
+
+        // Progress details: read rendered project progress entries so ordering matches the page
+        const progressRows = [];
+        const container = document.querySelector('#reports .space-y-4');
+        if (container) {
+          container.querySelectorAll(':scope > div').forEach(div => {
+            try {
+              const titleSpan = div.querySelector('div.flex.justify-between span:first-child');
+              const progressSpan = div.querySelector('div.flex.justify-between span:last-child');
+              const budgetSpan = div.querySelector('.text-sm .font-bold');
+              const title = titleSpan ? titleSpan.textContent.trim() : '';
+              const progressText = progressSpan ? progressSpan.textContent.trim() : '';
+              const budgetText = budgetSpan ? budgetSpan.textContent.trim().replace('₱','').replace(/,/g,'') : '';
+
+              // Parse title like: "Project Name (COMP — Section A)"
+              let name = title;
+              let component = '';
+              let section = '';
+              const m = title.match(/^(.*)\s*\(([^)]*)\)$/);
+              if (m) {
+                name = m[1].trim();
+                const meta = m[2].split('—').map(s => s.trim());
+                component = meta[0] || '';
+                section = meta[1] || '';
+              }
+
+              progressRows.push([name, component, section, progressText, budgetText]);
+            } catch (e) { /* ignore parse errors for a row */ }
+          });
+        }
+
+        // Build CSV using the DOM-derived values
+        const csvData = [];
+        csvData.push(["NSTP Project Management System - Reports Export"]);
+        csvData.push(["Generated on: " + new Date().toLocaleString()]);
+        csvData.push(["Active Filters:", `Component: ${compFilter}`, `Section: ${secFilter}`]);
+        csvData.push([""]);
+
+        csvData.push(["PROJECT PROPOSALS SUMMARY"]);
+        csvData.push(["Status", "Count", "Percentage"]);
+        const totNum = Number(total) || 0;
+        const approvedNum = Number(approved) || 0;
+        const pendingNum = Number(pending) || 0;
+        const draftNum = Number(draft) || 0;
+        csvData.push(["Approved", approvedNum, totNum ? ((Math.round((approvedNum/totNum)*1000)/10) + "%") : "0%"]);
+        csvData.push(["Pending", pendingNum, totNum ? ((Math.round((pendingNum/totNum)*1000)/10) + "%") : "0%"]);
+        csvData.push(["Draft", draftNum, totNum ? ((Math.round((draftNum/totNum)*1000)/10) + "%") : "0%"]);
+        csvData.push(["Total", totNum, totNum ? "100%" : "0%"]);
+        csvData.push([""]);
+
+        csvData.push(["PROJECT IMPLEMENTATION STATUS"]);
+        csvData.push(["Status", "Count"]);
+        csvData.push(["Ongoing", Number(ongoing) || 0]);
+        csvData.push(["Completed", Number(completed) || 0]);
+        csvData.push(["Archived", Number(archived) || 0]);
+        csvData.push([""]);
+
+        csvData.push(["PROJECTS PER COMPONENT"]);
+        csvData.push(["Component", "Count"]);
+        compRows.forEach(r => csvData.push(r));
+        csvData.push([""]);
+
+        csvData.push(["PROJECT PROGRESS DETAILS"]);
+        csvData.push(["Project Name", "Component", "Section", "Progress Percentage", "Total Budget"]);
+        progressRows.forEach(r => csvData.push(r));
+
+        // Serialize CSV with proper escaping
+        const csvContent = 'data:text/csv;charset=utf-8,' + csvData.map(row => row.map(cell => {
+          if (cell === null || typeof cell === 'undefined') return '';
+          const s = String(cell);
+          if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g, '""') + '"';
+          return s;
+        }).join(',')).join('\n');
+
+        const link = document.createElement('a');
         link.href = encodeURI(csvContent);
-        link.download = "nstp_comprehensive_reports_" + new Date().toISOString().split('T')[0] + ".csv";
+        link.download = 'nstp_comprehensive_reports_' + new Date().toISOString().split('T')[0] + '.csv';
         link.click();
       }
 

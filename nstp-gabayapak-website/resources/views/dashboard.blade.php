@@ -53,7 +53,7 @@
           <!-- Filters: stacked on small screens, single-line on md+ -->
           <form id="dashboard-filters" method="GET" action="{{ route('dashboard') }}" class="mb-4">
             <div class="flex flex-col md:flex-row md:items-center md:justify-end md:flex-nowrap gap-2">
-              <input type="search" name="q" value="{{ request('q') }}" placeholder="Search activities, projects, teams..." class="w-full md:flex-1 min-w-0 rounded-lg border px-3 py-2" />
+              <input type="search" name="q" value="{{ request('q') }}" placeholder="Search activities, projects, teams..." class=" w-full min-w-0 rounded-lg border px-3 py-2" />
 
               <input type="date" name="date" value="{{ request('date') }}" class=" md:flex-1 rounded-lg border px-3 py-2" />
 

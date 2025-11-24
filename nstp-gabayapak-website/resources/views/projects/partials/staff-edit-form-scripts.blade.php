@@ -45,6 +45,21 @@ if (typeof window.staff_syncHiddenIds !== 'function' || window.staff_syncHiddenI
       function syncIds(rowSelector, hiddenName, desktopId = null, mobileId = null) {
         const visibleRows = getPreferredRows(rowSelector, desktopId, mobileId);
 
+        // Disable inputs in non-preferred duplicate rows so only preferred rows submit
+        try {
+          const allRows = Array.from(document.querySelectorAll(rowSelector));
+          allRows.forEach(r => {
+            try {
+              const inputs = Array.from(r.querySelectorAll('input, textarea, select'));
+              if (!visibleRows.includes(r)) {
+                inputs.forEach(i => { try { i.disabled = true; i.setAttribute('data-disabled-by-sync','1'); } catch(e){} });
+              } else {
+                inputs.forEach(i => { try { if (i.hasAttribute('data-disabled-by-sync')) { i.removeAttribute('data-disabled-by-sync'); } i.disabled = false; } catch(e){} });
+              }
+            } catch (e) {}
+          });
+        } catch (e) {}
+
         // Capture existing hidden inputs (server-side rendered) that are NOT
         // inside any matching row so we can use them as fallbacks in order.
         const allHiddenInputs = Array.from(form.querySelectorAll(`input[name="${hiddenName}[]"]`));
@@ -54,19 +69,56 @@ if (typeof window.staff_syncHiddenIds !== 'function' || window.staff_syncHiddenI
         const ids = [];
         let fallbackIndex = 0;
         visibleRows.forEach(r => {
+          // Prefer an explicit hidden input inside the row
           const h = r.querySelector && r.querySelector(`input[name="${hiddenName}[]"]`);
           if (h && (h.value !== undefined)) {
             ids.push(h.value || '');
+            return;
+          }
+
+          // If we're syncing row keys and the row element has a data-row-key attribute, use that
+          if ((/row_key$/).test(hiddenName)) {
+            try {
+              const drk = (r.getAttribute && r.getAttribute('data-row-key')) || (r.dataset && r.dataset.rowKey);
+              if (drk) {
+                ids.push(String(drk));
+                return;
+              }
+            } catch (e) {}
+          }
+
+          // Fallback to the next existing hidden input value (server-rendered fallback)
+          const fallback = (fallbackIndex < existingValues.length) ? existingValues[fallbackIndex] : '';
+          ids.push(fallback || '');
+          fallbackIndex++;
+        });
+
+        // Optional debug: print arrays when enabled
+        try {
+          if (window.__DEBUG_SYNC) {
+            console.debug('staff_syncHiddenIds debug:', { rowSelector, hiddenName, visibleRows: visibleRows.length, ids: ids.slice(), existingValues: existingValues.slice() });
+          }
+        } catch (e) {}
+
+        // Deduplicate while preserving order (helps when both desktop and mobile rows are present)
+        const deduped = [];
+        const seen = new Set();
+        ids.forEach(v => {
+          // Preserve empty placeholders (don't collapse empty strings) — only dedupe non-empty values
+          const k = (v || '').toString();
+          if (k === '') {
+            deduped.push(k);
           } else {
-            const fallback = (fallbackIndex < existingValues.length) ? existingValues[fallbackIndex] : '';
-            ids.push(fallback || '');
-            fallbackIndex++;
+            if (!seen.has(k)) {
+              seen.add(k);
+              deduped.push(k);
+            }
           }
         });
 
         // Remove existing inputs and recreate them in the same order as visible rows
         Array.from(form.querySelectorAll(`input[name="${hiddenName}[]"]`)).forEach(el => el.remove());
-        ids.forEach(val => {
+        deduped.forEach(val => {
           const inp = document.createElement('input');
           inp.type = 'hidden';
           inp.name = `${hiddenName}[]`;
@@ -75,9 +127,12 @@ if (typeof window.staff_syncHiddenIds !== 'function' || window.staff_syncHiddenI
         });
       }
 
-      // Sync activity and budget ids using preferred containers
+      // Sync activity and budget ids and their stable row keys using preferred containers
       syncIds('.activity-row', 'activity_id', 'activitiesContainer', 'activitiesContainerMobile');
       syncIds('.budget-row', 'budget_id', 'budgetContainer', 'budgetContainerMobile');
+      // row keys allow deterministic matching on the server
+      syncIds('.activity-row', 'activity_row_key', 'activitiesContainer', 'activitiesContainerMobile');
+      syncIds('.budget-row', 'budget_row_key', 'budgetContainer', 'budgetContainerMobile');
     } catch (e) {
       console.warn('staff_syncHiddenIds error', e);
     }
@@ -195,7 +250,47 @@ if (typeof window.staff_loadMemberList !== 'function') {
         } catch (e) { console.warn('Error cleaning tracking sets', e); }
 
         // call centralized remover to ensure modal refresh and set cleanup
-        try { staff_onMemberRemoved(row); } catch (e) { console.warn('staff_onMemberRemoved call failed', e); row.remove(); }
+          try {
+            // Record deleted ids and row keys so server can delete deterministically
+            try {
+              const formEl = document.getElementById('projectForm');
+              if (formEl) {
+                const actInput = row.querySelector && row.querySelector('input[name="activity_id[]"]');
+                if (actInput && actInput.value) {
+                  const del = document.createElement('input');
+                  del.type = 'hidden';
+                  del.name = 'deleted_activity_id[]';
+                  del.value = actInput.value;
+                  formEl.appendChild(del);
+                }
+                const actKey = row.querySelector && row.querySelector('input[name="activity_row_key[]"]');
+                if (actKey && actKey.value) {
+                  const delk = document.createElement('input');
+                  delk.type = 'hidden';
+                  delk.name = 'deleted_activity_row_key[]';
+                  delk.value = actKey.value;
+                  formEl.appendChild(delk);
+                }
+                const budInput = row.querySelector && row.querySelector('input[name="budget_id[]"]');
+                if (budInput && budInput.value) {
+                  const del2 = document.createElement('input');
+                  del2.type = 'hidden';
+                  del2.name = 'deleted_budget_id[]';
+                  del2.value = budInput.value;
+                  formEl.appendChild(del2);
+                }
+                const budKey = row.querySelector && row.querySelector('input[name="budget_row_key[]"]');
+                if (budKey && budKey.value) {
+                  const delk2 = document.createElement('input');
+                  delk2.type = 'hidden';
+                  delk2.name = 'deleted_budget_row_key[]';
+                  delk2.value = budKey.value;
+                  formEl.appendChild(delk2);
+                }
+              }
+            } catch (e) { console.warn('Error recording deleted ids/keys', e); }
+            staff_onMemberRemoved(row);
+          } catch (e) { console.warn('staff_onMemberRemoved call failed', e); row.remove(); }
         try { if (typeof staff_markFormChanged === 'function') staff_markFormChanged('Item removed', 'removeRow'); else formChanged = true; } catch (e) {}
         // Inform user of successful removal
         if (window.Swal) {
@@ -220,6 +315,14 @@ if (typeof window.staff_loadMemberList !== 'function') {
 function addActivityRow(stage = '', activity = '', timeframe = '', implementationDate = '', pointPerson = '', status = 'Planned', markDirty = true, activityId = '') {
   // Normalize status for consistent comparisons (case-insensitive)
   const s = String(status || '').trim().toLowerCase();
+  // Compute stable row key once so desktop and mobile representations share it
+  const rowKey = (function() {
+    try {
+      if (activityId && activityId !== '') return 'act-' + String(activityId);
+      return 'act-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9);
+    } catch (e) { return 'act-' + Math.random().toString(36).slice(2,9); }
+  })();
+
   const desktopContainer = document.getElementById('activitiesContainer');
   if (desktopContainer) {
     const newRow = document.createElement('div');
@@ -228,6 +331,7 @@ function addActivityRow(stage = '', activity = '', timeframe = '', implementatio
       <div class="w-20 flex-none">
         <input name="stage[]" class="proposal-input w-full" placeholder="e.g., 1" value="${stage}" >
         <input type="hidden" name="activity_id[]" value="${activityId || ''}">
+        <input type="hidden" name="activity_row_key[]" value="${rowKey}">
       </div>
       <div class="flex-1 px-2">
         <textarea name="activities[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe specific activities...">${activity}</textarea>
@@ -253,6 +357,8 @@ function addActivityRow(stage = '', activity = '', timeframe = '', implementatio
       </div>
     `;
     desktopContainer.appendChild(newRow);
+    // tag the element with the row key for easier lookup
+    try { newRow.setAttribute('data-row-key', rowKey); } catch (e) {}
   }
 
 
@@ -266,6 +372,7 @@ function addActivityRow(stage = '', activity = '', timeframe = '', implementatio
         <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
         <input name="stage[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm" placeholder="Stage" value="${stage}">
         <input type="hidden" name="activity_id[]" value="${activityId || ''}">
+        <input type="hidden" name="activity_row_key[]" value="${rowKey}">
       </div>
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Specific Activities <span class="text-red-500">*</span></label>
@@ -296,6 +403,7 @@ function addActivityRow(stage = '', activity = '', timeframe = '', implementatio
       </div>
     `;
     mobileContainer.appendChild(newCard);
+    try { newCard.setAttribute('data-row-key', rowKey); } catch (e) {}
   }
   if (markDirty) formChanged = true;
   // attachRemoveButtons(); // not needed: we use delegated listener
@@ -319,34 +427,95 @@ function staff_onMemberRemoved(row) {
     try { if (email && typeof staff_addedMemberEmails !== 'undefined') staff_addedMemberEmails.delete(normalizeEmail(email)); } catch (e) {}
     try { if (sid && typeof staff_addedMemberIds !== 'undefined') staff_addedMemberIds.delete(String(sid)); } catch (e) {}
 
-    // Remove DOM
-    try { row.remove(); } catch (e) { console.warn('Could not remove row element', e); }
+        // Remove DOM
+        try { row.remove(); } catch (e) { console.warn('Could not remove row element', e); }
 
-    // Also remove any duplicate representations (desktop/mobile) that reference the same student id or email
-    try {
-      if (sid) {
-        const sameIdInputs = Array.from(document.querySelectorAll('input[name="member_student_id[]"]'));
-        sameIdInputs.forEach(inp => {
+        // Also remove any duplicate representations (desktop/mobile) that reference the same student id or email
+        try {
+          if (sid) {
+            const sameIdInputs = Array.from(document.querySelectorAll('input[name="member_student_id[]"]'));
+            sameIdInputs.forEach(inp => {
+              try {
+                if (String(inp.value).trim() === String(sid).trim()) {
+                  const ancestor = inp.closest('tr, .member-card, .member-row');
+                  if (ancestor && ancestor !== row) ancestor.remove();
+                }
+              } catch (e) {}
+            });
+          }
+          if (email) {
+            const sameEmailInputs = Array.from(document.querySelectorAll('input[name="member_email[]"]'));
+            sameEmailInputs.forEach(inp => {
+              try {
+                if ((inp.value||'').toString().trim() === email) {
+                  const ancestor = inp.closest('tr, .member-card, .member-row');
+                  if (ancestor && ancestor !== row) ancestor.remove();
+                }
+              } catch (e) {}
+            });
+          }
+        } catch (e) { console.warn('Error removing duplicate member representations', e); }
+
+        // Also remove duplicate activity/budget representations by matching row keys or ids
+        try {
+          // Activities
           try {
-            if (String(inp.value).trim() === String(sid).trim()) {
-              const ancestor = inp.closest('tr, .member-card, .member-row');
-              if (ancestor && ancestor !== row) ancestor.remove();
+            const actKeyInput = row.querySelector && row.querySelector('input[name="activity_row_key[]"]');
+            const actIdInput = row.querySelector && row.querySelector('input[name="activity_id[]"]');
+            const actKey = actKeyInput && actKeyInput.value ? String(actKeyInput.value).trim() : null;
+            const actId = actIdInput && actIdInput.value ? String(actIdInput.value).trim() : null;
+            if (actKey) {
+              const others = Array.from(document.querySelectorAll('[data-row-key]'));
+              others.forEach(o => {
+                try {
+                  if (o.getAttribute && o.getAttribute('data-row-key') === actKey) {
+                    if (o !== row) o.remove();
+                  }
+                } catch (e) {}
+              });
+            }
+            if (actId) {
+              const inputs = Array.from(document.querySelectorAll('input[name="activity_id[]"]'));
+              inputs.forEach(inp => {
+                try {
+                  if (String(inp.value).trim() === actId) {
+                    const anc = inp.closest('tr, .activity-row, .grid');
+                    if (anc && anc !== row) anc.remove();
+                  }
+                } catch (e) {}
+              });
             }
           } catch (e) {}
-        });
-      }
-      if (email) {
-        const sameEmailInputs = Array.from(document.querySelectorAll('input[name="member_email[]"]'));
-        sameEmailInputs.forEach(inp => {
+
+          // Budgets
           try {
-            if ((inp.value||'').toString().trim() === email) {
-              const ancestor = inp.closest('tr, .member-card, .member-row');
-              if (ancestor && ancestor !== row) ancestor.remove();
+            const budKeyInput = row.querySelector && row.querySelector('input[name="budget_row_key[]"]');
+            const budIdInput = row.querySelector && row.querySelector('input[name="budget_id[]"]');
+            const budKey = budKeyInput && budKeyInput.value ? String(budKeyInput.value).trim() : null;
+            const budId = budIdInput && budIdInput.value ? String(budIdInput.value).trim() : null;
+            if (budKey) {
+              const others = Array.from(document.querySelectorAll('[data-row-key]'));
+              others.forEach(o => {
+                try {
+                  if (o.getAttribute && o.getAttribute('data-row-key') === budKey) {
+                    if (o !== row) o.remove();
+                  }
+                } catch (e) {}
+              });
+            }
+            if (budId) {
+              const inputs = Array.from(document.querySelectorAll('input[name="budget_id[]"]'));
+              inputs.forEach(inp => {
+                try {
+                  if (String(inp.value).trim() === budId) {
+                    const anc = inp.closest('tr, .budget-row, .grid');
+                    if (anc && anc !== row) anc.remove();
+                  }
+                } catch (e) {}
+              });
             }
           } catch (e) {}
-        });
-      }
-    } catch (e) { console.warn('Error removing duplicate member representations', e); }
+        } catch (e) { console.warn('Error removing duplicate activity/budget representations', e); }
 
     // Mark form as changed
     try { if (typeof staff_markFormChanged === 'function') staff_markFormChanged('Member removed', 'members'); else formChanged = true; } catch (e) {}
@@ -370,6 +539,14 @@ function staff_onMemberRemoved(row) {
 
 // Function to add a budget row with data
 function addBudgetRow(activity = '', resources = '', partners = '', amount = '', markDirty = true, budgetId = '') {
+  // Compute stable row key once so desktop and mobile representations share it
+  const rowKey = (function() {
+    try {
+      if (budgetId && budgetId !== '') return 'bud-' + String(budgetId);
+      return 'bud-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9);
+    } catch (e) { return 'bud-' + Math.random().toString(36).slice(2,9); }
+  })();
+
   const desktopContainer = document.getElementById('budgetContainer');
         if (desktopContainer) {
           const newRow = document.createElement('div');
@@ -377,23 +554,28 @@ function addBudgetRow(activity = '', resources = '', partners = '', amount = '',
           newRow.innerHTML = `
             <textarea name="budget_activity[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe the activity...">${activity || ''}</textarea>
             <input type="hidden" name="budget_id[]" value="${budgetId || ''}">
+            <input type="hidden" name="budget_row_key[]" value="${rowKey}">
             <textarea name="budget_resources[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="List resources needed...">${resources || ''}</textarea>
             <textarea name="budget_partners[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Partner organizations...">${partners || ''}</textarea>
             <input type="text" name="budget_amount[]" class="proposal-input w-full" placeholder="₱ 0.00" value="${amount || ''}">
             <button type="button" class="proposal-remove-btn removeRow whitespace-nowrap">Remove</button>
           `;
           desktopContainer.appendChild(newRow);
+          try { newRow.setAttribute('data-row-key', rowKey); } catch (e) {}
         }
 
   const mobileContainer = document.getElementById('budgetContainerMobile');
   if (mobileContainer) {
     const newCard = document.createElement('div');
     newCard.className = 'budget-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm';
+    // use the same rowKey for mobile representation
+    const mobileRowKey = rowKey;
     newCard.innerHTML = `
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Activity</label>
         <textarea name="budget_activity[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm" rows="2">${activity || ''}</textarea>
         <input type="hidden" name="budget_id[]" value="${budgetId || ''}">
+        <input type="hidden" name="budget_row_key[]" value="${mobileRowKey}">
       </div>
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Resources Needed</label>
@@ -412,6 +594,7 @@ function addBudgetRow(activity = '', resources = '', partners = '', amount = '',
       </div>
     `;
     mobileContainer.appendChild(newCard);
+    try { newCard.setAttribute('data-row-key', mobileRowKey); } catch (e) {}
   }
   if (markDirty) formChanged = true;
 }
@@ -874,6 +1057,9 @@ document.addEventListener('DOMContentLoaded', function() {
   if (form) {
     form.addEventListener('submit', function(e) {
       if (isSubmitting) return;
+
+      // Always sync hidden ids/row-keys immediately before submit
+      try { if (typeof staff_syncHiddenIds === 'function') staff_syncHiddenIds(form); } catch (err) { console.warn('pre-submit staff_syncHiddenIds failed', err); }
       
       // Basic validation
       const activityRows = document.querySelectorAll('.activity-row');
@@ -897,6 +1083,17 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('Please add at least one team member.');
         return;
       }
+
+      // Debug: log counts of visible rows vs hidden id/row_key inputs
+      try {
+        const ar = document.querySelectorAll('.activity-row').length;
+        const ai = document.querySelectorAll('input[name="activity_id[]"]').length;
+        const ark = document.querySelectorAll('input[name="activity_row_key[]"]').length;
+        const br = document.querySelectorAll('.budget-row').length;
+        const bi = document.querySelectorAll('input[name="budget_id[]"]').length;
+        const brk = document.querySelectorAll('input[name="budget_row_key[]"]').length;
+        console.debug('Submit counts: activities visible=', ar, 'activity_id[]=', ai, 'activity_row_key[]=', ark, 'budgets visible=', br, 'budget_id[]=', bi, 'budget_row_key[]=', brk);
+      } catch (e) {}
       
       isSubmitting = true;
       console.log('✅ Form submitted successfully');

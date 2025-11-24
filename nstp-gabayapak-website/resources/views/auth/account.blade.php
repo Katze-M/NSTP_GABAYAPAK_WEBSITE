@@ -144,6 +144,29 @@
     </section>
     @endif
 
+    <!-- SACSI Information (Staff only) -->
+    @if(Auth::user()->staff)
+    <section class="bg-white rounded-2xl shadow-subtle overflow-hidden border border-gray-100">
+        <div class="p-6 md:p-8">
+            <h3 class="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.66 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                SACSI Information
+            </h3>
+
+            <div class="max-w-md">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Staff Position</label>
+                    <div class="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <p class="text-gray-800 font-medium">{{ Auth::user()->user_role ?? 'N/A' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    @endif
+
     <!-- Account Actions -->
     <section class="bg-white rounded-2xl shadow-subtle overflow-hidden border border-gray-100">
         <div class="p-6 md:p-8">

@@ -1019,10 +1019,13 @@ class ProjectController extends Controller
                 }
             }
 
-            // create new only if the row has any content (avoid creating empty rows on draft save)
-            // Require Specific_Activity and a numeric amount to create new budget rows
-            $shouldCreate = $hasAny && trim($act) !== '' && $amtNormalized !== '' && is_numeric($amtNormalized);
-                    if ($shouldCreate) {
+            // For drafts, create a budget row if any field is filled (not just Specific_Activity)
+            if ($allowPartialRows) {
+                $shouldCreate = $hasAny;
+            } else {
+                $shouldCreate = $hasAny && trim($act) !== '' && $amtNormalized !== '' && is_numeric($amtNormalized);
+            }
+            if ($shouldCreate) {
                 try {
                     // Temporary debug: log payload attempted for creation
                     Log::debug('syncBudgets: create payload', array_merge(['project' => $project->Project_ID ?? null], $data));

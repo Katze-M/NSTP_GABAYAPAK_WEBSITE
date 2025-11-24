@@ -86,14 +86,17 @@
                                     <div class="ml-4">
                                         <div class="text-lg font-semibold text-gray-800">{{ $member['name'] ?? ($member->name ?? 'N/A') }}</div>
                                         @php
-                                            // Use a consistent blue badge for member roles and preserve original casing
+                                            // Use a consistent blue badge for member roles but do NOT default
+                                            // empty/blank values to 'Member'. If role is empty, do not render.
                                             $rawRole = $member['role'] ?? ($member->role ?? null);
-                                            $roleLabel = trim((string)($rawRole ?? '')) ?: 'Member';
+                                            $roleLabel = trim((string)($rawRole ?? ''));
                                             $roleClass = 'bg-blue-600 text-white';
                                         @endphp
-                                        <div class="mt-1">
-                                            <span class="inline-flex items-center {{ $roleClass }} text-sm font-semibold px-3 py-0.5 rounded-full shadow-sm" aria-label="role">{{ $roleLabel }}</span>
-                                        </div>
+                                        @if(!empty($roleLabel))
+                                            <div class="mt-1">
+                                                <span class="inline-flex items-center {{ $roleClass }} text-sm font-semibold px-3 py-0.5 rounded-full shadow-sm" aria-label="role">{{ $roleLabel }}</span>
+                                            </div>
+                                        @endif
 
                                         @php
                                             // Try several possible locations for a contact number

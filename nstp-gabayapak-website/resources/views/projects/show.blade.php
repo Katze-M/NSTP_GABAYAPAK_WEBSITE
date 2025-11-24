@@ -262,8 +262,9 @@
                     @endif
                 </div>
 
-                {{-- Show rejection history if this is a resubmission or has past rejections --}}
-                @if((isset($isResubmission) && $isResubmission) || $project->Project_Status === 'rejected' || $project->previous_rejection_reasons)
+                {{-- Rejection history: visible only to project owner and staff --}}
+                @if(auth()->check() && (auth()->user()->isStaff() || (auth()->user()->isStudent() && auth()->user()->student && auth()->user()->student->id === $project->student_id)))
+                    @if((isset($isResubmission) && $isResubmission) || $project->Project_Status === 'rejected' || $project->previous_rejection_reasons)
                     <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
                         <h3 class="font-semibold text-red-800 mb-2">Rejection History</h3>
 
@@ -319,6 +320,7 @@
                             @endif
                         @endif
                     </div>
+                @endif
                 @endif
 
                 <div class="flex flex-wrap justify-center gap-2 mt-6">

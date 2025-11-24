@@ -970,8 +970,21 @@ class ProjectController extends Controller
 
     public function show(Project $project)
     {
-        if (Auth::user()->isStudent() && Auth::user()->student->id !== $project->student_id) {
-            abort(403, 'Unauthorized action.');
+        // Allow staff to view any project. Students may view their own projects.
+        // Additionally, allow students to view public/current projects on the listing
+        // pages (including 'current', 'approved', 'completed'). This enables students
+        // to open project details from the Current Projects page.
+        $user = Auth::user();
+        if ($user && $user->isStudent()) {
+            if ($user->student->id === $project->student_id) {
+                // owner - allowed
+            } else {
+                // allow viewing if project is public (current/approved/completed)
+                $publicStatuses = ['current', 'approved', 'completed'];
+                if (!in_array(strtolower((string)$project->Project_Status), $publicStatuses)) {
+                    abort(403, 'Unauthorized action.');
+                }
+            }
         }
 
         // Load relations used on the page

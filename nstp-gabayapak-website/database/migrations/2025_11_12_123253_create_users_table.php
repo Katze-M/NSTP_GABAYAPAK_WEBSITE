@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('user_Email')->unique();
             $table->string('user_Password');
             $table->string('user_Type')->default('student'); // 'student' or 'staff'
-            $table->string('user_role'); // Student, NSTP Formator, NSTP Program Officer, SACSI Director, and SACSI Admin Staff
+            $table->string('user_role'); // Student, NSTP Formator, NSTP Program Officer, SACSI Director, and NSTP Coordinator
             $table->rememberToken();
             $table->timestamps();
         });

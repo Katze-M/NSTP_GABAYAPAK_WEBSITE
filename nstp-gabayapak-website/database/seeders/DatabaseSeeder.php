@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
                 'user_Name' => 'Admin User',
                 'user_Password' => Hash::make('password'),
                 'user_Type' => 'staff',
-                'user_role' => 'SACSI Admin Staff',
+                'user_role' => 'NSTP Coordinator',
             ]
         );
 

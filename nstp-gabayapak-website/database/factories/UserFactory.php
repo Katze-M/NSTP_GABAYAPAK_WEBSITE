@@ -24,7 +24,7 @@ class UserFactory extends Factory
             'user_Email_verified_at' => now(),
             'user_Password' => Hash::make('password'), // password
             'user_Type' => fake()->randomElement(['student', 'staff']),
-            'user_role' => fake()->randomElement(['Student', 'NSTP Formator', 'NSTP Program Officer', 'SACSI Director', 'SACSI Admin Staff']),
+            'user_role' => fake()->randomElement(['Student', 'NSTP Formator', 'NSTP Program Officer', 'SACSI Director', 'NSTP Coordinator']),
             'remember_token' => Str::random(10),
         ];
     }

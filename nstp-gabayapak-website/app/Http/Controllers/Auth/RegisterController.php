@@ -31,7 +31,7 @@ class RegisterController extends Controller
             'BSEd', 'BECEd', 'BEED', 'BPEd'
         ];
         sort($courses);
-        $roles = ['NSTP Formator', 'NSTP Program Officer', 'SACSI Director', 'SACSI Admin Staff'];
+        $roles = ['NSTP Formator', 'NSTP Program Officer', 'SACSI Director', 'NSTP Coordinator'];
         
         return view('auth.register', compact('courses', 'roles'));
     }

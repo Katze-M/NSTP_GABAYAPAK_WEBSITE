@@ -319,7 +319,7 @@
                                     <h4 class="font-semibold text-red-800 mb-2">Previous Rejection History:</h4>
                                     @foreach($previousReasons as $index => $reason)
                                         <div class="bg-red-100 border border-red-300 rounded p-3 mb-2">
-                                            <p class="text-red-700 text-sm"><strong>Rejection #{{ count($previousReasons) - $index }}:</strong> {{ $reason['reason'] ?? 'No reason provided' }}</p>
+                                            <p class="text-red-700 text-sm"><strong>Rejection #{{ $index + 1 }}:</strong> {{ $reason['reason'] ?? 'No reason provided' }}</p>
                                             <p class="text-red-600 text-xs mt-1">Rejected on: {{ $reason['rejected_at'] ?? 'Unknown' }}</p>
                                             @if(!empty($reason['rejected_by']))
                                                 <p class="text-red-600 text-xs">Rejected by: {{ \App\Models\User::find($reason['rejected_by'])->user_Name ?? $reason['rejected_by'] }}</p>

@@ -6,7 +6,14 @@
 <div class="max-w-6xl mx-auto">
     <!-- Page Header -->
     <div class="mb-6 md:mb-8">
-        <h1 class="text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-800 mb-2">Manage NSTP Formators</h1>
+        <div class="flex items-center gap-3">
+            <h1 class="text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-800 mb-2">Manage NSTP Formators</h1>
+            <button type="button" class="text-sm text-gray-500" title="Only approved staff appear here. Approve staff via Staff Registration Approvals first.">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M18 10A8 8 0 11.999 10 8 8 0 0118 10zm-8.93-4.588a.75.75 0 10-1.14.974l1.22 1.429A2.25 2.25 0 109.75 11h.75a.75.75 0 100-1.5h-.75a.75.75 0 01-.75-.75c0-.38.276-.702.652-.755l-.472-.916zM10 13.5a.75.75 0 100 1.5.75.75 0 000-1.5z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </div>
         <p class="text-gray-600 text-sm md:text-base">Select staff members to display as NSTP Formators on the homepage</p>
     </div>
 

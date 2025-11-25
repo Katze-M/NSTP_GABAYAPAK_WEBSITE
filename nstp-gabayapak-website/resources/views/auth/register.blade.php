@@ -108,18 +108,18 @@
             
             <div>
                 <label class="block mb-2 text-sm font-medium">Full Name <span class="text-red-500">*</span></label>
-                <input type="text" name="user_Name" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400" value="{{ old('user_Name') }}">
+                <input type="text" name="user_Name" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400" value="{{ old('user_Name', $prefill['user_Name'] ?? '') }}">
             </div>
 
             <div>
                 <label class="block mb-2 text-sm font-medium">ADZU Email Address <span class="text-red-500">*</span></label>
-                <input type="email" name="user_Email" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400" value="{{ old('user_Email') }}" placeholder="e.g., co230143@adzu.edu.ph">
+                <input type="email" name="user_Email" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400" value="{{ old('user_Email', $prefill['user_Email'] ?? '') }}" placeholder="e.g., co230143@adzu.edu.ph">
                 <p class="text-sm text-gray-300 mt-1">Must be a valid ADZU email address</p>
             </div>
 
             <div>
                 <label class="block mb-2 text-sm font-medium">Contact Number <span class="text-red-500">*</span></label>
-                <input type="tel" name="student_contact_number" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="e.g., 09123456789" pattern="[0-9]{11}" value="{{ old('student_contact_number') }}">
+                <input type="tel" name="student_contact_number" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="e.g., 09123456789" pattern="[0-9]{11}" value="{{ old('student_contact_number', $prefill['student_contact_number'] ?? '') }}">
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -128,7 +128,7 @@
                     <select name="student_course" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400">
                         <option value="" disabled selected>Select Course</option>
                         @foreach ($courses as $course)
-                            <option value="{{ $course }}" {{ old('student_course') == $course ? 'selected' : '' }}>
+                            <option value="{{ $course }}" {{ (old('student_course', $prefill['student_course'] ?? '') == $course) ? 'selected' : '' }}>
                                 {{ $course }}
                             </option>
                         @endforeach
@@ -140,7 +140,7 @@
                     <select name="student_year" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400">
                         <option value="" disabled selected>Select Year</option>
                         @for($i=1;$i<=4;$i++)
-                            <option value="{{ $i }}" {{ old('student_year') == $i ? 'selected' : '' }}>{{ $i }}</option>
+                            <option value="{{ $i }}" {{ (old('student_year', $prefill['student_year'] ?? '') == $i) ? 'selected' : '' }}>{{ $i }}</option>
                         @endfor
                     </select>
                 </div>
@@ -152,7 +152,7 @@
                     <select name="student_section" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400">
                         <option value="" disabled selected>Select Section</option>
                         @foreach (range('A', 'Z') as $letter)
-                            <option value="Section {{ $letter }}" {{ old('student_section') == "Section $letter" ? 'selected' : '' }}>
+                            <option value="Section {{ $letter }}" {{ (old('student_section', $prefill['student_section'] ?? '') == "Section $letter") ? 'selected' : '' }}>
                                 Section {{ $letter }}
                             </option>
                         @endforeach
@@ -163,9 +163,9 @@
                     <label class="block mb-2 text-sm font-medium">Component <span class="text-red-500">*</span></label>
                     <select name="student_component" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400">
                         <option value="" disabled selected>Select Component</option>
-                        <option value="ROTC" {{ old('student_component') == 'ROTC' ? 'selected' : '' }}>ROTC</option>
-                        <option value="LTS" {{ old('student_component') == 'LTS' ? 'selected' : '' }}>LTS</option>
-                        <option value="CWTS" {{ old('student_component') == 'CWTS' ? 'selected' : '' }}>CWTS</option>
+                        <option value="ROTC" {{ (old('student_component', $prefill['student_component'] ?? '') == 'ROTC') ? 'selected' : '' }}>ROTC</option>
+                        <option value="LTS" {{ (old('student_component', $prefill['student_component'] ?? '') == 'LTS') ? 'selected' : '' }}>LTS</option>
+                        <option value="CWTS" {{ (old('student_component', $prefill['student_component'] ?? '') == 'CWTS') ? 'selected' : '' }}>CWTS</option>
                     </select>
                 </div>
             </div>
@@ -190,12 +190,12 @@
 
             <div>
                 <label class="block mb-2 text-sm font-medium">Full Name <span class="text-red-500">*</span></label>
-                <input type="text" name="user_Name" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400" value="{{ old('user_Name') }}">
+                <input type="text" name="user_Name" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400" value="{{ old('user_Name', $prefill['user_Name'] ?? '') }}">
             </div>
 
             <div>
                 <label class="block mb-2 text-sm font-medium">Email Address <span class="text-red-500">*</span></label>
-                <input type="email" name="user_Email" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400" value="{{ old('user_Email') }}" placeholder="e.g., username@adzu.edu.ph or username@gmail.com">
+                <input type="email" name="user_Email" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400" value="{{ old('user_Email', $prefill['user_Email'] ?? '') }}" placeholder="e.g., username@adzu.edu.ph or username@gmail.com">
                 <p class="text-sm text-gray-300 mt-1">Must be a valid ADZU email or Gmail address</p>
             </div>
 
@@ -205,7 +205,7 @@
                     <option value="" disabled selected>Select Position</option>
                     @foreach($roles as $role)
                         @if($role != 'Student')
-                            <option value="{{ $role }}" {{ old('user_role') == $role ? 'selected' : '' }}>
+                            <option value="{{ $role }}" {{ (old('user_role', $prefill['user_role'] ?? '') == $role) ? 'selected' : '' }}>
                                 {{ $role }}
                             </option>
                         @endif
@@ -215,7 +215,7 @@
 
             <div>
                 <label class="block mb-2 text-sm font-medium">Formal Picture <span class="text-red-500">*</span></label>
-                <input type="file" name="staff_formal_picture" required class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                <input type="file" name="staff_formal_picture" {{ empty($prefill['user_role']) ? 'required' : '' }} class="w-full px-4 py-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-yellow-400">
                 <p class="text-sm text-gray-300 mt-1">Please upload a formal headshot picture</p>
             </div>
 

@@ -1590,7 +1590,8 @@ class ProjectController extends Controller
         $section = $request->input('section', $user->student->student_section ?? null);
         $component = $request->input('component', $user->student->student_component ?? null);
 
-        $q = Student::with('user');
+        // Eager-load user and their approvals to determine approval status without N+1 queries
+        $q = Student::with('user.approvals');
         if ($section) $q->where('student_section', $section);
         if ($component) $q->where('student_component', $component);
 
@@ -1600,8 +1601,13 @@ class ProjectController extends Controller
         }
 
         $students = $q->get()->filter(function($s) {
-            // Ensure linked user exists
-            return !empty($s->user) && !empty($s->user->user_Name);
+            // Ensure linked user exists and is approved (either user.approved true or has an approved approval)
+            if (empty($s->user) || empty($s->user->user_Name)) return false;
+            $u = $s->user;
+            if (!empty($u->approved) && $u->approved) return true;
+            // check if any approval for this user is approved
+            $hasApproved = collect($u->approvals ?? [])->contains(function($ap) { return isset($ap->status) && $ap->status === 'approved'; });
+            return $hasApproved;
         })->sortBy(function($s) {
             return $s->user->user_Name ?? '';
         })->values()->map(function($s) {
@@ -1623,10 +1629,16 @@ class ProjectController extends Controller
         if (!Auth::user()->isStaff()) abort(403);
         $section = $request->input('section');
         $component = $request->input('component');
-        $q = Student::with('user');
+        $q = Student::with('user.approvals');
         if ($section) $q->where('student_section', $section);
         if ($component) $q->where('student_component', $component);
-        $students = $q->get()->map(function($s) {
+        $students = $q->get()->filter(function($s) {
+            if (empty($s->user) || empty($s->user->user_Name)) return false;
+            $u = $s->user;
+            if (!empty($u->approved) && $u->approved) return true;
+            $hasApproved = collect($u->approvals ?? [])->contains(function($ap) { return isset($ap->status) && $ap->status === 'approved'; });
+            return $hasApproved;
+        })->map(function($s) {
             return [
                 'id' => $s->id,
                 'name' => $s->user->user_Name ?? null,
@@ -1634,7 +1646,7 @@ class ProjectController extends Controller
                 'contact' => $s->student_contact_number ?? null,
                 'contact_number' => $s->student_contact_number ?? null,
             ];
-        });
+        })->values();
         return response()->json($students);
     }
 
@@ -1654,7 +1666,13 @@ class ProjectController extends Controller
         $user = Auth::user();
         if (!$user || !$user->isStudent()) abort(403);
         $ids = $request->input('ids', []);
-        $students = Student::with('user')->whereIn('id', $ids)->get()->map(function($s) {
+        $students = Student::with('user.approvals')->whereIn('id', $ids)->get()->filter(function($s) {
+            if (empty($s->user) || empty($s->user->user_Name)) return false;
+            $u = $s->user;
+            if (!empty($u->approved) && $u->approved) return true;
+            $hasApproved = collect($u->approvals ?? [])->contains(function($ap) { return isset($ap->status) && $ap->status === 'approved'; });
+            return $hasApproved;
+        })->map(function($s) {
             return [
                 'id' => $s->id,
                 'name' => $s->user->user_Name ?? null,
@@ -1662,7 +1680,7 @@ class ProjectController extends Controller
                 'contact' => $s->student_contact_number ?? null,
                 'contact_number' => $s->student_contact_number ?? null,
             ];
-        });
+        })->values();
         return response()->json($students);
     }
 

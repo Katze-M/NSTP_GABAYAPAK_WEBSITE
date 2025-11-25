@@ -7,6 +7,9 @@
   <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
       <div class="p-6 text-gray-900">
+        @if(session('registration_status') === 'pending')
+          <div class="mb-4 p-3 rounded bg-yellow-100 text-yellow-800">Your registration is under review.</div>
+        @endif
           <div class="flex items-center justify-between mb-4">
           <div>
             <h1 class="text-3xl md:text-4xl font-bold">Dashboard</h1>
@@ -17,6 +20,14 @@
           <div class="flex gap-2">
             <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700">Current Projects</a>
             <a href="{{ route('projects.pending') }}" class="px-3 py-2 bg-yellow-400 text-black rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-yellow-300">Pending Projects</a>
+            @php $u = Auth::user(); @endphp
+            @if($u && $u->isStaff() && ($u->user_role === 'SACSI Director' || $u->user_role === 'NSTP Program Officer'))
+              @if($u->user_role === 'SACSI Director')
+                <a href="{{ route('approvals.staff') }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-green-700">Staff Registration Approval</a>
+              @elseif($u->user_role === 'NSTP Program Officer')
+                <a href="{{ route('approvals.students') }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-green-700">Student Registration Approval</a>
+              @endif
+            @endif
           </div>
         </div>
 

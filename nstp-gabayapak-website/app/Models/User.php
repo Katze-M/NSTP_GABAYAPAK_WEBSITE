@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Approval;
 
 class User extends Authenticatable
 {
@@ -156,5 +157,10 @@ class User extends Authenticatable
     public function isNstpFormator()
     {
         return $this->user_role === 'NSTP Formator';
+    }
+
+    public function approvals()
+    {
+        return $this->hasMany(Approval::class, 'user_id', 'user_id');
     }
 }

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
+use App\Models\Approval;
 use Illuminate\Support\Facades\Hash;
 
 class LoginController extends Controller
@@ -38,13 +39,44 @@ class LoginController extends Controller
         $user = User::where('user_Email', $request->user_Email)->first();
 
         if ($user && Hash::check($request->user_Password, $user->user_Password)) {
-            Auth::login($user);
-            
-            // Redirect to homepage after successful login
-            return redirect()->route('home');
+            // SACSI Director is auto-approved and should always be able to log in
+            if ($user->isStaff() && $user->user_role === 'SACSI Director') {
+                Auth::login($user);
+                return $user->isStudent() ? redirect()->route('home') : redirect()->route('dashboard');
+            }
+
+            // Check approval status for other users
+            $approval = Approval::where('user_id', $user->user_id)->latest()->first();
+
+            // Consider user approved if `approved` flag is true or latest approval is approved
+            $isApproved = $user->approved || ($approval && $approval->status === 'approved');
+
+            if ($isApproved) {
+                Auth::login($user);
+                return redirect()->route('home');
+            }
+
+            // If pending
+            if ($approval && $approval->status === 'pending') {
+                throw ValidationException::withMessages([
+                    'user_Email' => ['Your registration is currently under review.'],
+                ]);
+            }
+
+            // If rejected, send back with a helpful link to re-register (prefill email)
+            if ($approval && $approval->status === 'rejected') {
+                return redirect()->route('login')->with('rejected_email', $user->user_Email)->withErrors([
+                    'user_Email' => 'Your registration was rejected. Please update and re-register.'
+                ]);
+            }
+
+            // No approval record or unknown state -> treat as pending
+            throw ValidationException::withMessages([
+                'user_Email' => ['Your registration is currently under review.'],
+            ]);
         }
 
-        // Authentication failed
+        // Authentication failed (wrong credentials)
         throw ValidationException::withMessages([
             'user_Email' => [trans('auth.failed')],
         ]);

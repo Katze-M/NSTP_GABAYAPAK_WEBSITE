@@ -84,6 +84,7 @@
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
+                {{-- registration status link removed --}}
             </div>
         @endif
 
@@ -116,6 +117,16 @@
             Don't have an account? 
             <a href="{{ route('register') }}" class="font-semibold hover:underline">Register here</a>
         </p>
+        <p class="mt-2 text-center text-sm">
+            <a href="{{ route('registration.status') }}" class="text-gray-200 underline">Click here to see your registration status</a>
+        </p>
+        {{-- registration status link added below the form (not inside validation errors) --}}
+
+        @if(session('rejected_email'))
+            <div class="mt-4 text-center text-red-400">
+                Your registration was rejected. <a href="{{ route('register', ['email' => session('rejected_email')]) }}" class="font-semibold underline">Click here to edit and re-register</a>
+            </div>
+        @endif
     </div>
 
     <!-- Scroll to Top Button -->

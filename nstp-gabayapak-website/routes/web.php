@@ -18,8 +18,15 @@ Route::get('/', function () {
     }
     
     // Fetch only staff members with the "NSTP Formator" role from the database
+    // Only include those who are approved (or have an approved approval record)
     $nstpFormators = User::where('user_Type', 'staff')
         ->where('user_role', 'NSTP Formator')
+        ->where(function($q) {
+            $q->where('approved', true)
+              ->orWhereHas('approvals', function($a) {
+                  $a->where('status', 'approved');
+              });
+        })
         ->with('staff')
         ->get();
     
@@ -42,14 +49,26 @@ Route::get('/formators/manage', function () {
         return redirect()->route('home');
     }
     
-    // Fetch all staff members who could be formators
+    // Fetch only approved staff members who could be formators
     $allStaff = User::where('user_Type', 'staff')
+        ->where(function($q) {
+            $q->where('approved', true)
+              ->orWhereHas('approvals', function($a) {
+                  $a->where('status', 'approved');
+              });
+        })
         ->with('staff')
         ->get();
     
-    // Fetch current NSTP Formators
+    // Fetch current NSTP Formators (only among approved staff)
     $currentFormators = User::where('user_Type', 'staff')
         ->where('user_role', 'NSTP Formator')
+        ->where(function($q) {
+            $q->where('approved', true)
+              ->orWhereHas('approvals', function($a) {
+                  $a->where('status', 'approved');
+              });
+        })
         ->pluck('user_id')
         ->toArray();
     
@@ -68,15 +87,23 @@ Route::post('/formators/update', function (\Illuminate\Http\Request $request) {
         'formators.*' => 'exists:users,user_id'
     ]);
     
-    // Get all staff users
-    $staffUsers = User::where('user_Type', 'staff')->get();
+    // Only consider approved staff for role changes
+    $staffUsers = User::where('user_Type', 'staff')
+        ->where(function($q) {
+            $q->where('approved', true)
+              ->orWhereHas('approvals', function($a) {
+                  $a->where('status', 'approved');
+              });
+        })
+        ->get();
+
+    $selected = $request->formators ?? [];
     
-    // Update roles based on selection
+    // Update roles based on selection (only for approved staff)
     foreach ($staffUsers as $user) {
-        if (in_array($user->user_id, $request->formators ?? [])) {
+        if (in_array($user->user_id, $selected)) {
             $user->update(['user_role' => 'NSTP Formator']);
         } else {
-            // If they were formators but are no longer selected, change their role
             if ($user->user_role === 'NSTP Formator') {
                 $user->update(['user_role' => 'Staff']);
             }
@@ -153,3 +180,43 @@ Route::middleware('auth')->group(function () {
     Route::put('/activities/{activity}', [ActivityController::class, 'update'])->name('activities.update');
 
 });
+
+// Approval routes
+// Staff approvals - only SACSI Director can access
+Route::middleware(['auth', 'role:SACSI Director'])->group(function () {
+    Route::get('/approvals/staff', [\App\Http\Controllers\StaffApprovalController::class, 'index'])->name('approvals.staff');
+    Route::post('/approvals/staff/{id}/approve', [\App\Http\Controllers\StaffApprovalController::class, 'approve'])->name('approvals.staff.approve');
+    Route::post('/approvals/staff/{id}/reject', [\App\Http\Controllers\StaffApprovalController::class, 'reject'])->name('approvals.staff.reject');
+});
+
+// Student approvals - only NSTP Program Officer can access
+Route::middleware(['auth', 'role:NSTP Program Officer'])->group(function () {
+    Route::get('/approvals/students', [\App\Http\Controllers\StudentApprovalController::class, 'index'])->name('approvals.students');
+    Route::post('/approvals/students/{id}/approve', [\App\Http\Controllers\StudentApprovalController::class, 'approve'])->name('approvals.students.approve');
+    Route::post('/approvals/students/{id}/reject', [\App\Http\Controllers\StudentApprovalController::class, 'reject'])->name('approvals.students.reject');
+});
+
+// Registration status check (public form shown on login page)
+Route::get('/registration-status', function () { return view('registration.status'); })->name('registration.status');
+Route::post('/registration-status', function (\Illuminate\Http\Request $request) {
+    $request->validate(['user_Email' => 'required|email']);
+    $user = App\Models\User::where('user_Email', $request->user_Email)->first();
+    $status = null;
+    $message = 'No registration found for that email.';
+    if ($user) {
+        $approval = App\Models\Approval::where('user_id', $user->user_id)->latest()->first();
+        if ($user->approved || ($approval && $approval->status === 'approved')) {
+            $status = 'approved';
+            $message = 'Your account registration has been approved!';
+        } elseif ($approval && $approval->status === 'pending') {
+            $status = 'pending';
+            $message = 'Your registration is currently under review.';
+        } elseif ($approval && $approval->status === 'rejected') {
+            $status = 'rejected';
+            $message = 'Your registration was rejected. Please register again.';
+        } else {
+            $message = 'No approval record found. Please contact admin.';
+        }
+    }
+    return view('registration.status', compact('message','status'));
+})->name('registration.status.post');

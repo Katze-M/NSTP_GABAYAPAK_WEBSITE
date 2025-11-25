@@ -6,6 +6,10 @@
 <!-- HOME (About + Moderators) -->
 <section id="home" class="bg-white rounded-2xl shadow-subtle overflow-hidden">
 
+  @if(session('registration_status') === 'pending')
+    <div class="p-4 max-w-4xl mx-auto mt-4 bg-yellow-100 text-yellow-800 rounded">Your registration is under review.</div>
+  @endif
+
   <!-- IMAGE SLIDER -->
   <div class="relative w-full h-48 md:h-72 overflow-hidden rounded-2xl mb-6 md:mb-10">
     <div id="slider" class="flex transition-transform duration-700 ease-in-out">

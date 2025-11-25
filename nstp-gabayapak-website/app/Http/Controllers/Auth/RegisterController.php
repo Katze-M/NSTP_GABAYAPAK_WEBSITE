@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Staff;
+use App\Models\Approval;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -33,7 +34,27 @@ class RegisterController extends Controller
         sort($courses);
         $roles = ['NSTP Formator', 'NSTP Program Officer', 'SACSI Director', 'NSTP Coordinator'];
         
-        return view('auth.register', compact('courses', 'roles'));
+        // Prefill support: if ?email=... present, load existing user/profile data for editing when rejected
+        $prefill = [];
+        $email = request()->query('email');
+        if ($email) {
+            $u = User::where('user_Email', $email)->first();
+            if ($u) {
+                $prefill['user_Name'] = $u->user_Name;
+                $prefill['user_Email'] = $u->user_Email;
+                $prefill['user_Type'] = $u->user_Type;
+                $prefill['user_role'] = $u->user_role;
+                if ($u->isStudent() && $u->student) {
+                    $prefill['student_contact_number'] = $u->student->student_contact_number;
+                    $prefill['student_course'] = $u->student->student_course;
+                    $prefill['student_year'] = $u->student->student_year;
+                    $prefill['student_section'] = $u->student->student_section;
+                    $prefill['student_component'] = $u->student->student_component;
+                }
+            }
+        }
+
+        return view('auth.register', compact('courses', 'roles', 'prefill'));
     }
 
     /**
@@ -52,7 +73,8 @@ class RegisterController extends Controller
             'user_role' => 'required_if:user_Type,staff|string|max:255',
         ];
 
-        // Email validation based on user type
+        // Email validation based on user type (we validate format here;
+        // uniqueness will be handled manually so rejected users can re-register)
         if ($request->user_Type === 'student') {
             // Students must use ADZU email
             $rules['user_Email'] = [
@@ -60,7 +82,6 @@ class RegisterController extends Controller
                 'string',
                 'email',
                 'max:255',
-                'unique:users,user_Email',
                 'regex:/^[a-zA-Z0-9._%+-]+@adzu\.edu\.ph$/'
             ];
         } else {
@@ -70,7 +91,6 @@ class RegisterController extends Controller
                 'string',
                 'email',
                 'max:255',
-                'unique:users,user_Email',
                 'regex:/^[a-zA-Z0-9._%+-]+@(adzu\.edu\.ph|gmail\.com)$/'
             ];
         }
@@ -87,14 +107,35 @@ class RegisterController extends Controller
 
         $request->validate($rules, $messages);
 
-        // Create the user
-        $user = User::create([
-            'user_Name' => $request->user_Name,
-            'user_Email' => $request->user_Email,
-            'user_Password' => Hash::make($request->user_Password),
-            'user_Type' => $request->user_Type,
-            'user_role' => $request->user_Type === 'student' ? 'Student' : $request->user_role,
-        ]);
+        // Check if email already exists
+        $existing = User::where('user_Email', $request->user_Email)->first();
+
+        if ($existing) {
+            // If existing user has a rejected approval, allow updating their record and create a new pending approval.
+            $lastApproval = Approval::where('user_id', $existing->user_id)->latest()->first();
+            if ($lastApproval && $lastApproval->status === 'rejected') {
+                // update the existing user
+                $existing->update([
+                    'user_Name' => $request->user_Name,
+                    'user_Password' => Hash::make($request->user_Password),
+                    'user_Type' => $request->user_Type,
+                    'user_role' => $request->user_Type === 'student' ? 'Student' : $request->user_role,
+                ]);
+
+                $user = $existing;
+            } else {
+                return back()->withErrors(['user_Email' => 'This email address is already registered.'])->withInput();
+            }
+        } else {
+            // Create the user
+            $user = User::create([
+                'user_Name' => $request->user_Name,
+                'user_Email' => $request->user_Email,
+                'user_Password' => Hash::make($request->user_Password),
+                'user_Type' => $request->user_Type,
+                'user_role' => $request->user_Type === 'student' ? 'Student' : $request->user_role,
+            ]);
+        }
 
         // Create profile based on user type
         if ($request->user_Type === 'student') {
@@ -106,34 +147,75 @@ class RegisterController extends Controller
                 'student_component' => 'required|string|in:ROTC,LTS,CWTS',
             ]);
 
-            Student::create([
-                'user_id' => $user->user_id,
-                'student_contact_number' => $request->student_contact_number,
-                'student_course' => $request->student_course,
-                'student_year' => $request->student_year,
-                'student_section' => $request->student_section,
-                'student_component' => $request->student_component,
-            ]);
+            // Create or update student profile
+            Student::updateOrCreate(
+                ['user_id' => $user->user_id],
+                [
+                    'student_contact_number' => $request->student_contact_number,
+                    'student_course' => $request->student_course,
+                    'student_year' => $request->student_year,
+                    'student_section' => $request->student_section,
+                    'student_component' => $request->student_component,
+                ]
+            );
         } else {
             // For staff, validate and handle formal picture upload
             $request->validate([
-                'staff_formal_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'staff_formal_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
-            // Handle file upload
-            $picturePath = $request->file('staff_formal_picture')->store('staff_pictures', 'public');
+            $existingStaff = Staff::where('user_id', $user->user_id)->first();
+            $picturePath = null;
+            if ($request->hasFile('staff_formal_picture')) {
+                $picturePath = $request->file('staff_formal_picture')->store('staff_pictures', 'public');
+            } elseif ($existingStaff && $existingStaff->staff_formal_picture) {
+                $picturePath = $existingStaff->staff_formal_picture;
+            }
 
-            // Create staff record
-            Staff::create([
-                'user_id' => $user->user_id,
-                'staff_formal_picture' => $picturePath,
-            ]);
+            if (!$picturePath) {
+                return back()->withErrors(['staff_formal_picture' => 'Formal picture is required for staff registration.'])->withInput();
+            }
+
+            // Create or update staff profile
+            Staff::updateOrCreate(
+                ['user_id' => $user->user_id],
+                ['staff_formal_picture' => $picturePath]
+            );
         }
 
-        // Log the user in
+        // Create approval record if necessary
+        // SACSI Director is treated as super admin and does not require approval
+        if ($user->isStaff() && $user->user_role === 'SACSI Director') {
+            $user->approved = true;
+            $user->save();
+        } else {
+            // Create an approval entry (pending)
+            Approval::create([
+                'user_id' => $user->user_id,
+                'type' => $user->isStudent() ? 'student' : 'staff',
+                'status' => 'pending',
+            ]);
+            $user->approved = false;
+            $user->save();
+        }
+
+        // Redirect / login behavior:
+        // - Students: after registering they are NOT logged in; show a pending page informing them their account is under review.
+        // - Staff: keep old behavior (log in approved staff or SACSI Director as before)
+
+        // If the user is not approved, show the pending page (no login),
+        // but allow SACSI Director through (they are auto-approved earlier).
+        if (!$user->approved && !($user->isStaff() && $user->user_role === 'SACSI Director')) {
+            return view('auth.registration_pending');
+        }
+
+        // For approved users (or SACSI Director), continue logging in
         Auth::login($user);
 
-        // Redirect based on user type
+        if (!$user->approved) {
+            session()->flash('registration_status', 'pending');
+        }
+
         if ($user->isStudent()) {
             return redirect()->route('home');
         } else {

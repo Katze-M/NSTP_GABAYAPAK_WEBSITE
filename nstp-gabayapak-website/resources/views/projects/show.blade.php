@@ -30,6 +30,13 @@
                     <h1 class="text-3xl font-extrabold text-gray-800 mt-4">{{ $project->Project_Name }}</h1>
                     <p class="text-gray-600 mt-1">Team: <span class="font-semibold text-gray-800">{{ $project->Project_Team_Name }}</span></p>
 
+                    @if($project->Project_Approved_By && $project->approvedBy)
+                        <p class="text-sm text-green-600 mt-2">
+                            <span class="font-semibold">Approved by:</span> {{ $project->approvedBy->user_Name ?? 'N/A' }}
+                            <span class="text-gray-500">({{ $project->updated_at->format('M d, Y') }})</span>
+                        </p>
+                    @endif
+
                     <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
                         <span class="bg-indigo-50 text-indigo-700 text-sm font-semibold px-3 py-1 rounded-full">{{ $project->Project_Component ?? 'No Component' }}</span>
                         <span class="bg-gray-100 text-gray-800 text-sm font-semibold px-3 py-1 rounded-full">{{ $project->Project_Section ?? 'N/A' }}</span>

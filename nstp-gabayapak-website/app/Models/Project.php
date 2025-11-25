@@ -43,6 +43,7 @@ class Project extends Model
         'member_roles',
         'Project_Rejection_Reason',
         'Project_Rejected_By',
+        'Project_Approved_By',
         'is_resubmission',
         'previous_rejection_reasons',
         'resubmission_count',
@@ -78,6 +79,14 @@ class Project extends Model
     public function rejectedBy()
     {
         return $this->belongsTo(\App\Models\User::class, 'Project_Rejected_By', 'user_id');
+    }
+
+    /**
+     * Staff user who approved the project (if any).
+     */
+    public function approvedBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'Project_Approved_By', 'user_id');
     }
 
     /**

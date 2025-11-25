@@ -1211,7 +1211,7 @@ class ProjectController extends Controller
         }
 
         // Load relations used on the page
-        $project->load(['activities', 'budgets']);
+        $project->load(['activities', 'budgets', 'approvedBy', 'rejectedBy']);
 
         // Build a validation payload from saved project data so we can determine
         // whether the project is ready for submission without relying on client JS.
@@ -1413,7 +1413,10 @@ class ProjectController extends Controller
     {
         if (!Auth::user()->isStaff()) abort(403);
         // Keep 'approved' as the canonical approved state
-        $project->update(['Project_Status' => 'approved']);
+        $project->update([
+            'Project_Status' => 'approved',
+            'Project_Approved_By' => Auth::user()->user_id
+        ]);
         return redirect()->back()->with('success', 'Project approved successfully.');
     }
 

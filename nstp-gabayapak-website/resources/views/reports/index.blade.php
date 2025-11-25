@@ -89,7 +89,7 @@
     </div>
 
     <!-- Component Breakdown -->
-    <h3 class="text-xl md:text-2xl font-bold mt-6 md:mt-8 mb-3 md:mb-4">Projects per Component</h3>
+    <h3 class="text-xl md:text-2xl font-bold mt-6 md:mt-8 mb-3 md:mb-4">Total Projects per Component</h3>
       <div class="flex justify-center items-center mb-6 md:mb-8">
       <div class="w-full md:max-w-xs">
         <canvas id="componentChart" width="200" height="200" class="max-w-full"></canvas>

@@ -36,7 +36,10 @@ class DashboardController extends Controller
 
         // Total submitted projects should exclude drafts. Count only pending, current/approved, and rejected.
         $total_projects = $project_status_counts['pending'] + $project_status_counts['approved'] + $project_status_counts['rejected'] + $project_status_counts['archived'];
-        $total_students = Student::count();
+        // Only count students whose user is approved
+        $total_students = Student::whereHas('user', function($q) {
+            $q->where('approved', true);
+        })->count();
 
         // Filters from request
         $search = $request->input('q');

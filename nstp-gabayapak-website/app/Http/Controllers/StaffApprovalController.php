@@ -81,6 +81,34 @@ class StaffApprovalController extends Controller
         return view('approvals.staff_index', compact('pending', 'q'));
     }
 
+    public function history(Request $request)
+    {
+        // Authorization handled by middleware
+        $q = trim($request->input('q', ''));
+
+        $query = Approval::where('type', 'staff')
+            ->whereIn('status', ['approved', 'rejected'])
+            ->with(['user', 'approver']);
+
+        if ($q !== '') {
+            $query->where(function($query) use ($q) {
+                $query->whereHas('user', function($u) use ($q) {
+                    $u->where('user_Name', 'like', "%{$q}%")
+                      ->orWhere('user_Email', 'like', "%{$q}%")
+                      ->orWhere('user_role', 'like', "%{$q}%");
+                })
+                ->orWhereHas('approver', function($a) use ($q) {
+                    $a->where('user_Name', 'like', "%{$q}%");
+                });
+            });
+        }
+
+        $perPage = 15;
+        $history = $query->orderBy('updated_at', 'desc')->paginate($perPage)->withQueryString();
+
+        return view('approvals.staff_history', compact('history', 'q'));
+    }
+
     public function approve(Request $request, $id)
     {
         $user = auth()->user();

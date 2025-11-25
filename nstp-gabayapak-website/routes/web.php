@@ -185,6 +185,7 @@ Route::middleware('auth')->group(function () {
 // Staff approvals - only SACSI Director can access
 Route::middleware(['auth', 'role:SACSI Director'])->group(function () {
     Route::get('/approvals/staff', [\App\Http\Controllers\StaffApprovalController::class, 'index'])->name('approvals.staff');
+    Route::get('/approvals/staff/history', [\App\Http\Controllers\StaffApprovalController::class, 'history'])->name('approvals.staff.history');
     Route::post('/approvals/staff/{id}/approve', [\App\Http\Controllers\StaffApprovalController::class, 'approve'])->name('approvals.staff.approve');
     Route::post('/approvals/staff/{id}/reject', [\App\Http\Controllers\StaffApprovalController::class, 'reject'])->name('approvals.staff.reject');
 });
@@ -192,6 +193,7 @@ Route::middleware(['auth', 'role:SACSI Director'])->group(function () {
 // Student approvals - only NSTP Program Officer can access
 Route::middleware(['auth', 'role:NSTP Program Officer'])->group(function () {
     Route::get('/approvals/students', [\App\Http\Controllers\StudentApprovalController::class, 'index'])->name('approvals.students');
+    Route::get('/approvals/students/history', [\App\Http\Controllers\StudentApprovalController::class, 'history'])->name('approvals.students.history');
     Route::post('/approvals/students/{id}/approve', [\App\Http\Controllers\StudentApprovalController::class, 'approve'])->name('approvals.students.approve');
     Route::post('/approvals/students/{id}/reject', [\App\Http\Controllers\StudentApprovalController::class, 'reject'])->name('approvals.students.reject');
 });

@@ -37,7 +37,9 @@ class ReportsController extends Controller
         ];
 
         // Components breakdown (ROTC, LTS, CWTS)
+        // Only count approved, completed, and archived projects (exclude draft and rejected)
         $components = Project::select('Project_Component', DB::raw('count(*) as cnt'))
+            ->whereIn('Project_Status', ['approved', 'completed', 'archived'])
             ->groupBy('Project_Component')
             ->pluck('cnt', 'Project_Component')
             ->toArray();

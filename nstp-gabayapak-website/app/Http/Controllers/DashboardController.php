@@ -68,9 +68,8 @@ class DashboardController extends Controller
 
         $upcoming_activities = $upcomingQuery->with('project')
             ->orderBy('Implementation_Date')
-            ->take(200)
-            ->get()
-            ->map(function ($a) {
+            ->paginate(10)
+            ->through(function ($a) {
                     $projComp = $a->project?->Project_Component ?? '';
                     return [
                         'project_id' => $a->project?->Project_ID ?? null,

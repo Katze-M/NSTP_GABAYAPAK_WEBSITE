@@ -417,6 +417,11 @@
                 </li>
               @endforeach
             </ul>
+            
+            <!-- Pagination Links -->
+            <div class="mt-6">
+              {{ $upcoming_activities->links() }}
+            </div>
           @else
             <div class="mt-6 rounded-xl border bg-white p-6 shadow-md text-center">
               <p class="text-gray-500">No upcoming activities match your filters</p>

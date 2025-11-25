@@ -3,63 +3,92 @@
 @section('title', 'Student Registrations Approval')
 
 @section('content')
-<div class="p-6">
-    <a href="{{ route('dashboard') }}" class="inline-block mb-4 px-3 py-1 bg-gray-200 rounded">&larr; Back to Dashboard</a>
-    <h1 class="text-2xl font-bold mb-4">Student Registration Approvals</h1>
+<div class="p-6 max-w-7xl mx-auto">
+    <a href="{{ route('dashboard') }}" class="inline-flex items-center mb-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">&larr; Back to Dashboard</a>
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Student Registration Approvals</h1>
 
     {{-- session status removed; approvals use SweetAlert2 confirmations --}}
 
-    <form method="GET" class="mb-4">
+    <form method="GET" class="mb-6">
         <div class="flex gap-2">
-            <input type="text" name="q" placeholder="Search name, email, section or course" value="{{ old('q', $q ?? request('q')) }}" class="border rounded px-2 py-1 w-full">
-            <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded">Search</button>
-            <a href="{{ url()->current() }}" class="px-3 py-1 border rounded">Reset</a>
+            <input type="text" name="q" placeholder="Search name, email, section or course" value="{{ old('q', $q ?? request('q')) }}" class="border border-gray-300 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">Search</button>
+            <a href="{{ url()->current() }}" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">Reset</a>
         </div>
     </form>
 
     @if($pending->isEmpty())
-        <p>No pending student registrations.</p>
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+            <p class="text-gray-600">No pending student registrations.</p>
+        </div>
     @else
-        <table class="w-full table-auto border-collapse">
-                <thead>
-                    <tr class="bg-gray-100">
-                        <th class="p-2 text-left">Name</th>
-                        <th class="p-2 text-left">Email</th>
-                        <th class="p-2 text-left">Contact</th>
-                        <th class="p-2 text-left">Component</th>
-                        <th class="p-2 text-left">Section</th>
-                        <th class="p-2 text-left">Course</th>
-                        <th class="p-2 text-left">Year</th>
-                        <th class="p-2">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($pending as $a)
-                        @php $u = $a->user; $stu = $u->student ?? null; @endphp
-                        <tr class="border-t">
-                            <td class="p-2">{{ $u->user_Name }}</td>
-                            <td class="p-2">{{ $u->user_Email }}</td>
-                            <td class="p-2">{{ $stu->student_contact_number ?? '—' }}</td>
-                            <td class="p-2">{{ $stu->student_component ?? '—' }}</td>
-                            <td class="p-2">{{ $stu->student_section ?? '—' }}</td>
-                            <td class="p-2">{{ $stu->student_course ?? '—' }}</td>
-                            <td class="p-2">{{ $stu->student_year ?? '—' }}</td>
-                            <td class="p-2">
-                                    <button type="button" class="px-3 py-1 bg-green-600 text-white rounded open-confirm-modal" data-id="{{ $a->id }}" data-type="approve" data-base-url="{{ url('/approvals/students') }}">Approve</button>
-
-                                    <button type="button" class="px-3 py-1 bg-red-600 text-white rounded open-remark-button" style="margin-left:8px;" data-id="{{ $a->id }}" data-base-url="{{ url('/approvals/students') }}">Reject</button>
-                            </td>
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                            <th class="px-3 py-3 text-left font-semibold">Name</th>
+                            <th class="px-3 py-3 text-left font-semibold">Email</th>
+                            <th class="px-3 py-3 text-left font-semibold">Contact</th>
+                            <th class="px-3 py-3 text-left font-semibold">Component</th>
+                            <th class="px-3 py-3 text-left font-semibold">Section</th>
+                            <th class="px-3 py-3 text-left font-semibold">Course</th>
+                            <th class="px-3 py-3 text-left font-semibold">Year</th>
+                            <th class="px-3 py-3 text-center font-semibold">Actions</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
-
-            <div class="mt-4 flex items-center justify-between">
-                <div class="text-sm text-gray-600">Showing {{ $pending->firstItem() ?? 0 }} to {{ $pending->lastItem() ?? 0 }} of {{ $pending->total() }} entries</div>
-                <div>
-                    {{ $pending->links() }}
-                </div>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @foreach($pending as $a)
+                            @php 
+                                $u = $a->user; 
+                                $stu = $u->student ?? null;
+                                $component = $stu->student_component ?? '—';
+                                $componentClass = '';
+                                if (strtoupper($component) === 'ROTC') {
+                                    $componentClass = 'bg-blue-100 text-blue-800';
+                                } elseif (strtoupper($component) === 'LTS') {
+                                    $componentClass = 'bg-yellow-100 text-yellow-800';
+                                } elseif (strtoupper($component) === 'CWTS') {
+                                    $componentClass = 'bg-red-100 text-red-800';
+                                } else {
+                                    $componentClass = 'bg-gray-100 text-gray-800';
+                                }
+                            @endphp
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-3 py-3 font-medium text-gray-900 whitespace-nowrap">{{ $u->user_Name }}</td>
+                                <td class="px-3 py-3 text-gray-600 whitespace-nowrap">{{ $u->user_Email }}</td>
+                                <td class="px-3 py-3 text-gray-600 whitespace-nowrap">{{ $stu->student_contact_number ?? '—' }}</td>
+                                <td class="px-3 py-3 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ $componentClass }}">
+                                        {{ $component }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                        {{ $stu->student_section ?? '—' }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3 text-gray-600 whitespace-nowrap">{{ $stu->student_course ?? '—' }}</td>
+                                <td class="px-3 py-3 text-gray-600 text-center whitespace-nowrap">{{ $stu->student_year ?? '—' }}</td>
+                                <td class="px-3 py-3">
+                                    <div class="flex gap-1 justify-center">
+                                        <button type="button" class="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm text-sm open-confirm-modal" data-id="{{ $a->id }}" data-type="approve" data-base-url="{{ url('/approvals/students') }}">Approve</button>
+                                        <button type="button" class="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm text-sm open-remark-button" data-id="{{ $a->id }}" data-base-url="{{ url('/approvals/students') }}">Reject</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-between">
+            <div class="text-sm text-gray-600">Showing {{ $pending->firstItem() ?? 0 }} to {{ $pending->lastItem() ?? 0 }} of {{ $pending->total() }} entries</div>
+            <div>
+                {{ $pending->links() }}
+            </div>
+        </div>
         @endif
 
         <!-- include SweetAlert2 -->

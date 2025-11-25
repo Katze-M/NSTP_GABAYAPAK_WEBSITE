@@ -1265,13 +1265,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Members (visible only)
     const memberRows = Array.from(document.querySelectorAll('.member-row, .member-card, #memberTable tbody tr')).filter(r => r && r.offsetParent !== null && getComputedStyle(r).display !== 'none');
-    const memberHtml = memberRows.length ? memberRows.map(r => {
+    const memberHtml = memberRows.length ? memberRows.map((r, i) => {
       const name = r.querySelector('input[name="member_name[]"]')?.value || '—';
       const role = r.querySelector('input[name="member_role[]"]')?.value || '—';
       const email = r.querySelector('input[name="member_email[]"]')?.value || '—';
       const contact = r.querySelector('input[name="member_contact[]"]')?.value || '—';
-      return `<li class="py-1"><strong>${name}</strong><div class="text-sm text-gray-600">${role} — ${email} — ${contact}</div></li>`;
-    }).join('') : '<li class="text-gray-500">No members</li>';
+      const studentId = r.querySelector('input[name="member_student_id[]"]')?.value || '';
+      
+      // Check if this member is the project owner
+      const roleValue = String(role || '').toLowerCase();
+      const isOwner = roleValue.includes('owner') || roleValue.includes('project leader') || roleValue.includes('leader') || 
+                      (typeof projectOwnerStudentId !== 'undefined' && projectOwnerStudentId !== null && String(studentId) === String(projectOwnerStudentId)) ||
+                      r.querySelector('.text-blue-600, .project-owner-label');
+      
+      return `
+        <div class="bg-gray-50 p-3 rounded-lg border ${isOwner ? 'border-blue-400 border-2' : 'border-gray-200'}">
+          <div class="flex justify-between items-start mb-2">
+            <div class="font-semibold text-gray-800">${name}</div>
+            ${isOwner ? '<span class="text-xs px-2 py-1 bg-blue-600 text-white rounded-full font-semibold">Project Owner</span>' : ''}
+          </div>
+          <div class="text-sm text-gray-600 space-y-1">
+            <div><span class="inline-block px-2 py-1 bg-blue-500 text-white text-xs rounded font-medium">${role}</span></div>
+            <div><span class="font-medium">Email:</span> ${email}</div>
+            <div><span class="font-medium">Contact:</span> ${contact}</div>
+          </div>
+        </div>`;
+    }).join('') : '<div class="text-gray-500 text-center py-4">No members</div>';
 
     // Activities (visible only)
     const activityRows = Array.from(document.querySelectorAll('.activity-row')).filter(r => r && r.offsetParent !== null && getComputedStyle(r).display !== 'none');
@@ -1281,66 +1300,163 @@ document.addEventListener('DOMContentLoaded', function() {
       const timeframe = r.querySelector('input[name="timeframe[]"]')?.value || '—';
       const impl = r.querySelector('input[name="implementation_date[]"]')?.value || '—';
       const point = r.querySelector('input[name="point_person[]"], textarea[name="point_person[]"]')?.value || '—';
+      const status = r.querySelector('select[name="status[]"]')?.value || 'Planned';
       return `
-        <li class="py-2 border-b border-gray-100">
-          <div class="flex justify-between items-start">
-            <div><strong>Activity ${i+1}</strong> <span class="text-sm text-gray-600">(Stage ${stage})</span></div>
-            <div class="text-sm text-gray-500">Timeframe: ${timeframe} — Date: ${impl}</div>
+        <div class="bg-white border border-gray-300 rounded-lg p-3 mb-3">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-gray-800">Planning</span>
+              <span class="text-xs px-2 py-1 bg-indigo-500 text-white rounded-full font-medium">Activity ${i+1}</span>
+            </div>
+            <span class="text-xs px-2 py-1 rounded ${status === 'Completed' ? 'bg-green-100 text-green-800' : status === 'Ongoing' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">${status}</span>
           </div>
-          <div class="mt-1 text-sm">${specific}</div>
-          <div class="mt-1 text-sm text-gray-600">Point: ${point}</div>
-        </li>`;
-    }).join('') : '<li class="text-gray-500">No activities</li>';
+          <div class="text-sm text-gray-700 mb-2">${specific}</div>
+          <div class="text-sm text-gray-600 space-y-1">
+            <div><span class="font-medium">Timeframe:</span> ${timeframe}</div>
+            <div class="bg-yellow-100 px-2 py-1 rounded"><span class="font-semibold text-gray-800">Implementation Date:</span> <span class="font-medium text-gray-900">${impl}</span></div>
+            <div><span class="font-medium">Point Person:</span> ${point}</div>
+          </div>
+        </div>`;
+    }).join('') : '<div class="text-gray-500 text-center py-4">No activities</div>';
 
     // Budgets (visible only)
     const budgetRows = Array.from(document.querySelectorAll('.budget-row')).filter(r => r && r.offsetParent !== null && getComputedStyle(r).display !== 'none');
+    let totalBudget = 0;
     const budgetsHtml = budgetRows.length ? budgetRows.map((r, i) => {
       const act = r.querySelector('textarea[name="budget_activity[]"]')?.value || '—';
       const res = r.querySelector('textarea[name="budget_resources[]"]')?.value || '—';
       const partners = r.querySelector('textarea[name="budget_partners[]"]')?.value || '—';
-      const amount = r.querySelector('input[name="budget_amount[]"]')?.value || '—';
-      return `<li class="py-1"><strong>Budget ${i+1}</strong><div class="text-sm text-gray-600">${act} — ${res} — ${partners} — <span class="font-medium">${amount}</span></div></li>`;
-    }).join('') : '<li class="text-gray-500">No budgets</li>';
+      const amountStr = r.querySelector('input[name="budget_amount[]"]')?.value || '0';
+      // Parse amount (remove currency symbols and commas)
+      const amount = parseFloat(amountStr.replace(/[₱,\s]/g, '')) || 0;
+      totalBudget += amount;
+      return `
+        <div class="bg-white border border-gray-300 rounded-lg p-3 mb-3">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-gray-800">${act}</span>
+              <span class="text-xs px-2 py-1 bg-purple-500 text-white rounded-full font-medium">Budget Item ${i+1}</span>
+            </div>
+            <div class="font-bold text-green-700">₱${amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+          </div>
+          <div class="text-sm text-gray-700 space-y-1">
+            <div><span class="font-medium">Resources:</span> ${res}</div>
+            <div><span class="font-medium">Partners:</span> ${partners}</div>
+          </div>
+        </div>`;
+    }).join('') : '<div class="text-gray-500 text-center py-4">No budget items</div>';
 
     const html = `
-      <div style="text-align:left; max-height:70vh; overflow:auto" class="p-4">
-        <div class="flex gap-4">
-          <div class="w-28 flex-shrink-0">
-            ${logoSrc ? `<img src="${logoSrc}" alt="Logo" class="w-28 h-28 object-cover rounded border" />` : `<div class="w-28 h-28 bg-gray-100 rounded border flex items-center justify-center text-gray-400">No Logo</div>`}
-          </div>
-          <div class="flex-1">
-            <h3 class="text-xl font-semibold">${projectName}</h3>
-            <div class="text-sm text-gray-600">Team: <strong>${teamName}</strong> • ${component} / ${section}</div>
-            <div class="mt-3 grid grid-cols-1 gap-2 text-sm text-gray-700">
-              <div><strong>Problems</strong><div class="text-gray-600 mt-1">${problems}</div></div>
-              <div><strong>Goals</strong><div class="text-gray-600 mt-1">${goals}</div></div>
-              <div><strong>Target Community</strong><div class="text-gray-600 mt-1">${targetCommunity}</div></div>
-              <div><strong>Solution</strong><div class="text-gray-600 mt-1">${solution}</div></div>
-              <div><strong>Expected Outcomes</strong><div class="text-gray-600 mt-1">${outcomes}</div></div>
+      <div style="text-align:left; max-height:75vh; overflow-y:auto;" class="p-4">
+        
+        <!-- Team Info Section -->
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200 mb-4">
+          <h3 class="text-lg font-bold text-blue-900 mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+            Team Information
+          </h3>
+          <div class="flex gap-4">
+            <div class="flex-shrink-0">
+              ${logoSrc ? `<img src="${logoSrc}" alt="Team Logo" class="w-24 h-24 object-cover rounded-lg border-2 border-white shadow-md" />` : `<div class="w-24 h-24 bg-white rounded-lg border-2 border-gray-300 flex items-center justify-center text-gray-400 shadow"><svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/><path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/></svg></div>`}
+            </div>
+            <div class="flex-1">
+              <div class="text-xl font-bold text-gray-800">${projectName}</div>
+              <div class="text-sm text-gray-700 mt-1">
+                <div><span class="font-semibold">Team Name:</span> ${teamName}</div>
+                <div><span class="font-semibold">Component:</span> ${component}</div>
+                <div><span class="font-semibold">Section:</span> ${section}</div>
+              </div>
             </div>
           </div>
         </div>
 
-        <hr class="my-3" />
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div class="col-span-1 lg:col-span-1">
-            <h4 class="font-semibold">Members</h4>
-            <ul class="mt-2 text-sm text-gray-700">${memberHtml}</ul>
-          </div>
-          <div class="col-span-1 lg:col-span-1">
-            <h4 class="font-semibold">Activities</h4>
-            <ul class="mt-2 text-sm text-gray-700">${activitiesHtml}</ul>
-          </div>
-          <div class="col-span-1 lg:col-span-1">
-            <h4 class="font-semibold">Budgets</h4>
-            <ul class="mt-2 text-sm text-gray-700">${budgetsHtml}</ul>
+        <!-- Team Members Section -->
+        <div class="bg-white border-2 border-gray-300 rounded-lg p-4 mb-4">
+          <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg>
+            Team Members (${memberRows.length})
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+            ${memberHtml}
           </div>
         </div>
+
+        <!-- Project Details Section -->
+        <div class="bg-white border-2 border-gray-300 rounded-lg p-4 mb-4">
+          <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+            Project Details
+          </h3>
+          <div class="space-y-3 text-sm">
+            <div>
+              <div class="font-semibold text-gray-700 mb-1">Problems Addressed</div>
+              <div class="text-gray-600 bg-gray-50 p-2 rounded border border-gray-200 whitespace-pre-wrap">${problems}</div>
+            </div>
+            <div>
+              <div class="font-semibold text-gray-700 mb-1">Project Goals</div>
+              <div class="text-gray-600 bg-gray-50 p-2 rounded border border-gray-200 whitespace-pre-wrap">${goals}</div>
+            </div>
+            <div>
+              <div class="font-semibold text-gray-700 mb-1">Target Community</div>
+              <div class="text-gray-600 bg-gray-50 p-2 rounded border border-gray-200 whitespace-pre-wrap">${targetCommunity}</div>
+            </div>
+            <div>
+              <div class="font-semibold text-gray-700 mb-1">Proposed Solution</div>
+              <div class="text-gray-600 bg-gray-50 p-2 rounded border border-gray-200 whitespace-pre-wrap">${solution}</div>
+            </div>
+            <div>
+              <div class="font-semibold text-gray-700 mb-1">Expected Outcomes</div>
+              <div class="text-gray-600 bg-gray-50 p-2 rounded border border-gray-200 whitespace-pre-wrap">${outcomes}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activities Section -->
+        <div class="bg-white border-2 border-gray-300 rounded-lg p-4 mb-4">
+          <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+            Activities (${activityRows.length})
+          </h3>
+          <div class="max-h-64 overflow-y-auto">
+            ${activitiesHtml}
+          </div>
+        </div>
+
+        <!-- Budget Section -->
+        <div class="bg-white border-2 border-gray-300 rounded-lg p-4">
+          <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/></svg>
+            Budget (${budgetRows.length} items)
+          </h3>
+          <div class="max-h-64 overflow-y-auto mb-3">
+            ${budgetsHtml}
+          </div>
+          <div class="border-t-2 border-gray-300 pt-3 mt-3">
+            <div class="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-300">
+              <span class="text-lg font-bold text-gray-800">Total Budget:</span>
+              <span class="text-2xl font-bold text-green-700">₱${totalBudget.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     `;
 
-    Swal.fire({ title: '<div class="text-2xl font-bold">📋 Review Project Changes</div>', html: html, width: '800px', showCancelButton: true, confirmButtonText: 'Save Changes', cancelButtonText: 'Cancel' })
+    Swal.fire({ 
+      title: '<div class="text-2xl font-bold text-blue-900">📋 Review Project Changes</div>', 
+      html: html, 
+      width: '900px',
+      showCancelButton: true, 
+      confirmButtonText: '💾 Save Changes', 
+      cancelButtonText: '❌ Cancel',
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#6b7280',
+      customClass: {
+        popup: 'rounded-xl shadow-2xl',
+        confirmButton: 'px-6 py-2 rounded-lg font-semibold',
+        cancelButton: 'px-6 py-2 rounded-lg font-semibold'
+      }
+    })
       .then(result => {
         if (result.isConfirmed) {
           isSubmitting = true;

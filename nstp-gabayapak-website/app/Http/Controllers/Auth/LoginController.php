@@ -65,9 +65,12 @@ class LoginController extends Controller
 
             // If rejected, send back with a helpful link to re-register (prefill email)
             if ($approval && $approval->status === 'rejected') {
-                return redirect()->route('login')->with('rejected_email', $user->user_Email)->withErrors([
-                    'user_Email' => 'Your registration was rejected. Please update and re-register.'
-                ]);
+                return redirect()->route('login')
+                    ->with('rejected_email', $user->user_Email)
+                    ->with('rejection_remarks', $approval->remarks ?? null)
+                    ->withErrors([
+                        'user_Email' => 'Your registration was rejected. Please update and re-register.'
+                    ]);
             }
 
             // No approval record or unknown state -> treat as pending

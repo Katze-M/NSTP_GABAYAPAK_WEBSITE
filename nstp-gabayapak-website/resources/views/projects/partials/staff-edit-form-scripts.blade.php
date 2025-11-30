@@ -1112,12 +1112,22 @@ document.addEventListener('DOMContentLoaded', function() {
         text: "Any unsaved changes will be lost. Are you sure you want to cancel?",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#6b7280',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6c757d',
         confirmButtonText: 'Yes, cancel editing',
       }).then((result) => {
         if (result.isConfirmed) {
-          window.location.href = '{{ route("projects.show", $project) }}';
+          // Show success message first, then redirect to show page using replace
+          Swal.fire({
+            icon: 'success',
+            title: 'Editing Cancelled',
+            text: 'You have successfully cancelled editing.',
+            timer: 1500,
+            showConfirmButton: false
+          }).then(() => {
+            // Use replace to avoid adding to history
+            window.location.replace('{{ route("projects.show", $project) }}');
+          });
         }
       });
     });
@@ -1468,6 +1478,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Also dump all keys for inspection
             for (const pair of fd.entries()) console.debug('FormData entry:', pair[0], pair[1]);
           } catch (e) { console.warn('Error dumping FormData before submit', e); }
+          
+          // Replace current history entry so when user clicks back from show page, it skips this edit page
+          if (window.history.length > 1) {
+            window.history.replaceState({skipped: true}, '', window.location.href);
+          }
+          
           form.submit();
         }
       });

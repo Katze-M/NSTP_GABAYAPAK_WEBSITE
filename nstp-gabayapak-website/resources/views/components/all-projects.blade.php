@@ -1,4 +1,42 @@
-<div class="flex-1 p-6">
+<style>
+@media (max-width: 400px) {
+  /* Make back button smaller and tighter */
+  .back-btn {
+    font-size: 0.9rem !important;
+    padding: 0.4rem 0.8rem !important;
+    border-radius: 0.7rem !important;
+  }
+  .back-btn svg {
+    width: 1rem !important;
+    height: 1rem !important;
+    margin-right: 0.3rem !important;
+  }
+  /* Heading adjustments */
+  .section-heading {
+    font-size: 1.2rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.7rem !important;
+    line-height: 1.2 !important;
+  }
+  /* Section grid: tighter spacing, smaller buttons */
+  .section-grid {
+    grid-gap: 0.4rem !important;
+    gap: 0.4rem !important;
+    margin-top: 0.5rem !important;
+  }
+  .section-grid a {
+    font-size: 0.85rem !important;
+    padding: 0.5rem 0.7rem !important;
+    min-width: 2.2rem !important;
+    border-radius: 0.7rem !important;
+  }
+  /* Project list spacing */
+  .all-projects-container {
+    padding: 0.75rem !important;
+  }
+}
+</style>
+<div class="flex-1 p-6 all-projects-container">
     <!-- Header and Back button -->
     @unless(isset($hideHeader) && $hideHeader)
     <div class="flex items-center justify-between mb-4">
@@ -8,7 +46,7 @@
             @endphp
             @unless($hideBackButton)
             <button onclick="history.back()" 
-                    class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-100 
+                    class="back-btn inline-flex items-center px-4 py-2 bg-white hover:bg-gray-100 
                            text-gray-700 font-medium rounded-lg shadow transition">
                 <svg class="h-5 w-5 mr-2 text-gray-700" xmlns="http://www.w3.org/2000/svg" 
                      viewBox="0 0 122.88 122.88" xml:space="preserve" fill="currentColor">
@@ -30,7 +68,7 @@
                 Back
             </button>
             @endunless
-            <h1 class="text-2xl font-bold">
+            <h1 class="text-2xl font-bold section-heading">
                 {{ $section ?? 'Projects' }} @if(isset($currentSection) && (isset($section) && $section !== 'ROTC')) - Section {{ $currentSection }} @endif
             </h1>
         </div>
@@ -41,7 +79,7 @@
     @if(isset($section) && in_array($section, ['LTS', 'CWTS']))
     <div class="mb-6">
         <h3 class="text-lg font-semibold mb-2">Sections:</h3>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2 section-grid">
             @foreach (range('A', 'Z') as $letter)
                 <a href="{{ route('projects.' . strtolower($section), $letter) }}" 
                    class="px-3 py-2 rounded-lg text-sm font-medium transition-colors
@@ -106,7 +144,7 @@
                         }
                     @endphp
                     <div class="flex flex-col items-center mb-2 min-w-0">
-                        <h2 class="text-lg font-semibold truncate text-center" title="{{ $project->Project_Name }}">{{ $project->Project_Name }}</h2>
+                        <h2 class="text-lg font-semibold text-center break-words" title="{{ $project->Project_Name }}">{{ $project->Project_Name }}</h2>
 
                         {{-- Resubmission count removed from card list (kept in show view) --}}
                     </div>

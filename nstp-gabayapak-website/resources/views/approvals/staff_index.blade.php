@@ -3,13 +3,100 @@
 @section('title', 'Staff Registrations Approval')
 
 @section('content')
-<div class="p-6 max-w-7xl mx-auto">
-    <a href="{{ route('dashboard') }}" class="inline-flex items-center mb-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">&larr; Back to Dashboard</a>
-    <h1 class="text-3xl font-bold mb-6 text-gray-800">Staff Registration Approvals</h1>
+<style>
+    @media (max-width: 400px) {
+        .approval-container {
+            padding: 0.75rem !important;
+            padding-top: 4rem !important;
+        }
+        .approval-back-btn {
+            font-size: 0.8rem !important;
+            padding: 0.4rem 0.6rem !important;
+            margin-bottom: 0.75rem !important;
+        }
+        .approval-heading {
+            font-size: 1.25rem !important;
+            margin-bottom: 0.75rem !important;
+        }
+        .approval-search-form {
+            margin-bottom: 0.75rem !important;
+        }
+        .approval-search-form > div {
+            flex-direction: column !important;
+            gap: 0.5rem !important;
+        }
+        .approval-search-form input {
+            width: 100% !important;
+            font-size: 0.8rem !important;
+            padding: 0.5rem !important;
+        }
+        .approval-search-form button,
+        .approval-search-form a {
+            width: 100% !important;
+            font-size: 0.85rem !important;
+            padding: 0.65rem 1rem !important;
+            text-align: center !important;
+            justify-content: center !important;
+            border-radius: 0.5rem !important;
+        }
+        .approval-table-wrapper {
+            font-size: 0.65rem !important;
+        }
+        .approval-table-wrapper th,
+        .approval-table-wrapper td {
+            padding: 0.4rem !important;
+        }
+        .approval-table-wrapper .staff-picture {
+            width: 2rem !important;
+            height: 2rem !important;
+        }
+        .approval-table-wrapper .staff-picture svg {
+            width: 1rem !important;
+            height: 1rem !important;
+        }
+        .approval-table-wrapper .action-buttons {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0.25rem !important;
+        }
+        .approval-table-wrapper .action-buttons button {
+            font-size: 0.65rem !important;
+            padding: 0.35rem 0.5rem !important;
+            white-space: nowrap !important;
+        }
+        .approval-pagination {
+            flex-direction: column !important;
+            gap: 0.75rem !important;
+            align-items: flex-start !important;
+        }
+        .approval-pagination-info {
+            font-size: 0.7rem !important;
+        }
+        .approval-pagination-controls {
+            flex-direction: column !important;
+            gap: 0.5rem !important;
+            align-items: flex-start !important;
+            width: 100% !important;
+        }
+        .approval-history-btn {
+            font-size: 0.75rem !important;
+            padding: 0.5rem 0.75rem !important;
+            width: 100% !important;
+            justify-content: center !important;
+        }
+        .approval-history-btn svg {
+            width: 0.85rem !important;
+            height: 0.85rem !important;
+        }
+    }
+</style>
+<div class="p-6 max-w-7xl mx-auto approval-container">
+    <a href="{{ route('dashboard') }}" class="inline-flex items-center mb-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors approval-back-btn">&larr; Back to Dashboard</a>
+    <h1 class="text-3xl font-bold mb-6 text-gray-800 approval-heading">Staff Registration Approvals</h1>
 
     {{-- session status removed; approvals use SweetAlert2 confirmations --}}
 
-    <form method="GET" class="mb-6">
+    <form method="GET" class="mb-6 approval-search-form">
         <div class="flex gap-2">
             <input type="text" name="q" placeholder="Search name, email or role" value="{{ old('q', $q ?? request('q')) }}" class="border border-gray-300 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">Search</button>
@@ -22,7 +109,7 @@
             <p class="text-gray-600">No pending staff registrations.</p>
         </div>
     @else
-        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="bg-white shadow-md rounded-lg overflow-hidden approval-table-wrapper">
             <div class="overflow-x-auto">
                 <table class="w-full table-auto border-collapse">
                     <thead>
@@ -45,10 +132,10 @@
                                     @if($staff && $staff->staff_formal_picture)
                                         <img src="{{ asset('storage/' . $staff->staff_formal_picture) }}" 
                                              alt="{{ $u->user_Name }}" 
-                                             class="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
+                                             class="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-sm staff-picture"
                                              onclick="openImageModal('{{ asset('storage/' . $staff->staff_formal_picture) }}', '{{ $u->user_Name }}')">
                                     @else
-                                        <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                        <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center staff-picture">
                                             <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
                                             </svg>
@@ -63,7 +150,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex gap-2 justify-center">
+                                    <div class="flex gap-2 justify-center action-buttons">
                                         <button type="button" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm open-confirm-modal" data-id="{{ $a->id }}" data-type="approve" data-base-url="{{ url('/approvals/staff') }}">Approve</button>
                                         <button type="button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm open-remark-button" data-id="{{ $a->id }}" data-base-url="{{ url('/approvals/staff') }}">Reject</button>
                                     </div>
@@ -75,11 +162,11 @@
             </div>
         </div>
 
-        <div class="mt-6 flex items-center justify-between">
-            <div class="text-sm text-gray-600">Showing {{ $pending->firstItem() ?? 0 }} to {{ $pending->lastItem() ?? 0 }} of {{ $pending->total() }} entries</div>
-            <div class="flex items-center gap-4">
+        <div class="mt-6 flex items-center justify-between approval-pagination">
+            <div class="text-sm text-gray-600 approval-pagination-info">Showing {{ $pending->firstItem() ?? 0 }} to {{ $pending->lastItem() ?? 0 }} of {{ $pending->total() }} entries</div>
+            <div class="flex items-center gap-4 approval-pagination-controls">
                 {{ $pending->links() }}
-                <a href="{{ route('approvals.staff.history') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm whitespace-nowrap">
+                <a href="{{ route('approvals.staff.history') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm whitespace-nowrap approval-history-btn">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>

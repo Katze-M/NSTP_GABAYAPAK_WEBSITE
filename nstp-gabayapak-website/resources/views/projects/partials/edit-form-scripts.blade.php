@@ -284,8 +284,9 @@ function addActivityRow(stage='', activity='', timeframe='', implementation_date
 }
 
 
-  // Handle Cancel Edit with confirmation - redirect to appropriate page
-  safeAddListener('cancelEditBtn', 'click', function() {
+  // Handle Cancel Edit with confirmation - redirect to show page
+  safeAddListener('cancelEditBtn', 'click', function(e) {
+    e.preventDefault();
     Swal.fire({
       title: 'Cancel Editing?',
       text: "Any unsaved changes will be lost. Are you sure you want to cancel?",
@@ -296,7 +297,7 @@ function addActivityRow(stage='', activity='', timeframe='', implementation_date
       confirmButtonText: 'Yes, cancel editing'
     }).then((result) => {
       if (result.isConfirmed) {
-        // Show success message first, then redirect
+        // Show success message first, then redirect to show page using replace
         Swal.fire({
           icon: 'success',
           title: 'Editing Cancelled',
@@ -304,8 +305,8 @@ function addActivityRow(stage='', activity='', timeframe='', implementation_date
           timer: 1500,
           showConfirmButton: false
         }).then(() => {
-          // Always redirect to project show page
-          window.location.href = "{{ route('projects.show', $project) }}";
+          // Use replace to avoid adding to history
+          window.location.replace("{{ route('projects.show', $project) }}");
         });
       }
     })
@@ -940,6 +941,12 @@ if (saveProjectBtn) {
       const submitProjectInput = document.getElementById('submitProjectInput');
       if (saveDraftInput) saveDraftInput.value = '1';
       if (submitProjectInput) submitProjectInput.value = '0';
+
+      // Replace current history entry so when user clicks back from show page, it skips this edit page
+      if (window.history.length > 1) {
+        // Get the previous page URL from history
+        window.history.replaceState({skipped: true}, '', window.location.href);
+      }
 
       // final submit
       form.submit();

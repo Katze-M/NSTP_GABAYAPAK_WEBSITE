@@ -11,7 +11,7 @@ This is a Laravel-based website for the NSTP GabaYapak project management system
 
 2. **User Roles**
    - Student
-   - Staff (NSTP Formator, NSTP Program Officer, SACSI Director, SACSI Admin Staff)
+   - Staff (NSTP Formator, NSTP Program Officer, SACSI Director, NSTP Coordinator)
 
 3. **Models**
    - User model with proper database schema mapping

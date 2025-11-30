@@ -8,8 +8,6 @@
   <!-- Main Heading -->
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <!-- Back Button -->
-      <x-back-button />
       <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6 flex items-center gap-2">
         @if(isset($isResubmission) && $isResubmission)
           Resubmit Project

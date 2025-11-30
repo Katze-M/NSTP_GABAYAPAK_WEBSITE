@@ -1,14 +1,16 @@
 @props(['active'])
 
-<aside id="sidebar" class="w-64 bg-[#EF3333] text-white shadow-lg h-screen fixed flex flex-col transition-all duration-300 z-50">
+
+<aside id="sidebar" class="w-64 bg-[#EF3333] text-white shadow-lg h-screen fixed flex flex-col transition-all duration-300 z-50 -translate-x-full md:translate-x-0">
     <!-- Collapse button -->
     <div class="p-4 flex items-center justify-end border-b border-red-400">
-        <button id="collapseBtn" class="p-2 rounded hover:bg-red-500">
+        <button id="collapseBtn" class="p-2 rounded hover:bg-red-500 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
         </button>
     </div>
+
 
     <!-- Sidebar header -->
     <div class="px-4 py-3 flex items-center gap-2 border-b border-red-400 bg-white">
@@ -19,6 +21,7 @@
         <span class="font-bold text-lg sidebar-text text-black">NSTP GabaYapak</span>
     </div>
 
+
     <!-- Navigation -->
     <nav class="flex-1 p-4 space-y-2">
         <a href="{{ route('home') }}" class="flex items-center gap-3 p-2 rounded hover:bg-red-500" data-route="home">
@@ -28,6 +31,7 @@
             <span class="sidebar-text">Homepage</span>
         </a>
 
+
         @if(Auth::user()->isStaff())
         <a href="{{ route('dashboard') }}" class="flex items-center gap-3 p-2 rounded hover:bg-red-500" data-route="dashboard">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -36,6 +40,7 @@
             <span class="sidebar-text">Dashboard</span>
         </a>
         @endif
+
 
         <!-- For Students: Current Projects only (no dropdown) -->
         @if(Auth::user()->isStudent())
@@ -71,6 +76,7 @@
         </div>
         @endif
 
+
         @if(Auth::user()->isStudent())
         <a href="{{ route('projects.create') }}" class="flex items-center gap-3 p-2 rounded hover:bg-red-500" data-route="projects.create">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -79,6 +85,7 @@
             <span class="sidebar-text">Upload Project</span>
         </a>
         @endif
+
 
         @if(Auth::user()->isStaff())
         <a href="{{ route('reports.index') }}" class="flex items-center gap-3 p-2 rounded hover:bg-red-500" data-route="reports">
@@ -91,6 +98,7 @@
         </a>
         @endif
 
+
         @if(Auth::user()->isStudent())
         <a href="{{ route('projects.my') }}" class="flex items-center gap-3 p-2 rounded hover:bg-red-500" data-route="projects.my">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -100,6 +108,7 @@
         </a>
         @endif
 
+
         <a href="{{ route('account.show') }}" class="flex items-center gap-3 p-2 rounded hover:bg-red-500" data-route="account.show">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -108,11 +117,12 @@
         </a>
     </nav>
 
+
     <!-- Logout -->
     <div class="p-4 border-t border-red-400">
-        <form method="POST" action="{{ route('logout') }}">
+        <form id="logoutForm" method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit" class="flex items-center gap-3 p-2 rounded hover:bg-red-500 text-white w-full">
+            <button type="button" onclick="confirmLogout()" class="flex items-center gap-3 p-2 rounded hover:bg-red-500 text-white w-full">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
                 </svg>
@@ -122,7 +132,25 @@
     </div>
 </aside>
 
+
 <script>
+function confirmLogout() {
+    Swal.fire({
+        title: 'Logout?',
+        text: "Are you sure you want to logout?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, logout',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('logoutForm').submit();
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('sidebar');
     const content = document.getElementById('content');
@@ -133,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const allProjectsToggle = document.querySelector('.all-projects-toggle');
     const dropdownArrow = document.querySelector('.dropdown-arrow');
     const currentPath = window.location.pathname;
+
 
     // Add active class based on current route
     const navLinks = document.querySelectorAll('nav a[data-route]');
@@ -169,15 +198,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 default:
                     routePath = '/' + route.replace(/\./g, '/');
             }
-            
+           
             // Check if current path matches route path
-            if (currentPath === routePath || 
+            if (currentPath === routePath ||
                 (routePath === '/' && currentPath === '/') ||
                 (routePath !== '/' && currentPath.startsWith(routePath))) {
                 link.classList.add('active-link');
             }
         }
     });
+
 
     // Collapse sidebar (desktop)
     const collapseSidebar = () => {
@@ -197,6 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+
     // Expand sidebar (desktop)
     const expandSidebar = () => {
         sidebar.classList.remove('w-20');
@@ -212,13 +243,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+
     // Mobile toggle
     const toggleMobileSidebar = () => {
-        sidebar.classList.toggle('open');
-        if (sidebarOverlay) {
-            sidebarOverlay.classList.toggle('visible');
+        if (sidebar.classList.contains('-translate-x-full')) {
+            sidebar.classList.remove('-translate-x-full');
+            sidebar.classList.add('translate-x-0');
+        } else {
+            sidebar.classList.add('-translate-x-full');
+            sidebar.classList.remove('translate-x-0');
         }
     };
+
 
     // Collapse button click
     if (collapseBtn) {
@@ -231,11 +267,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     expandSidebar();
                 }
             } else {
-                // Mobile -> close sidebar
+                // Mobile -> toggle sidebar
                 toggleMobileSidebar();
             }
         });
     }
+
 
     // Dropdown toggle
     if (allProjectsToggle && dropdownMenu) {
@@ -247,10 +284,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (dropdownArrow) {
                 dropdownArrow.classList.toggle('rotate');
             }
-            
+           
             // Check if current route is one of the dropdown items and show dropdown if needed
-            if (currentPath.includes('/projects/current') || 
-                currentPath.includes('/projects/pending') || 
+            if (currentPath.includes('/projects/current') ||
+                currentPath.includes('/projects/pending') ||
                 currentPath.includes('/projects/archived')) {
                 dropdownMenu.classList.remove('hidden');
                 if (dropdownArrow) {
@@ -260,9 +297,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+
     // Check if current route is one of the dropdown items and show dropdown if needed
-    if (dropdownMenu && (currentPath.includes('/projects/current') || 
-        currentPath.includes('/projects/pending') || 
+    if (dropdownMenu && (currentPath.includes('/projects/current') ||
+        currentPath.includes('/projects/pending') ||
         currentPath.includes('/projects/archived'))) {
         dropdownMenu.classList.remove('hidden');
         if (dropdownArrow) {
@@ -270,16 +308,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+
     // Initial layout
     const setInitialLayout = () => {
         if (window.innerWidth >= 768) {
-            sidebar.classList.remove('w-20');
-            sidebar.classList.add('w-64');
+            // Desktop: ensure sidebar is visible and expanded
+            sidebar.classList.remove('w-20', '-translate-x-full');
+            sidebar.classList.add('w-64', 'translate-x-0');
             sidebarText.forEach(text => text.classList.remove('hidden'));
             if (content) {
                 content.classList.remove('ml-20');
                 content.classList.add('md:ml-64');
             }
+        } else {
+            // Mobile: ensure sidebar is hidden by default
+            sidebar.classList.add('-translate-x-full');
+            sidebar.classList.remove('translate-x-0');
         }
     };
     window.addEventListener('resize', setInitialLayout);

@@ -8,23 +8,23 @@
     .light-pink-bg { background-color: #FFE4E1; }
     
     .rotc-bg {
-        background-image: url('{{ asset('assets/1000036078.jpg') }}');
+        background-image: url('{{ asset('assets/NSTP_ROTC_IMAGE_3.jpg') }}');
         background-size: cover;
-        background-position: center;
+        background-position: center 35%;
         background-repeat: no-repeat;
     }
     
     .lts-bg {
-        background-image: url('{{ asset('assets/1000036079.jpg') }}');
+        background-image: url('{{ asset('assets/NSTP_LTS_IMAGE_2.jpg') }}');
         background-size: cover;
-        background-position: center 30%;
+        background-position: center 20%;
         background-repeat: no-repeat;
     }
     
     .cwts-bg {
-        background-image: url('{{ asset('assets/1000036076.jpg') }}');
+        background-image: url('{{ asset('assets/NSTP_IMAGE_1.jpg') }}');
         background-size: cover;
-        background-position: center 30%;
+        background-position: center 55%;
         background-repeat: no-repeat;
     }
     
@@ -68,10 +68,17 @@
 
 @section('content')
 <!-- Main Content -->
-<main id="content" class="flex-1 p-6 transition-all duration-300 bg-white min-h-screen">
+<main id="content" class="flex-1 p-6 transition-all duration-300 bg-white min-h-screen current-projects-container">
     <!-- Page Header -->
-    <div class="mb-6 md:mb-8">
-        <h1 class="text-2xl md:text-4xl font-bold text-black mb-2">All Current Projects</h1>
+    <div class="mb-6 md:mb-8 current-projects-header">
+        <div class="flex items-center justify-between mb-2">
+            <h1 class="text-2xl md:text-4xl font-bold text-black">All Current Projects</h1>
+            @if(Auth::user()->isStaff())
+                <div>
+                    <a href="{{ route('projects.allApproved') }}" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow transition">All Approved Projects</a>
+                </div>
+            @endif
+        </div>
         <p class="text-base md:text-lg text-gray-700">
             {{ $projectCount ?? 0 }} of {{ $projectCount ?? 0 }} projects organized
         </p>

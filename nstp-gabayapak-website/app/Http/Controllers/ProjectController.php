@@ -346,10 +346,14 @@ class ProjectController extends Controller
 
         // If this was a staff-save, return a neutral 'updated' message instead of 'Draft saved'
         if ($user->isStaff() && $request->input('staff_save')) {
-            return redirect()->route('projects.show', $project)->with('success', 'Project updated successfully!');
+            return redirect()->route('projects.show', $project)
+                ->with('success', 'Project updated successfully!')
+                ->with('saved_from_edit', true);
         }
 
-        return redirect()->route('projects.show', $project)->with('success', 'Draft saved successfully!');
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'Draft saved successfully!')
+            ->with('saved_from_edit', true);
     }
 
     /**
@@ -1392,6 +1396,15 @@ class ProjectController extends Controller
             ->orderByDesc('created_at')
             ->get();
         return view('all_projects.archived', compact('projects'));
+    }
+
+    public function allApproved()
+    {
+        if (!Auth::user()->isStaff()) abort(403);
+        $projects = Project::whereIn('Project_Status', ['completed', 'archived', 'approved'])
+            ->orderByDesc('created_at')
+            ->get();
+        return view('all_projects.all-approved', compact('projects'));
     }
 
     /**

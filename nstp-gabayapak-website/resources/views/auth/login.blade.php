@@ -81,10 +81,21 @@
                 <div class="font-medium text-red-400">Whoops! Something went wrong.</div>
                 <ul class="mt-3 text-sm text-red-400 list-disc list-inside">
                     @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
+                        @if(str_contains($error, 'Your registration was rejected'))
+                            <li>
+                                Your registration was rejected. Please update and <a href="{{ route('register', ['email' => old('user_Email', session('rejected_email'))]) }}" class="font-semibold underline">re-register</a>.
+                                @if(session('rejection_remarks'))
+                                    <div class="mt-3 text-red-700 text-base font-normal bg-red-50 border border-red-200 rounded p-3">
+                                        <strong>Rejection Remarks:</strong><br>
+                                        <span style="white-space:pre-line">{{ session('rejection_remarks') }}</span>
+                                    </div>
+                                @endif
+                            </li>
+                        @else
+                            <li>{{ $error }}</li>
+                        @endif
                     @endforeach
                 </ul>
-                {{-- registration status link removed --}}
             </div>
         @endif
 
@@ -122,11 +133,7 @@
         </p>
         {{-- registration status link added below the form (not inside validation errors) --}}
 
-        @if(session('rejected_email'))
-            <div class="mt-4 text-center text-red-400">
-                Your registration was rejected. <a href="{{ route('register', ['email' => session('rejected_email')]) }}" class="font-semibold underline">Click here to edit and re-register</a>
-            </div>
-        @endif
+        {{-- Removed duplicate rejection message block --}}
     </div>
 
     <!-- Scroll to Top Button -->

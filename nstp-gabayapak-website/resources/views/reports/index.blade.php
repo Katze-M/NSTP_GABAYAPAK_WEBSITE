@@ -10,6 +10,78 @@
         #sidebar, #sidebar-overlay { display: none !important; }
         /* Avoid capturing interactive controls in print header */
         .no-print { display: none !important; }
+        /* Hide mobile menu button when printing/downloading PDF */
+        #mobileMenuBtn { display: none !important; }
+      }
+      
+      /* Mobile optimizations for small screens (360x600 and similar) */
+      @media (max-width: 400px) {
+        /* Adjust header and buttons */
+        #reports h2 {
+          font-size: 1.5rem !important;
+        }
+        
+        #reports > div:first-of-type p {
+          font-size: 0.75rem !important;
+        }
+        
+        /* Make buttons smaller on very small screens */
+        #reports button {
+          font-size: 0.75rem !important;
+          padding: 0.5rem 0.75rem !important;
+        }
+        
+        /* Filter adjustments */
+        #filterWrapper {
+          flex-direction: column !important;
+          gap: 0.5rem !important;
+        }
+        
+        #filterWrapper > div {
+          width: 100% !important;
+        }
+        
+        #filterWrapper select {
+          width: 100% !important;
+          font-size: 0.75rem !important;
+          padding: 0.5rem !important;
+        }
+        
+        #filterWrapper label {
+          font-size: 0.75rem !important;
+        }
+        
+        #clearFiltersBtn {
+          width: 100% !important;
+          margin-left: 0 !important;
+          margin-top: 0.25rem !important;
+        }
+        
+        /* Cards adjustments */
+        .grid.grid-cols-2 {
+          gap: 0.5rem !important;
+        }
+        
+        .rounded-xl {
+          padding: 0.5rem !important;
+        }
+        
+        .rounded-xl p:first-child {
+          font-size: 0.65rem !important;
+        }
+        
+        .rounded-xl p:nth-child(2) {
+          font-size: 1.5rem !important;
+        }
+        
+        .rounded-xl p:last-child {
+          font-size: 0.6rem !important;
+        }
+        
+        /* Section headings */
+        h3 {
+          font-size: 1.125rem !important;
+        }
       }
     </style>
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 md:mb-6 gap-4">
@@ -67,13 +139,13 @@
       </div>
       <div class="rounded-xl border bg-white p-3 md:p-4 shadow-subtle text-center">
         <p class="text-xs md:text-sm text-black">Total Proposals</p>
-        <p id="totalProposals" class="text-xl md:text-3xl font-bold text-black">{{ $project_proposals['total'] }}</p>
+        <p id="totalProposals" class="text-3xl font-bold text-black">{{ $project_proposals['total'] }}</p>
       </div>
     </div>
 
     <!-- Project Status Summary -->
     <h3 class="text-xl md:text-2xl font-bold mt-6 md:mt-8 mb-3 md:mb-4">Project Implementation Status</h3>
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
+    <div class="grid grid-cols-3 sm:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
       <div class="rounded-xl border bg-white p-3 md:p-4 shadow-subtle text-center">
         <p class="text-xs md:text-sm text-black">Ongoing</p>
         <p id="statusOngoing" class="text-2xl md:text-3xl font-bold text-blue-600">{{ $project_status['ongoing'] }}</p>

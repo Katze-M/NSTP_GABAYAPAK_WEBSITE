@@ -135,6 +135,7 @@ Route::middleware('auth')->group(function () {
     // All Projects routes (Staff only)
     Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::get('/projects/current', [ProjectController::class, 'current'])->name('projects.current');
+    Route::get('/projects/all-approved', [ProjectController::class, 'allApproved'])->name('projects.allApproved');
     Route::get('/projects/pending', [ProjectController::class, 'pending'])->name('projects.pending')->middleware('staff');
     Route::get('/projects/rejected', [ProjectController::class, 'rejected'])->name('projects.rejected')->middleware('staff');
     Route::get('/projects/archived', [ProjectController::class, 'archived'])->name('projects.archived')->middleware('staff');
@@ -182,16 +183,16 @@ Route::middleware('auth')->group(function () {
 });
 
 // Approval routes
-// Staff approvals - only SACSI Director can access
-Route::middleware(['auth', 'role:SACSI Director'])->group(function () {
+// Staff approvals - SACSI Director and NSTP Program Officer can access
+Route::middleware(['auth', 'roles:SACSI Director|NSTP Program Officer'])->group(function () {
     Route::get('/approvals/staff', [\App\Http\Controllers\StaffApprovalController::class, 'index'])->name('approvals.staff');
     Route::get('/approvals/staff/history', [\App\Http\Controllers\StaffApprovalController::class, 'history'])->name('approvals.staff.history');
     Route::post('/approvals/staff/{id}/approve', [\App\Http\Controllers\StaffApprovalController::class, 'approve'])->name('approvals.staff.approve');
     Route::post('/approvals/staff/{id}/reject', [\App\Http\Controllers\StaffApprovalController::class, 'reject'])->name('approvals.staff.reject');
 });
 
-// Student approvals - only NSTP Program Officer can access
-Route::middleware(['auth', 'role:NSTP Program Officer'])->group(function () {
+// Student approvals - SACSI Director, NSTP Program Officer, and NSTP Coordinator can access
+Route::middleware(['auth', 'roles:SACSI Director|NSTP Program Officer|NSTP Coordinator'])->group(function () {
     Route::get('/approvals/students', [\App\Http\Controllers\StudentApprovalController::class, 'index'])->name('approvals.students');
     Route::get('/approvals/students/history', [\App\Http\Controllers\StudentApprovalController::class, 'history'])->name('approvals.students.history');
     Route::post('/approvals/students/{id}/approve', [\App\Http\Controllers\StudentApprovalController::class, 'approve'])->name('approvals.students.approve');
@@ -205,6 +206,7 @@ Route::post('/registration-status', function (\Illuminate\Http\Request $request)
     $user = App\Models\User::where('user_Email', $request->user_Email)->first();
     $status = null;
     $message = 'No registration found for that email.';
+    $remarks = null;
     if ($user) {
         $approval = App\Models\Approval::where('user_id', $user->user_id)->latest()->first();
         if ($user->approved || ($approval && $approval->status === 'approved')) {
@@ -216,9 +218,10 @@ Route::post('/registration-status', function (\Illuminate\Http\Request $request)
         } elseif ($approval && $approval->status === 'rejected') {
             $status = 'rejected';
             $message = 'Your registration was rejected. Please register again.';
+            $remarks = $approval->remarks ?? null;
         } else {
             $message = 'No approval record found. Please contact admin.';
         }
     }
-    return view('registration.status', compact('message','status'));
+    return view('registration.status', compact('message','status','remarks'));
 })->name('registration.status.post');

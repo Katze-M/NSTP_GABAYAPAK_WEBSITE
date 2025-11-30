@@ -87,18 +87,28 @@
                 <div class="mb-8">
                     <h2 class="text-2xl font-bold mb-4 text-gray-800">Team Members</h2>
                     <div class="space-y-4">
-                        @foreach($project->members() as $member)
-                            <div class="bg-white p-4 rounded-lg border-l-4 border-indigo-200 shadow-md">
+                        @foreach($project->members() as $index => $member)
+                            <div class="bg-white p-4 rounded-lg border-l-4 border-indigo-200 shadow-md relative">
+                                @php
+                                    // Use a consistent blue badge for member roles but do NOT default
+                                    // empty/blank values to 'Member'. If role is empty, do not render.
+                                    $rawRole = $member['role'] ?? ($member->role ?? null);
+                                    $roleLabel = trim((string)($rawRole ?? ''));
+                                    $roleClass = 'bg-blue-600 text-white';
+                                    // Check if this is the project owner - first member or contains "owner" or "leader" and is first
+                                    $isOwner = $index === 0 || stripos($roleLabel, 'owner') !== false || (stripos($roleLabel, 'leader') !== false && $index === 0);
+                                @endphp
+                                
+                                {{-- Project Owner badge in top right --}}
+                                @if($isOwner)
+                                    <div class="absolute top-2 right-2">
+                                        <span class="text-xs px-2 py-1 bg-blue-600 text-white rounded-full font-semibold">Project Owner</span>
+                                    </div>
+                                @endif
+                                
                                 <div class="flex items-center">
                                     <div class="ml-4">
                                         <div class="text-lg font-semibold text-gray-800">{{ $member['name'] ?? ($member->name ?? 'N/A') }}</div>
-                                        @php
-                                            // Use a consistent blue badge for member roles but do NOT default
-                                            // empty/blank values to 'Member'. If role is empty, do not render.
-                                            $rawRole = $member['role'] ?? ($member->role ?? null);
-                                            $roleLabel = trim((string)($rawRole ?? ''));
-                                            $roleClass = 'bg-blue-600 text-white';
-                                        @endphp
                                         @if(!empty($roleLabel))
                                             <div class="mt-1">
                                                 <span class="inline-flex items-center {{ $roleClass }} text-sm font-semibold px-3 py-0.5 rounded-full shadow-sm" aria-label="role">{{ $roleLabel }}</span>

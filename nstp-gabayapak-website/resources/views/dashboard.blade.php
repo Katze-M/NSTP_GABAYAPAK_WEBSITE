@@ -3,53 +3,226 @@
 @section('title', 'Dashboard')
 
 @section('content')
+<style>
+  /* Mobile optimizations for small screens (360x600 and similar) */
+  @media (max-width: 400px) {
+    /* Dashboard header adjustments */
+    .dashboard-header h1 {
+      font-size: 1.5rem !important;
+    }
+    
+    .dashboard-header p {
+      font-size: 0.875rem !important;
+    }
+    
+    /* Show action buttons but make them smaller and stack vertically */
+    .dashboard-actions {
+      flex-direction: column !important;
+      width: 100% !important;
+      gap: 0.5rem !important;
+      margin-top: 0.75rem !important;
+    }
+    
+    .dashboard-actions a {
+      font-size: 0.75rem !important;
+      padding: 0.5rem 0.75rem !important;
+      text-align: center !important;
+      width: 100% !important;
+    }
+    
+    /* Stack header content vertically */
+    .dashboard-header {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+    }
+    
+    /* Summary cards - make text smaller */
+    .summary-card p:first-child {
+      font-size: 0.65rem !important;
+    }
+    
+    .summary-card p:nth-child(2) {
+      font-size: 1.25rem !important;
+    }
+    
+    /* Reduce padding */
+    .dashboard-container {
+      padding: 0.75rem !important;
+    }
+    
+    
+    /* Make note text smaller */
+    .dashboard-note {
+      font-size: 0.7rem !important;
+      line-height: 1.3 !important;
+    }
+    
+    /* Upcoming activities section */
+    .activities-header h3 {
+      font-size: 1.125rem !important;
+    }
+    
+    /* Activity cards */
+    .activity-item {
+      padding: 0.75rem !important;
+      font-size: 0.875rem !important;
+    }
+    
+    /* Search input */
+    input[type="search"] {
+      font-size: 0.875rem !important;
+    }
+
+    /* Activity containers under upcoming activities */
+    .activity-item,
+    .activity-list > li,
+    .activity-list .relative {
+      padding: 0.75rem 0.5rem !important;
+      margin-bottom: 0.75rem !important;
+      border-radius: 0.75rem !important;
+      font-size: 0.9rem !important;
+      box-shadow: none !important;
+    }
+    .activity-item h2,
+    .activity-list .font-semibold {
+      font-size: 1rem !important;
+    }
+    .activity-item .badge,
+    .activity-list .inline-flex {
+      font-size: 0.75rem !important;
+      padding: 0.2rem 0.5rem !important;
+    }
+    .activity-item .absolute,
+    .activity-list .absolute {
+      font-size: 0.8rem !important;
+      padding: 0.2rem 0.7rem !important;
+      top: 0.5rem !important;
+      right: 0.5rem !important;
+    }
+    .activity-item .w-12,
+    .activity-list .w-12 {
+      width: 2.2rem !important;
+      height: 2.2rem !important;
+    }
+    .activity-item .text-xl,
+    .activity-list .text-xl {
+      font-size: 1rem !important;
+    }
+    .activity-item .mt-2,
+    .activity-list .mt-2 {
+      margin-top: 0.3rem !important;
+    }
+    .activity-item .mt-3,
+    .activity-list .mt-3 {
+      margin-top: 0.4rem !important;
+    }
+    .activity-item .px-3,
+    .activity-list .px-3 {
+      padding-left: 0.5rem !important;
+      padding-right: 0.5rem !important;
+    }
+    .activity-item .py-1,
+    .activity-list .py-1 {
+      padding-top: 0.2rem !important;
+      padding-bottom: 0.2rem !important;
+    }
+    .activity-item .rounded,
+    .activity-list .rounded {
+      border-radius: 0.5rem !important;
+    }
+    .activity-item .text-base,
+    .activity-list .text-base {
+      font-size: 0.9rem !important;
+    }
+    .activity-item .text-sm,
+    .activity-list .text-sm {
+      font-size: 0.8rem !important;
+    }
+    .activity-item .text-xs,
+    .activity-list .text-xs {
+      font-size: 0.7rem !important;
+    }
+    .activity-item .text-bold,
+    .activity-list .font-bold {
+      font-weight: 600 !important;
+    }
+    .activity-item .text-center,
+    .activity-list .text-center {
+      text-align: left !important;
+    }
+    .activity-item .flex,
+    .activity-list .flex {
+      gap: 0.5rem !important;
+      flex-wrap: wrap !important;
+    }
+    .activity-item .View,
+    .activity-list .View {
+      font-size: 0.8rem !important;
+      padding: 0.3rem 0.7rem !important;
+    }
+  }
+</style>
 <div class="py-6">
   <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-      <div class="p-6 text-gray-900">
+      <div class="p-6 text-gray-900 dashboard-container">
         @if(session('registration_status') === 'pending')
           <div class="mb-4 p-3 rounded bg-yellow-100 text-yellow-800">Your registration is under review.</div>
         @endif
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center justify-between mb-4 dashboard-header">
           <div>
             <h1 class="text-3xl md:text-4xl font-bold">Dashboard</h1>
               <p class="text-xl md:text-2xl text-gray-800">Welcome,
                 <span class="text-blue-800 font-semibold px-1 py-0.5 rounded">{{ Auth::user()->user_Name }}</span>!
               </p>
           </div>
-          <div class="flex gap-2">
-            <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700">Current Projects</a>
-            <a href="{{ route('projects.pending') }}" class="px-3 py-2 bg-yellow-400 text-black rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-yellow-300">Pending Projects</a>
-            @php $u = Auth::user(); @endphp
-            @if($u && $u->isStaff() && ($u->user_role === 'SACSI Director' || $u->user_role === 'NSTP Program Officer'))
-              @if($u->user_role === 'SACSI Director')
-                <a href="{{ route('approvals.staff') }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-green-700">Staff Registration Approval</a>
-              @elseif($u->user_role === 'NSTP Program Officer')
-                <a href="{{ route('approvals.students') }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-green-700">Student Registration Approval</a>
+          <div class="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-sm">
+            <h3 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider text-center">Quick Actions</h3>
+            <div class="flex gap-3 dashboard-actions">
+              @php $u = Auth::user(); @endphp
+              @if($u && $u->isStaff() && ($u->user_role === 'SACSI Director' || $u->user_role === 'NSTP Program Officer'))
+                {{-- Director and Program Officer: Stacked layout --}}
+                <div class="flex flex-col gap-2">
+                  <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700 whitespace-nowrap text-center">Current Projects</a>
+                  <a href="{{ route('projects.pending') }}" class="px-3 py-2 bg-yellow-400 text-black rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-yellow-300 whitespace-nowrap text-center">Pending Projects</a>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <a href="{{ route('approvals.students') }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-green-700 whitespace-nowrap text-center">Student Registration Approval</a>
+                  <a href="{{ route('approvals.staff') }}" class="px-3 py-2 bg-red-900 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-red-950 whitespace-nowrap text-center">Staff Registration Approval</a>
+                </div>
+              @elseif($u && $u->isStaff() && $u->user_role === 'NSTP Coordinator')
+                {{-- NSTP Coordinator: All buttons in a row --}}
+                <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700 whitespace-nowrap text-center">Current Projects</a>
+                <a href="{{ route('projects.pending') }}" class="px-3 py-2 bg-yellow-400 text-black rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-yellow-300 whitespace-nowrap text-center">Pending Projects</a>
+                <a href="{{ route('approvals.students') }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-green-700 whitespace-nowrap text-center">Student Registration Approval</a>
+              @else
+                {{-- NSTP Formators and other staff: Buttons in a row --}}
+                <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700 whitespace-nowrap text-center">Current Projects</a>
+                <a href="{{ route('projects.pending') }}" class="px-3 py-2 bg-yellow-400 text-black rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-yellow-300 whitespace-nowrap text-center">Pending Projects</a>
               @endif
-            @endif
+            </div>
           </div>
         </div>
 
         <!-- Summary Cards -->
         <div class="mt-4 md:mt-6 grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
-          <div class="rounded-xl  bg-slate-50 p-3 md:p-4 shadow-lg text-center">
+          <div class="rounded-xl  bg-slate-50 p-3 md:p-4 shadow-lg text-center summary-card">
             <p class="text-sm md:text-base text-black font-semibold">Submitted Projects</p>
             <p class="text-xl md:text-3xl font-bold text-blue-600">{{ $total_projects }}</p>
           </div>
-          <div class="rounded-xl  bg-slate-50 p-3 md:p-4 shadow-lg text-center">
+          <div class="rounded-xl  bg-slate-50 p-3 md:p-4 shadow-lg text-center summary-card">
             <p class="text-sm md:text-base text-black font-semibold">Pending Projects</p>
             <p class="text-xl md:text-3xl font-bold text-yellow-600">{{ $project_status_counts['pending'] }}</p>
           </div>
-          <div class="rounded-xl  bg-slate-50 p-3 md:p-4 shadow-lg text-center">
+          <div class="rounded-xl  bg-slate-50 p-3 md:p-4 shadow-lg text-center summary-card">
             <p class="text-sm md:text-base text-black font-semibold">Current Projects</p>
             <p class="text-xl md:text-3xl font-bold text-green-600">{{ $project_status_counts['approved'] }}</p>
           </div>
-          <div class="rounded-xl  bg-slate-50 p-3 md:p-4 shadow-lg text-center">
+          <div class="rounded-xl  bg-slate-50 p-3 md:p-4 shadow-lg text-center summary-card">
             <p class="text-sm md:text-base text-black font-semibold">Rejected Projects</p>
             <p class="text-xl md:text-3xl font-bold text-red-600">{{ $project_status_counts['rejected'] }}</p>
           </div>
-          <div class="col-span-2 md:col-span-1 rounded-xl bg-slate-50 p-3 md:p-4 shadow-lg text-center">
+          <div class="col-span-2 md:col-span-1 rounded-xl bg-slate-50 p-3 md:p-4 shadow-lg text-center summary-card">
             <p class="text-sm md:text-base text-black font-semibold">Total Student Users</p>
             <p class="text-xl md:text-3xl font-bold text-red-800">{{ $total_students }}</p>
           </div>
@@ -57,12 +230,12 @@
 
         <!-- Upcoming Activities + Filters -->
         <div class="mt-6 md:mt-10 rounded-xl border bg-white p-4 md:p-6 shadow-md">
-          <div class="flex items-center justify-between mb-4 md:mb-6">
+          <div class="flex items-center justify-between mb-4 md:mb-6 activities-header">
             <h3 class="text-xl md:text-2xl font-bold">Upcoming Activities</h3>
           </div>
 
           <!-- Filters: stacked on small screens, single-line on md+ -->
-          <form id="dashboard-filters" method="GET" action="{{ route('dashboard') }}" class="mb-4">
+          <form id="dashboard-filters" method="GET" action="{{ route('dashboard') }}" class="mb-4 dashboard-filters">
             <div class="flex flex-col md:flex-row md:items-center md:justify-end md:flex-nowrap gap-2">
               <input type="search" name="q" value="{{ request('q') }}" placeholder="Search activities, projects, teams..." class=" w-full min-w-0 rounded-lg border px-3 py-2" />
 
@@ -166,7 +339,7 @@
           </script>
 
           <div class="mb-3">
-            <p class="text-sm text-gray-500">Note: Completed activities are hidden by default. Select <strong>Completed</strong> in the status filter to show them. Some completed activities may belong to <strong>archived projects</strong>, so they won't appear in the upcoming activities list unless you view archived projects.</p>
+            <p class="text-sm text-gray-500 dashboard-note">Note: Completed activities are hidden by default. Select <strong>Completed</strong> in the status filter to show them. Some completed activities may belong to <strong>archived projects</strong>, so they won't appear in the upcoming activities list unless you view archived projects.</p>
           </div>
           @php $hasFilters = request('q') || request('date') || request('section') || request('component') || request('activity_status'); @endphp
 
@@ -190,7 +363,7 @@
                             else { $implBadge = ['text' => 'In ' . $days . 'd', 'class' => 'bg-blue-600 text-white']; }
                           } else {
                             $days = (int) $implDate->diffInDays($now);
-                            $implBadge = ['text' => $days . 'd ago', 'class' => 'bg-orange-400 text-black'];
+                            $implBadge = ['text' => $days . 'd ago', 'class' => 'bg-red-500 text-white'];
                           }
                         } catch (\Exception $e) {
                           $implBadge = null;
@@ -318,7 +491,7 @@
                           else { $implBadge = ['text' => 'In ' . $days . 'd', 'class' => 'bg-blue-600 text-white']; }
                         } else {
                           $days = (int) $implDate->diffInDays($now);
-                          $implBadge = ['text' => $days . 'd ago', 'class' => 'bg-orange-400 text-black'];
+                          $implBadge = ['text' => $days . 'd ago', 'class' => 'bg-red-500 text-white'];
                         }
                       } catch (\Exception $e) {
                         $implBadge = null;

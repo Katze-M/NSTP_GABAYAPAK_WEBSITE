@@ -3,6 +3,45 @@
 @section('title', 'NSTP Project Management and Monitoring System')
 
 @section('content')
+<style>
+  /* Mobile optimizations for NSTP Formators section on small screens (360x600) */
+  @media (max-width: 400px) {
+    /* NSTP Formators section adjustments */
+    .formators-section {
+      padding: 0.75rem !important;
+    }
+    
+    .formators-header h3 {
+      font-size: 1.25rem !important;
+    }
+    
+    .formators-header a {
+      font-size: 0.7rem !important;
+      margin-left: 0.5rem !important;
+    }
+    
+    /* Formator cards - adjust grid and sizing */
+    .formators-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 0.75rem !important;
+    }
+    
+    .formator-card .formator-image {
+      width: 3.5rem !important;
+      height: 3.5rem !important;
+    }
+    
+    .formator-card .formator-image svg {
+      width: 1.75rem !important;
+      height: 1.75rem !important;
+    }
+    
+    .formator-card p {
+      font-size: 0.7rem !important;
+      margin-top: 0.375rem !important;
+    }
+  }
+</style>
 <!-- HOME (About + Moderators) -->
 <section id="home" class="bg-white rounded-2xl shadow-subtle overflow-hidden">
 
@@ -13,10 +52,10 @@
   <!-- IMAGE SLIDER -->
   <div class="relative w-full h-48 md:h-72 overflow-hidden rounded-2xl mb-6 md:mb-10">
     <div id="slider" class="flex transition-transform duration-700 ease-in-out">
-      <img src="{{ asset('assets/1000036076.jpg') }}" class="w-full h-48 md:h-72 object-cover flex-shrink-0" alt="Slide 1">
-      <img src="{{ asset('assets/1000036077.jpg') }}" class="w-full h-48 md:h-72 object-cover flex-shrink-0" alt="Slide 2">
-      <img src="{{ asset('assets/1000036078.jpg') }}" class="w-full h-48 md:h-72 object-cover flex-shrink-0" alt="Slide 3">
-      <img src="{{ asset('assets/1000036079.jpg') }}" class="w-full h-48 md:h-72 object-cover flex-shrink-0" alt="Slide 4">
+      <img src="{{ asset('assets/NSTP_IMAGE_4.jpg') }}" class="w-full h-48 md:h-72 object-cover flex-shrink-0" alt="Slide 1">
+      <img src="{{ asset('assets/NSTP_ROTC_IMAGE_4.jpg') }}" class="w-full h-48 md:h-72 object-cover flex-shrink-0" alt="Slide 2">
+      <img src="{{ asset('assets/NSTP_IMAGE_2.jpg') }}" class="w-full h-48 md:h-72 object-cover flex-shrink-0" alt="Slide 3">
+      <img src="{{ asset('assets/NSTP_LTS_IMAGE_3.jpg') }}" class="w-full h-48 md:h-72 object-cover flex-shrink-0" style="object-position: center 30%;" alt="Slide 4">
     </div>
 
     <!-- Navigation Buttons -->
@@ -78,8 +117,8 @@
     </article>
 
     <!-- NSTP FORMATORS -->
-    <section class="rounded-2xl p-4 md:p-6" style="background-color: #F8E2E2;">
-      <div class="flex justify-between items-center mb-4 md:mb-6">
+    <section class="rounded-2xl p-4 md:p-6 formators-section" style="background-color: #F8E2E2;">
+      <div class="flex justify-between items-center mb-4 md:mb-6 formators-header">
         <h3 class="text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-800 text-center tracking-tight flex-1">NSTP Formators</h3>
         @if(auth()->check() && auth()->user()->isStaff())
           <a href="{{ route('formators.manage') }}" class="text-sm font-medium text-blue-600 hover:text-blue-800 ml-4">
@@ -87,10 +126,10 @@
           </a>
         @endif
       </div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6 formators-grid">
         @forelse($formators as $formator)
-          <div class="text-center">
-            <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-gray-400 mx-auto flex items-center justify-center bg-white overflow-hidden">
+          <div class="text-center formator-card">
+            <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-gray-400 mx-auto flex items-center justify-center bg-white overflow-hidden formator-image">
               @if (!empty($formator['image']))
                 <img src="{{ $formator['image'] }}" class="w-full h-full object-cover" alt="{{ $formator['name'] }}">
               @else

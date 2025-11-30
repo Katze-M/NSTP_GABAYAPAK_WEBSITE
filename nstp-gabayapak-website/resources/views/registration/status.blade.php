@@ -30,8 +30,16 @@
             <img src="{{ asset('assets/GabaYapak_Logo.png') }}" alt="GABAYAPAK Logo" class="w-28 mx-auto mb-6 drop-shadow-md">
             <h1 class="text-center text-2xl font-semibold tracking-wide text-gray-800 mb-6">Registration Status</h1>
 
+
             @if(isset($message))
-                <div class="mb-6 px-4 py-3 rounded-lg border {{ $stateClass }} text-sm font-medium shadow-inner" role="status" aria-live="polite">{!! $displayMessage !!}</div>
+                <div class="mb-6 px-4 py-3 rounded-lg border {{ $stateClass }} text-sm font-medium shadow-inner" role="status" aria-live="polite">{!! $displayMessage !!}
+                    @if(isset($remarks) && $status === 'rejected' && $remarks)
+                        <div class="mt-3 text-red-700 text-base font-normal bg-red-50 border border-red-200 rounded p-3">
+                            <strong>Rejection Remarks:</strong><br>
+                            <span style="white-space:pre-line">{{ $remarks }}</span>
+                        </div>
+                    @endif
+                </div>
             @endif
 
             <form method="POST" action="{{ route('registration.status.post') }}" class="space-y-4">

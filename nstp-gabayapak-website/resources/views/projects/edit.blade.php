@@ -9,7 +9,6 @@
   <!-- Main Heading -->
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <x-back-button />
       <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6 flex items-center gap-2">Edit Project Proposal</h1>
     </div>
   </div>

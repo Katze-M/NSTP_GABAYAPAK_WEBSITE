@@ -69,7 +69,7 @@
         <img src="{{ asset('assets/1000041348.jpg') }}" alt="bg5">
     </div>
     
-    <div class="absolute inset-0 bg-blue-900/80 -z-10"></div>
+    <div class="absolute inset-0 bg-white/75 -z-10"></div>
 
     <div id="formContainer" class="bg-blue-900/95 p-8 rounded-2xl w-full max-w-md relative">
         <div class="text-center mb-8">

@@ -14,6 +14,8 @@
                 $color = 'bg-yellow-50 text-yellow-800'; break;
             case 'pending':
                 $color = 'bg-orange-500 text-white'; break;
+            case 'endorsed':
+                $color = 'bg-purple-50 text-purple-800'; break;
             case 'under review':
             case 'approved':
             case 'current':
@@ -36,6 +38,8 @@
                 $color = 'bg-yellow-500 text-white'; break;
             case 'pending':
                 $color = 'bg-orange-500 text-white'; break;
+            case 'endorsed':
+                $color = 'bg-purple-600 text-white'; break;
             case 'under review':
             case 'approved':
             case 'current':

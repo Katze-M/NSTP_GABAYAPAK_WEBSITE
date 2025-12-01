@@ -50,7 +50,20 @@
                     @endif
 
                     <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
-                        <span class="bg-indigo-50 text-indigo-700 text-sm font-semibold px-3 py-1 rounded-full">{{ $project->Project_Component ?? 'No Component' }}</span>
+                        @php
+                            $componentRaw = strtoupper(trim((string)($project->Project_Component ?? '')));
+                            switch($componentRaw) {
+                                case 'LTS':
+                                    $compClasses = 'bg-yellow-50 text-yellow-800'; break;
+                                case 'CWTS':
+                                    $compClasses = 'bg-red-50 text-red-800'; break;
+                                case 'ROTC':
+                                    $compClasses = 'bg-blue-50 text-blue-800'; break;
+                                default:
+                                    $compClasses = 'bg-indigo-50 text-indigo-700'; break;
+                            }
+                        @endphp
+                        <span class="{{ $compClasses }} text-sm font-semibold px-3 py-1 rounded-full">{{ $project->Project_Component ?? 'No Component' }}</span>
                         <span class="bg-gray-100 text-gray-800 text-sm font-semibold px-3 py-1 rounded-full">{{ $project->Project_Section ?? 'N/A' }}</span>
                         @php
                             $acts = $project->activities ?? collect();

@@ -214,7 +214,8 @@
                                 @foreach($toApprove as $project)
                                     <div class="bg-white p-4 pt-10 rounded-lg shadow-md text-center relative">
                                         <div class="w-full flex justify-end mb-2">
-                                            @include('components.status-badge', ['status' => 'pending'])
+                                            {{-- These projects are in the "to approve" list and are 'endorsed' in DB -- show endorsed badge --}}
+                                            @include('components.status-badge', ['status' => 'endorsed'])
                                         </div>
                                         <h2 class="text-lg font-semibold text-center break-words" title="{{ $project->Project_Name }}">{{ $project->Project_Name }}</h2>
                                         <div class="w-16 h-16 mx-auto my-4">
@@ -274,6 +275,9 @@
                             @include('components.status-badge', ['status' => 'pending', 'extraClass' => 'bg-orange-500 text-white'])
                         @elseif($project->Project_Status === 'completed')
                             @include('components.status-badge', ['status' => 'completed'])
+                        @elseif($project->Project_Status === 'endorsed')
+                            {{-- Show purple endorsed badge on project cards/lists --}}
+                            @include('components.status-badge', ['status' => 'endorsed'])
                         {{-- Removed automatic badge when activities are all completed; badge displays only when project status is completed. --}}
                         @elseif($project->Project_Status === 'approved' || $project->Project_Status === 'current')
                             @include('components.status-badge', ['status' => 'current'])

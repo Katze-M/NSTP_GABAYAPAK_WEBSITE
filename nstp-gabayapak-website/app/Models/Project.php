@@ -47,6 +47,8 @@ class Project extends Model
         'is_resubmission',
         'previous_rejection_reasons',
         'resubmission_count',
+            'endorsed_by',
+            'mark_as_completed_by',
     ];
 
     /**
@@ -245,5 +247,21 @@ class Project extends Model
     public function getTotalBudgetAttribute()
     {
         return $this->budgets()->sum('Amount');
+    }
+
+    /**
+     * Get the user who endorsed the project.
+     */
+    public function endorsedBy()
+    {
+        return $this->belongsTo(User::class, 'endorsed_by', 'user_id');
+    }
+
+    /**
+     * Get the user who marked the project as completed.
+     */
+    public function completedBy()
+    {
+        return $this->belongsTo(User::class, 'mark_as_completed_by', 'user_id');
     }
 }

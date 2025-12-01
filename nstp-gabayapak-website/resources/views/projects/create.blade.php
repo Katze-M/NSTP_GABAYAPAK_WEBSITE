@@ -25,8 +25,48 @@
       $existingRejected = Project::where('student_id', $student->id)->where('Project_Status', 'rejected')->first();
       $existingPending = Project::where('student_id', $student->id)->where('Project_Status', 'pending')->first();
     }
+    // Default disables based on draft/pending/rejected owned projects
     $disableDraftBtn = ($hasPending || $hasRejected);
     $disableSubmit = (bool) ($existingDraft || $hasPending || $hasRejected);
+
+    // If controller passed an existingProject (student is a member of a project),
+    // disable save/submit for non-owners and show a banner only for non-owners.
+    $existingProject = $existingProject ?? null; // may be passed from controller
+    $isOwnerOfExisting = false;
+    if ($existingProject && $student) {
+        $isOwnerOfExisting = ($existingProject->student_id === $student->id);
+        if (!$isOwnerOfExisting) {
+            // Student is a member (but not owner): prevent creating/submitting another project
+            $disableDraftBtn = true;
+            $disableSubmit = true;
+        }
+    }
+
+    // Tooltip messages for disabled buttons
+    $draftTooltip = '';
+    $submitTooltip = '';
+    if ($disableDraftBtn) {
+      if (!$isOwnerOfExisting && $existingProject) {
+        $draftTooltip = 'You cannot save a draft while you are already a member of another project. Open the project to view details.';
+      } elseif ($hasPending || $hasRejected) {
+        $draftTooltip = 'You cannot save a draft while you have a pending or rejected project.';
+      } else {
+        $draftTooltip = 'Saving is disabled.';
+      }
+    }
+    if (!$disableSubmit) {
+      $submitTooltip = '';
+    } else {
+      if (!$isOwnerOfExisting && $existingProject) {
+        $submitTooltip = 'You cannot submit a project while you are a member of another project. Open that project to view details.';
+      } elseif ($existingDraft) {
+        $submitTooltip = 'Please open and submit your saved draft or delete it to create a new project.';
+      } elseif ($hasPending || $hasRejected) {
+        $submitTooltip = 'You cannot submit a new project while you have a pending or rejected project.';
+      } else {
+        $submitTooltip = 'Submitting is disabled.';
+      }
+    }
   @endphp
 
   @if($existingDraft)
@@ -38,6 +78,20 @@
         </div>
         <div class="flex items-center gap-2">
           <a href="{{ route('projects.edit', $existingDraft) }}" class="inline-block bg-blue-600 text-white px-3 py-2 rounded-lg">Open Draft</a>
+        </div>
+      </div>
+    </div>
+  @endif
+
+  @if(!empty($existingProject) && empty($isOwnerOfExisting))
+    <div class="mb-4 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 p-4">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="font-semibold text-emerald-800">You are already a member of a project</p>
+          <p class="text-sm text-emerald-700">You are currently attached to "<strong>{{ $existingProject->Project_Name ?? 'a project' }}</strong>". You may still fill out the form below, but you cannot create multiple active projects while attached to one.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="{{ route('projects.show', $existingProject) }}" class="inline-block bg-emerald-600 text-white px-3 py-2 rounded-lg">View Project</a>
         </div>
       </div>
     </div>
@@ -430,10 +484,12 @@
       @if($existingDraft)
         <a href="{{ route('projects.edit', $existingDraft) }}" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors">Open Draft</a>
       @else
-        <button type="button" id="saveDraftBtn" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors" @if($disableDraftBtn) disabled title="You cannot save a draft while you have a pending or rejected project." @endif>Save as Draft</button>
+        <button type="button" id="saveDraftBtn" class="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm md:text-base transition-colors @if($disableDraftBtn) cursor-not-allowed opacity-60 @endif" @if($disableDraftBtn) disabled title="{{ $draftTooltip }}" @endif>Save as Draft</button>
       @endif
       @if(!$disableSubmit)
         <button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-base transition-colors">Submit Project</button>
+      @else
+        <button type="button" id="submitProjectBtn" class="rounded-lg bg-blue-600/60 text-white px-4 py-2 text-sm md:text-base transition-colors cursor-not-allowed" disabled title="{{ $submitTooltip }}">Submit Project</button>
       @endif
     </div>
   </form>

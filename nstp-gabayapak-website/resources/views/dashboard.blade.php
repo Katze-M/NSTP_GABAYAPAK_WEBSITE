@@ -173,6 +173,9 @@
           <div>
             <h1 class="text-3xl md:text-4xl font-bold">Dashboard</h1>
               <p class="text-xl md:text-2xl text-gray-800">Welcome,
+                @if(Auth::user()->isStaff())
+                  <span class="text-black font-semibold px-1 py-0.5 rounded">{{ Auth::user()->user_role }}</span>
+                @endif
                 <span class="text-blue-800 font-semibold px-1 py-0.5 rounded">{{ Auth::user()->user_Name }}</span>!
               </p>
           </div>
@@ -192,9 +195,13 @@
                 </div>
               @elseif($u && $u->isStaff() && $u->user_role === 'NSTP Coordinator')
                 {{-- NSTP Coordinator: All buttons in a row --}}
-                <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700 whitespace-nowrap text-center">Current Projects</a>
-                <a href="{{ route('projects.pending') }}" class="px-3 py-2 bg-yellow-400 text-black rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-yellow-300 whitespace-nowrap text-center">Pending Projects</a>
-                <a href="{{ route('approvals.students') }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-green-700 whitespace-nowrap text-center">Student Registration Approval</a>
+                <div class="w-full flex flex-col items-center gap-3">
+                  <div class="flex flex-row gap-3 w-full justify-center">
+                    <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700 whitespace-nowrap text-center flex-1">Current Projects</a>
+                    <a href="{{ route('projects.pending') }}" class="px-3 py-2 bg-yellow-400 text-black rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-yellow-300 whitespace-nowrap text-center flex-1">Pending Projects</a>
+                  </div>
+                  <a href="{{ route('approvals.students') }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-green-700 whitespace-nowrap text-center w-full">Student Registration Approval</a>
+                </div>
               @else
                 {{-- NSTP Formators and other staff: Buttons in a row --}}
                 <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700 whitespace-nowrap text-center">Current Projects</a>
@@ -598,7 +605,6 @@
           @else
             <div class="mt-6 rounded-xl border bg-white p-6 shadow-md text-center">
               <p class="text-gray-500">No upcoming activities match your filters</p>
-              <a href="/activities/add_activity.php" class="mt-3 inline-block rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2">Add Activity</a>
             </div>
           @endif
         @endif

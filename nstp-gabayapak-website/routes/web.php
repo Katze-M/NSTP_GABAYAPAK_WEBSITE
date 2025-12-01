@@ -98,12 +98,23 @@ Route::post('/formators/update', function (\Illuminate\Http\Request $request) {
         ->get();
 
     $selected = $request->formators ?? [];
-    
+
+    // Protect privileged staff roles from being changed by this bulk update.
+    // These roles should only be changed through explicit admin actions.
+    $protectedRoles = ['SACSI Director', 'NSTP Program Officer', 'NSTP Coordinator'];
+
     // Update roles based on selection (only for approved staff)
     foreach ($staffUsers as $user) {
+        // If the user currently holds a protected role, skip any changes.
+        if (in_array($user->user_role, $protectedRoles)) {
+            continue;
+        }
+
         if (in_array($user->user_id, $selected)) {
+            // Promote to NSTP Formator when selected
             $user->update(['user_role' => 'NSTP Formator']);
         } else {
+            // Only demote users who are currently NSTP Formator
             if ($user->user_role === 'NSTP Formator') {
                 $user->update(['user_role' => 'Staff']);
             }

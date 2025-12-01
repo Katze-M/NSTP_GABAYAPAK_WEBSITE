@@ -60,6 +60,18 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Only authenticated students can create projects.');
         }
 
+        // Prevent students who are already attached to an active project from creating another
+        if (!$user->isStaff()) {
+            try {
+                $existing = $user->activeProject();
+                if ($existing) {
+                    return redirect()->route('projects.create')->with('error', 'You are already attached to an active project and cannot create another.');
+                }
+            } catch (\Throwable $e) {
+                // ignore and allow flow to continue if helper fails for any reason
+            }
+        }
+
         $rules = $this->validateDraftRules();
         $messages = $this->validationMessages();
 
@@ -175,6 +187,18 @@ class ProjectController extends Controller
         $user = Auth::user();
         if (!$user || !$user->student) {
             return redirect()->back()->with('error', 'Only authenticated students can submit projects.');
+        }
+
+        // Prevent students who already belong to an active project from submitting a new one
+        if (!$user->isStaff()) {
+            try {
+                $existing = $user->activeProject();
+                if ($existing) {
+                    return redirect()->route('projects.create')->with('error', 'You are already attached to an active project and cannot submit another.');
+                }
+            } catch (\Throwable $e) {
+                // ignore and continue
+            }
         }
 
         $rules = $this->validateSubmitRules();
@@ -437,6 +461,73 @@ class ProjectController extends Controller
         // Resubmission handling
         $isResubmission = $project->Project_Status === 'rejected' && $projectStatus === 'pending';
 
+        // If this is a resubmission, route it back to the appropriate reviewer based
+        // on who performed the last rejection. Prefer the explicit `Project_Rejected_By`
+        // column, but fall back to the last entry in `previous_rejection_reasons` if needed.
+        if ($isResubmission) {
+            try {
+                $wasCoordinator = false;
+                $hadEndorsedBy = !empty($project->endorsed_by);
+                $hadProjectApprovedBy = !empty($project->Project_Approved_By);
+
+                // Determine the most-recent rejecting user's id
+                $rejectedById = $project->Project_Rejected_By ?? null;
+
+                // If not present, try to extract from previous_rejection_reasons (last entry)
+                if (empty($rejectedById) && !empty($project->previous_rejection_reasons)) {
+                    try {
+                        $prev = json_decode($project->previous_rejection_reasons, true) ?: [];
+                        if (is_array($prev) && count($prev) > 0) {
+                            $last = end($prev);
+                            // Prefer an explicit id if available
+                            if (!empty($last['rejected_by_id'])) {
+                                $rejectedById = $last['rejected_by_id'];
+                            }
+                            // Otherwise, leave $rejectedById null and fall back to text checks below
+                        }
+                    } catch (\Throwable $e) {
+                        // ignore parsing errors
+                    }
+                }
+
+                // If we have an id, check role via User helper methods
+                if (!empty($rejectedById)) {
+                    $rejectedUser = \App\Models\User::where('user_id', $rejectedById)->first();
+                    if ($rejectedUser && method_exists($rejectedUser, 'isCoordinator') && $rejectedUser->isCoordinator()) {
+                        $wasCoordinator = true;
+                    }
+                }
+
+                // If still undetermined, use heuristic: if project was previously endorsed
+                // (endorsed_by present) and not yet approved at Coordinator level, route to coordinator.
+                if (!$wasCoordinator && $hadEndorsedBy && !$hadProjectApprovedBy) {
+                    $wasCoordinator = true;
+                }
+
+                // Final fallback: inspect last previous_rejection_reasons text for 'coordinator'
+                if (!$wasCoordinator && !empty($project->previous_rejection_reasons)) {
+                    try {
+                        $prev = json_decode($project->previous_rejection_reasons, true) ?: [];
+                        if (is_array($prev) && count($prev) > 0) {
+                            $last = end($prev);
+                            $rbText = isset($last['rejected_by']) ? (string)$last['rejected_by'] : '';
+                            if ($rbText !== '' && stripos($rbText, 'coordinator') !== false) {
+                                $wasCoordinator = true;
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        // ignore parsing errors
+                    }
+                }
+
+                $projectStatus = $wasCoordinator ? 'endorsed' : 'pending';
+                \Log::debug('Resubmission routing', ['project' => $project->Project_ID ?? null, 'rejectedById' => $rejectedById, 'hadEndorsedBy' => $hadEndorsedBy, 'hadProjectApprovedBy' => $hadProjectApprovedBy, 'wasCoordinator' => $wasCoordinator, 'computedStatus' => $projectStatus]);
+            } catch (\Throwable $e) {
+                // If anything goes wrong, fall back to 'pending'
+                $projectStatus = 'pending';
+            }
+        }
+
         DB::transaction(function() use ($project, $validated, $request, $studentIds, $memberRoles, $projectStatus, $isResubmission) {
             // Debug incoming activity/budget ids for submit flow
             Log::debug('updateSubmit payload ids', [
@@ -459,6 +550,62 @@ class ProjectController extends Controller
                 'member_roles' => $memberRoles,
                 'Project_Section' => $request->input('nstp_section') ?? $project->Project_Section,
             ];
+            // If this is a resubmission, clear the old rejection metadata so the
+            // project appears cleanly in the next reviewer's pending queue.
+            if ($isResubmission) {
+                $update['Project_Rejection_Reason'] = null;
+                $update['Project_Rejected_By'] = null;
+                // Ensure approval/endorsement markers are cleared so pending filters match.
+                $update['Project_Approved_By'] = null;
+            }
+
+            // Preserve previous rejection reasons history when the student resubmits.
+            // If the project currently has a rejection reason, capture it into the
+            // `previous_rejection_reasons` array before we clear the fields so reviewers
+            // can still see the prior feedback.
+            if ($isResubmission) {
+                try {
+                    $previous = [];
+                    if (!empty($project->previous_rejection_reasons)) {
+                        $previous = json_decode($project->previous_rejection_reasons, true) ?: [];
+                    }
+
+                    if (!empty($project->Project_Rejection_Reason)) {
+                        // Determine a display string for the rejecting user when possible
+                        $rejectedByDisplay = $project->Project_Rejected_By ?? null;
+                        $rejectedById = $project->Project_Rejected_By ?? null;
+                        if (!empty($rejectedById)) {
+                            try {
+                                $ru = \App\Models\User::where('user_id', $rejectedById)->first();
+                                if ($ru) {
+                                    $name = $ru->user_Name ?? null;
+                                    $role = $ru->user_role ?? null;
+                                    if ($name && $role) {
+                                        $rejectedByDisplay = $name . ' (' . $role . ')';
+                                    } elseif ($name) {
+                                        $rejectedByDisplay = $name;
+                                    }
+                                }
+                            } catch (\Throwable $e) {
+                                // ignore and fallback to id
+                            }
+                        }
+
+                        $previous[] = [
+                            'reason' => $project->Project_Rejection_Reason,
+                            'rejected_at' => optional($project->updated_at)->toDateTimeString() ?? now()->toDateTimeString(),
+                            'rejected_by' => $rejectedByDisplay,
+                            'rejected_by_id' => $rejectedById,
+                        ];
+                    }
+
+                    if (!empty($previous)) {
+                        $update['previous_rejection_reasons'] = json_encode($previous);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Failed preserving previous_rejection_reasons on resubmission: ' . $e->getMessage());
+                }
+            }
 
             if ($isResubmission) {
                 $update['is_resubmission'] = true;
@@ -1206,9 +1353,30 @@ class ProjectController extends Controller
             if ($user->student->id === $project->student_id) {
                 // owner - allowed
             } else {
-                // allow viewing if project is public (current/approved/completed)
+                // Allow viewing if project is public (current/approved/completed)
+                // or if the student is a team member (included in student_ids).
                 $publicStatuses = ['current', 'approved', 'completed'];
-                if (!in_array(strtolower((string)$project->Project_Status), $publicStatuses)) {
+
+                // Check membership robustly: student_ids may be stored as array, JSON string,
+                // and may contain ints or stringified numbers. Normalize and compare both forms.
+                $isMember = false;
+                try {
+                    $sids = $project->student_ids ?? [];
+                    if (!is_array($sids)) {
+                        $sids = json_decode($sids, true) ?: [];
+                    }
+                    $sidToCheck = (string) ($user->student->id ?? '');
+                    foreach ($sids as $sid) {
+                        if ((string) $sid === $sidToCheck) {
+                            $isMember = true;
+                            break;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $isMember = false;
+                }
+
+                if (!in_array(strtolower((string)$project->Project_Status), $publicStatuses) && !$isMember) {
                     abort(403, 'Unauthorized action.');
                 }
             }
@@ -1380,12 +1548,33 @@ class ProjectController extends Controller
 
     public function pending()
     {
-        if (!Auth::user()->isStaff()) abort(403);
-                // Only include projects whose status is 'pending'. Rejected projects
-                // should be shown in the dedicated rejected list instead.
-                $projects = Project::where('Project_Status', 'pending')
-                        ->orderByDesc('created_at')
-                        ->get();
+        $user = Auth::user();
+        if (!$user->isStaff()) abort(403);
+        // NSTP Formator: see projects with status 'pending' and not yet endorsed
+        if ($user->isFormator()) {
+            $projects = Project::where('Project_Status', 'pending')
+                ->whereNull('endorsed_by')
+                ->orderByDesc('created_at')
+                ->get();
+        }
+        // NSTP Coordinator: see projects with status 'endorsed' and not yet approved
+        elseif ($user->isCoordinator()) {
+            $projects = Project::where('Project_Status', 'endorsed')
+                ->whereNull('Project_Approved_By')
+                ->orderByDesc('created_at')
+                ->get();
+        }
+        // NSTP Program Officer: see projects with status 'approved' and not yet completed
+        // Also allow SACSI Director to view the same list (but SACSI Director will have limited actions)
+        elseif ($user->isProgramOfficer() || (isset($user->user_role) && $user->user_role === 'SACSI Director')) {
+            $projects = Project::where('Project_Status', 'approved')
+                ->whereNull('mark_as_completed_by')
+                ->orderByDesc('created_at')
+                ->get();
+        }
+        else {
+            $projects = collect();
+        }
         return view('all_projects.pending', compact('projects'));
     }
 
@@ -1401,7 +1590,9 @@ class ProjectController extends Controller
     public function allApproved()
     {
         if (!Auth::user()->isStaff()) abort(403);
-        $projects = Project::whereIn('Project_Status', ['completed', 'archived', 'approved'])
+        // Include 'endorsed' so projects that have been endorsed (but not yet fully
+        // approved) also appear on the All Approved Projects listing per UX request.
+        $projects = Project::whereIn('Project_Status', ['completed', 'archived', 'approved', 'endorsed'])
             ->orderByDesc('created_at')
             ->get();
         return view('all_projects.all-approved', compact('projects'));
@@ -1424,13 +1615,46 @@ class ProjectController extends Controller
      */
     public function approve(Request $request, Project $project)
     {
-        if (!Auth::user()->isStaff()) abort(403);
-        // Keep 'approved' as the canonical approved state
-        $project->update([
-            'Project_Status' => 'approved',
-            'Project_Approved_By' => Auth::user()->user_id
-        ]);
-        return redirect()->back()->with('success', 'Project approved successfully.');
+        $user = Auth::user();
+        if (!$user->isStaff()) abort(403);
+        // Coordinator approves project
+        if ($user->isCoordinator()) {
+            $project->update([
+                'Project_Status' => 'approved',
+                'Project_Approved_By' => $user->user_id
+            ]);
+            return redirect()->back()->with('success', 'Project approved successfully.');
+        }
+        // Formator endorses project
+        elseif ($user->isFormator()) {
+            $project->update([
+                'Project_Status' => 'endorsed',
+                'endorsed_by' => $user->user_id
+            ]);
+            return redirect()->back()->with('success', 'Project endorsed successfully.');
+        }
+        // Program Officer marks as completed
+        elseif ($user->isProgramOfficer()) {
+            // Only allow marking as completed when all activities are completed
+            $acts = $project->activities ?? collect();
+            $allCompleted = false;
+            try {
+                if ($acts instanceof \Illuminate\Support\Collection) {
+                    $allCompleted = $acts->isNotEmpty() && $acts->filter(function($a){ return strtolower(trim((string)($a->status ?? ''))) !== 'completed'; })->count() === 0;
+                }
+            } catch (\Exception $e) { $allCompleted = false; }
+
+            if (! $allCompleted) {
+                return redirect()->back()->with('error', 'Cannot mark project as completed: not all activities are completed yet.');
+            }
+
+            $project->update([
+                'Project_Status' => 'completed',
+                'mark_as_completed_by' => $user->user_id
+            ]);
+            return redirect()->back()->with('success', 'Project marked as completed.');
+        }
+        return redirect()->back()->with('error', 'Unauthorized action.');
     }
 
     public function reject(Request $request, Project $project)
@@ -1448,10 +1672,31 @@ class ProjectController extends Controller
         }
         // If there is an existing rejection reason, push it into history
         if (!empty($project->Project_Rejection_Reason)) {
+            // Determine a display string for the rejecting user (Name (Role)) when possible
+            $rejectedByDisplay = $project->Project_Rejected_By ?? null;
+            $rejectedById = $project->Project_Rejected_By ?? null;
+            if (!empty($rejectedById)) {
+                try {
+                    $ru = \App\Models\User::where('user_id', $rejectedById)->first();
+                    if ($ru) {
+                        $name = $ru->user_Name ?? null;
+                        $role = $ru->user_role ?? null;
+                        if ($name && $role) {
+                            $rejectedByDisplay = $name . ' (' . $role . ')';
+                        } elseif ($name) {
+                            $rejectedByDisplay = $name;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // ignore and fallback to id
+                }
+            }
+
             $previous[] = [
                 'reason' => $project->Project_Rejection_Reason,
                 'rejected_at' => optional($project->updated_at)->toDateTimeString() ?? now()->toDateTimeString(),
-                'rejected_by' => $project->Project_Rejected_By ?? null,
+                'rejected_by' => $rejectedByDisplay,
+                'rejected_by_id' => $rejectedById,
             ];
         }
 
@@ -1475,6 +1720,10 @@ class ProjectController extends Controller
                 $allCompleted = $acts->isNotEmpty() && $acts->filter(function($a){ return strtolower(trim((string)($a->status ?? ''))) !== 'completed'; })->count() === 0;
             }
         } catch (\Exception $e) { $allCompleted = false; }
+                // SACSI Director should not be able to archive projects via this flow
+                if (isset(Auth::user()->user_role) && Auth::user()->user_role === 'SACSI Director') {
+                    abort(403, 'Unauthorized action.');
+                }
 
         if (! $allCompleted) {
             return redirect()->back()->with('error', 'Project is still in progress and cannot be archived until all activities are completed.');
@@ -1487,6 +1736,10 @@ class ProjectController extends Controller
     public function unarchive(Request $request, Project $project)
     {
         if (!Auth::user()->isStaff()) abort(403);
+        // SACSI Director should not be able to unarchive projects via this flow
+        if (isset(Auth::user()->user_role) && Auth::user()->user_role === 'SACSI Director') {
+            abort(403, 'Unauthorized action.');
+        }
         // When unarchiving, mark project as completed (staff action).
         // Completed projects are the only ones that can be archived, so when
         // we unarchive we preserve that completed state.
@@ -1495,7 +1748,6 @@ class ProjectController extends Controller
         // is visible in the listing immediately (Current includes 'completed').
         return redirect()->route('projects.current')->with('success', 'Project unarchived and marked as completed.');
     }
-
     /**
      * Section views (rotc, lts, cwts)
      */
@@ -1503,14 +1755,22 @@ class ProjectController extends Controller
     {
         $component = 'ROTC';
         $letter = $section ?? request()->input('section');
-
+        // Initialize base query for this component
         $q = Project::where('Project_Component', $component);
+
         if (!empty($letter)) {
             // Accept both 'Section X' and legacy 'X' values
             $q->where(function($sub) use ($letter) {
                 $sub->where('Project_Section', 'Section ' . $letter)
                     ->orWhere('Project_Section', $letter);
             });
+        }
+
+        if (Auth::user()->isStaff()) {
+            // SACSI Director may only edit; disallow delete
+            if (isset(Auth::user()->user_role) && Auth::user()->user_role === 'SACSI Director') {
+                abort(403, 'Unauthorized action.');
+            }
         }
 
         $projects = $q->whereIn('Project_Status', ['current', 'approved', 'completed'])
@@ -1567,8 +1827,11 @@ class ProjectController extends Controller
         $user = Auth::user();
         if (!$user || !$user->isStudent()) abort(403);
         $sid = $user->student->id;
+        // Be robust to JSON storing student ids as integers or strings.
         $projects = Project::where(function($q) use ($sid) {
-            $q->where('student_id', $sid)->orWhereJsonContains('student_ids', $sid);
+            $q->where('student_id', $sid)
+              ->orWhereJsonContains('student_ids', $sid)
+              ->orWhereJsonContains('student_ids', (string) $sid);
         })->orderByDesc('created_at')->get();
         return view('all_projects.my-projects', compact('projects'));
     }
@@ -1576,16 +1839,27 @@ class ProjectController extends Controller
     public function myProjectDetails($id)
     {
         $user = Auth::user();
-        if (!$user || !$user->isStudent()) abort(403);
+        // Allow staff or students; delegate authorization and member checks to show()
+        if (!$user || (! $user->isStudent() && ! $user->isStaff())) abort(403);
         $project = Project::where('Project_ID', $id)->firstOrFail();
-        if ($project->student_id !== $user->student->id) abort(403);
-        $project->load(['activities', 'budgets']);
-        return view('projects.show', compact('project'));
+
+        // Delegate to the `show` method which already implements robust
+        // ownership, membership and public-status checks and prepares the view data.
+        return $this->show($project);
     }
 
     public function create()
     {
-        return view('projects.create');
+        $user = Auth::user();
+        $existingProject = null;
+        if ($user && $user->isStudent()) {
+            // If a student already owns or is a member of an active project, pass it
+            // to the create view so we can show a non-blocking banner while
+            // keeping the create form visible (per UX request).
+            $existingProject = $user->activeProject();
+        }
+
+        return view('projects.create', compact('existingProject'));
     }
 
     public function details($id)
@@ -1723,22 +1997,7 @@ class ProjectController extends Controller
      */
     protected function maybePersistCompleted(Project $project)
     {
-        try {
-            $project->load('activities');
-            $acts = $project->activities ?? collect();
-            if (!($acts instanceof \Illuminate\Support\Collection)) return;
-            if ($acts->isEmpty()) return;
-
-            $notCompleted = $acts->filter(function($a){ return strtolower(trim((string)($a->status ?? ''))) !== 'completed'; })->count();
-            if ($notCompleted === 0) {
-                // All activities completed — persist status
-                if ($project->Project_Status !== 'completed') {
-                    $project->update(['Project_Status' => 'completed']);
-                }
-            }
-        } catch (\Exception $e) {
-            // swallow errors — this is a best-effort persistence
-            Log::warning('maybePersistCompleted failed for project ' . ($project->Project_ID ?? 'unknown') . ': ' . $e->getMessage());
-        }
+        // No longer automatically mark as completed.
+        // Only NSTP Program Officer can mark a project as completed.
     }
 }

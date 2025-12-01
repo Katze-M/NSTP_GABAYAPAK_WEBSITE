@@ -16,8 +16,8 @@ class ReportsController extends Controller
         // Project proposals by submission status
         // Count projects marked 'approved' as approved/active.
         // Treat completed and archived projects as approved proposals as well.
-        $approved = Project::whereIn('Project_Status', ['approved', 'completed', 'archived'])->count();
-        $pending  = Project::where('Project_Status', 'pending')->count();
+        $approved = Project::whereIn('Project_Status', ['approved', 'completed'])->count();
+        $pending  = Project::whereIn('Project_Status', ['pending', 'endorsed'])->count();
         $draft    = Project::where('Project_Status', 'draft')->count();
         $total    = Project::count();
 

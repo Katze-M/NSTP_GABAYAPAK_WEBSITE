@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Approval;
+use App\Models\Project;
 
 class User extends Authenticatable
 {
@@ -150,17 +151,60 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is an NSTP Formator.
-     *
-     * @return bool
+     * Check if user is NSTP Formator
      */
-    public function isNstpFormator()
+    public function isFormator()
     {
         return $this->user_role === 'NSTP Formator';
+    }
+
+    /**
+     * Check if user is NSTP Coordinator
+     */
+    public function isCoordinator()
+    {
+        return $this->user_role === 'NSTP Coordinator';
+    }
+
+    /**
+     * Check if user is NSTP Program Officer
+     */
+    public function isProgramOfficer()
+    {
+        return $this->user_role === 'NSTP Program Officer';
     }
 
     public function approvals()
     {
         return $this->hasMany(Approval::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * Return an active project that the user owns or is a member of.
+     * Blocking statuses: draft, pending, endorsed, approved
+     * Returns the first matching Project or null.
+     *
+     * @return \App\Models\Project|null
+     */
+    public function activeProject()
+    {
+        // Only students can have student projects
+        if (!$this->isStudent() || empty($this->student) || empty($this->student->id)) {
+            return null;
+        }
+
+        $sid = $this->student->id;
+        $blocking = ['draft', 'pending', 'endorsed', 'approved'];
+
+        return Project::where(function($q) use ($sid) {
+            $q->where('student_id', $sid)
+              // JSON columns may contain numbers or strings depending on how they were written.
+              // Check both numeric and string forms to be robust for legacy data.
+              ->orWhereJsonContains('student_ids', $sid)
+              ->orWhereJsonContains('student_ids', (string) $sid);
+            })
+            ->whereIn('Project_Status', $blocking)
+            ->orderByDesc('created_at')
+            ->first();
     }
 }

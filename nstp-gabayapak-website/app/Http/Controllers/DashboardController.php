@@ -58,8 +58,8 @@ class DashboardController extends Controller
         // By default exclude activities with status 'completed'. If a status filter is provided,
         // show only activities that match that status (case-insensitive).
         $upcomingQuery = Activity::whereHas('project', function ($q) {
-                // Consider both 'approved' and 'completed' as active (unarchived) projects
-                $q->whereIn('Project_Status', ['approved', 'completed']);
+                // Only show activities for projects with status 'approved'
+                $q->where('Project_Status', 'approved');
             });
 
         if (!empty($filterStatus)) {

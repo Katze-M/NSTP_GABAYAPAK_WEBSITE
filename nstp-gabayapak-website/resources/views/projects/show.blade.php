@@ -30,9 +30,21 @@
                     <h1 class="text-3xl font-extrabold text-gray-800 mt-4">{{ $project->Project_Name }}</h1>
                     <p class="text-gray-600 mt-1">Team: <span class="font-semibold text-gray-800">{{ $project->Project_Team_Name }}</span></p>
 
+                    @if($project->endorsed_by && $project->endorsedBy)
+                        <p class="text-sm text-blue-600 mt-2">
+                            <span class="font-semibold">Endorsed by:</span> {{ $project->endorsedBy->user_Name ?? 'N/A' }}
+                            <span class="text-gray-500">({{ $project->updated_at->format('M d, Y') }})</span>
+                        </p>
+                    @endif
                     @if($project->Project_Approved_By && $project->approvedBy)
                         <p class="text-sm text-green-600 mt-2">
                             <span class="font-semibold">Approved by:</span> {{ $project->approvedBy->user_Name ?? 'N/A' }}
+                            <span class="text-gray-500">({{ $project->updated_at->format('M d, Y') }})</span>
+                        </p>
+                    @endif
+                    @if($project->mark_as_completed_by && $project->completedBy)
+                        <p class="text-sm text-purple-600 mt-2">
+                            <span class="font-semibold">Marked as Completed by:</span> {{ $project->completedBy->user_Name ?? 'N/A' }}
                             <span class="text-gray-500">({{ $project->updated_at->format('M d, Y') }})</span>
                         </p>
                     @endif
@@ -282,9 +294,72 @@
                     @endif
                 </div>
 
-                {{-- Rejection history: visible only to project owner and staff --}}
-                @if(auth()->check() && (auth()->user()->isStaff() || (auth()->user()->isStudent() && auth()->user()->student && auth()->user()->student->id === $project->student_id)))
-                    @if((isset($isResubmission) && $isResubmission) || $project->Project_Status === 'rejected' || $project->previous_rejection_reasons)
+                {{-- Rejection history: visible to project owner, project members, and staff --}}
+                @php
+                    $isMember = false;
+                    try {
+                        $sidToCheck = null;
+                        if (auth()->check() && auth()->user()->isStudent() && auth()->user()->student) {
+                            $sidToCheck = (string) auth()->user()->student->id;
+                        }
+                        if ($sidToCheck) {
+                            // First try stored student_ids JSON/array
+                            $sids = $project->student_ids ?? [];
+                            if (!is_array($sids)) {
+                                $sids = json_decode($sids, true) ?: [];
+                            }
+                            foreach ($sids as $sidVal) {
+                                if ((string) $sidVal === $sidToCheck) {
+                                    $isMember = true;
+                                    break;
+                                }
+                            }
+
+                            // Fallback: check the project's members() helper which may return
+                            // team members even when student_ids is not populated (legacy records)
+                            if (!$isMember) {
+                                try {
+                                    $members = is_callable([$project, 'members']) ? $project->members() : [];
+                                    foreach ($members as $m) {
+                                        $mid = null;
+                                        if (is_array($m)) {
+                                            $mid = isset($m['student_id']) ? (string)$m['student_id'] : null;
+                                        } else {
+                                            // Eloquent model
+                                            $mid = isset($m->id) ? (string)$m->id : null;
+                                        }
+                                        if ($mid && $mid === $sidToCheck) {
+                                            $isMember = true;
+                                            break;
+                                        }
+                                    }
+                                } catch (\Throwable $e) {
+                                    // ignore fallback errors
+                                }
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        $isMember = false;
+                    }
+                @endphp
+
+                @if(auth()->check() && (auth()->user()->isStaff() || (auth()->user()->isStudent() && auth()->user()->student && (auth()->user()->student->id === $project->student_id || $isMember))))
+                    @php
+                        // Show rejection history whenever there is any rejection metadata
+                        // (most recent rejection, previous rejection history, or resubmission count)
+                        $hasRejectionMetadata = false;
+                        try {
+                            $hasRejectionMetadata = (
+                                !empty($project->Project_Rejection_Reason) ||
+                                !empty($project->previous_rejection_reasons) ||
+                                (($project->resubmission_count ?? 0) > 0) ||
+                                (isset($isResubmission) && $isResubmission)
+                            );
+                        } catch (\Throwable $e) {
+                            $hasRejectionMetadata = false;
+                        }
+                    @endphp
+                    @if($hasRejectionMetadata)
                     <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
                         <h3 class="font-semibold text-red-800 mb-2">Rejection History</h3>
 
@@ -314,7 +389,20 @@
                             <div class="bg-red-100 border border-red-300 rounded p-3 mb-3">
                                 <p class="text-red-700"><strong>Most recent rejection:</strong> {{ $project->Project_Rejection_Reason }}</p>
                                 @if($project->Project_Rejected_By)
-                                    <p class="text-red-600 text-xs mt-1">Rejected by: {{ optional($project->rejectedBy)->user_Name ?? $project->Project_Rejected_By }}</p>
+                                    @php
+                                        $rej = $project->rejectedBy;
+                                        $rejName = optional($rej)->user_Name ?? null;
+                                        $rejRole = optional($rej)->user_role ?? null;
+                                        $rejDisplay = null;
+                                        if ($rejName && $rejRole) {
+                                            $rejDisplay = $rejName . ' (' . $rejRole . ')';
+                                        } elseif ($rejName) {
+                                            $rejDisplay = $rejName;
+                                        } else {
+                                            $rejDisplay = $project->Project_Rejected_By;
+                                        }
+                                    @endphp
+                                    <p class="text-red-600 text-xs mt-1">Rejected by: {{ $rejDisplay }}</p>
                                 @endif
                                 <p class="text-red-600 text-xs mt-1">On: {{ optional($project->updated_at)->toDateTimeString() }}</p>
                             </div>
@@ -331,8 +419,27 @@
                                         <div class="bg-red-100 border border-red-300 rounded p-3 mb-2">
                                             <p class="text-red-700 text-sm"><strong>Rejection #{{ $index + 1 }}:</strong> {{ $reason['reason'] ?? 'No reason provided' }}</p>
                                             <p class="text-red-600 text-xs mt-1">Rejected on: {{ $reason['rejected_at'] ?? 'Unknown' }}</p>
-                                            @if(!empty($reason['rejected_by']))
-                                                <p class="text-red-600 text-xs">Rejected by: {{ \App\Models\User::find($reason['rejected_by'])->user_Name ?? $reason['rejected_by'] }}</p>
+                                            @php
+                                                // Reason entries may include a human-friendly 'rejected_by' display
+                                                // (e.g., "Jane Doe (NSTP Coordinator)") or an id in older rows.
+                                                $rejectedByLabel = null;
+                                                if (!empty($reason['rejected_by'])) {
+                                                    $rejectedByLabel = $reason['rejected_by'];
+                                                } elseif (!empty($reason['rejected_by_id'])) {
+                                                    try {
+                                                        $u = \App\Models\User::find($reason['rejected_by_id']);
+                                                        if ($u) {
+                                                            $rejectedByLabel = $u->user_Name . ($u->user_role ? ' (' . $u->user_role . ')' : '');
+                                                        } else {
+                                                            $rejectedByLabel = $reason['rejected_by_id'];
+                                                        }
+                                                    } catch (\Throwable $e) {
+                                                        $rejectedByLabel = $reason['rejected_by_id'] ?? null;
+                                                    }
+                                                }
+                                            @endphp
+                                            @if(!empty($rejectedByLabel))
+                                                <p class="text-red-600 text-xs">Rejected by: {{ $rejectedByLabel }}</p>
                                             @endif
                                         </div>
                                     @endforeach

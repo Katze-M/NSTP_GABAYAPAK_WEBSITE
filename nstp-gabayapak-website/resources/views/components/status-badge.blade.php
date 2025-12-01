@@ -19,7 +19,7 @@
             case 'current':
                 $color = 'bg-green-50 text-green-800'; break;
             case 'completed':
-                $color = 'bg-blue-50 text-blue-800'; break;
+                $color = 'bg-blue-600 text-white font-extrabold shadow-lg border-2 border-blue-700'; break;
             case 'rejected':
             case 'cancelled':
                 $color = 'bg-red-50 text-red-800'; break;
@@ -41,7 +41,7 @@
             case 'current':
                 $color = 'bg-green-600 text-white'; break;
             case 'completed':
-                $color = 'bg-blue-600 text-white'; break;
+                $color = 'bg-blue-600 text-white font-extrabold shadow-lg border-2 border-blue-700'; break;
             case 'rejected':
             case 'cancelled':
                 $color = 'bg-red-600 text-white'; break;
@@ -62,4 +62,14 @@
     $classes = trim($baseClasses . ' ' . $color . ' inline-block whitespace-nowrap z-10 ' . ($extraClass ?? ''));
 @endphp
 
-<span class="{{ $classes }}" @if(!empty($inlineStyle)) style="{{ $inlineStyle }}" @endif>{{ $label }}</span>
+@if($statusValue === 'completed')
+    <span class="{{ $classes }} flex items-center gap-2" style="align-items:center; @if(!empty($inlineStyle)){{ $inlineStyle }}@endif">
+        <svg xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4-4" />
+        </svg>
+        <span style="display:inline-block;vertical-align:middle;">{{ $label }}</span>
+    </span>
+@else
+    <span class="{{ $classes }}" @if(!empty($inlineStyle)) style="{{ $inlineStyle }}" @endif>{{ $label }}</span>
+@endif

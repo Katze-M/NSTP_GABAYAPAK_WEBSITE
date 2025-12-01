@@ -42,7 +42,8 @@ class LoginController extends Controller
             // SACSI Director is auto-approved and should always be able to log in
             if ($user->isStaff() && $user->user_role === 'SACSI Director') {
                 Auth::login($user);
-                return $user->isStudent() ? redirect()->route('home') : redirect()->route('dashboard');
+                // SACSI Director is staff — send to dashboard
+                return redirect()->route('dashboard');
             }
 
             // Check approval status for other users
@@ -53,7 +54,17 @@ class LoginController extends Controller
 
             if ($isApproved) {
                 Auth::login($user);
-                return redirect()->route('home');
+                // Approved staff -> dashboard; approved students -> upload project page
+                if ($user->isStaff()) {
+                    return redirect()->route('dashboard');
+                }
+
+                if ($user->isStudent()) {
+                    return redirect()->route('projects.create');
+                }
+
+                // Fallback: about page
+                return redirect()->route('about');
             }
 
             // If pending

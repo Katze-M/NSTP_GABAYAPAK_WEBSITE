@@ -40,13 +40,13 @@ Route::get('/', function () {
     }
     
     return view('homepage', compact('formators'));
-})->name('home');
+})->name('about');
 
 // Route for managing NSTP Formators (staff only)
 Route::get('/formators/manage', function () {
     // Check if user is authenticated and is staff
     if (!auth()->check() || !auth()->user()->isStaff()) {
-        return redirect()->route('home');
+        return redirect()->route('about');
     }
     
     // Fetch only approved staff members who could be formators
@@ -78,7 +78,7 @@ Route::get('/formators/manage', function () {
 Route::post('/formators/update', function (\Illuminate\Http\Request $request) {
     // Check if user is authenticated and is staff
     if (!auth()->check() || !auth()->user()->isStaff()) {
-        return redirect()->route('home');
+        return redirect()->route('about');
     }
     
     // Validate the request
@@ -121,7 +121,7 @@ Route::post('/formators/update', function (\Illuminate\Http\Request $request) {
         }
     }
     
-    return redirect()->route('home')->with('status', 'NSTP Formators updated successfully!');
+    return redirect()->route('about')->with('status', 'NSTP Formators updated successfully!');
 })->name('formators.update')->middleware('auth', 'staff');
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');

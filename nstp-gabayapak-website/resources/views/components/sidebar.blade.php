@@ -24,12 +24,7 @@
 
     <!-- Navigation -->
     <nav class="flex-1 p-4 space-y-2">
-        <a href="{{ route('home') }}" class="flex items-center gap-3 p-2 rounded hover:bg-red-500" data-route="home">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9.75l9-7.5 9 7.5M4.5 10.5v9.75A1.5 1.5 0 006 21.75h12a1.5 1.5 0 001.5-1.5V10.5"/>
-            </svg>
-            <span class="sidebar-text">Homepage</span>
-        </a>
+        <!-- About (previously Homepage) - moved below to appear above Profile -->
 
 
         @if(Auth::user()->isStaff())
@@ -109,6 +104,14 @@
         @endif
 
 
+        <!-- About link placed above Profile as requested -->
+        <a href="{{ route('about') }}" class="flex items-center gap-3 p-2 rounded hover:bg-red-500" data-route="about">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9.75l9-7.5 9 7.5M4.5 10.5v9.75A1.5 1.5 0 006 21.75h12a1.5 1.5 0 001.5-1.5V10.5"/>
+            </svg>
+            <span class="sidebar-text">About</span>
+        </a>
+
         <a href="{{ route('account.show') }}" class="flex items-center gap-3 p-2 rounded hover:bg-red-500" data-route="account.show">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -171,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Convert route name to path pattern
             let routePath = '';
             switch(route) {
-                case 'home':
+                case 'about':
                     routePath = '/';
                     break;
                 case 'dashboard':

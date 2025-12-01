@@ -217,7 +217,7 @@ class RegisterController extends Controller
         }
 
         if ($user->isStudent()) {
-            return redirect()->route('home');
+            return redirect()->route('projects.create');
         } else {
             return redirect()->route('dashboard');
         }

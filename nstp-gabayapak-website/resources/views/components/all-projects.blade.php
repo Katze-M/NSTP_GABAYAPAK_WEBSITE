@@ -647,9 +647,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 const text = 'Are you sure you want to ' + lower + '?';
                 const confirmText = 'Yes, ' + lower.replace(/[^a-z0-9 ]/gi, '');
 
+                // Insert an action-specific note between the title and the confirmation text
+                let noteHtml = '';
+                if (/endorse/i.test(actionLabel)) {
+                    noteHtml = '<p style="text-align:center;margin-bottom:0.5rem"><strong>Note:</strong> Endorsing this project means the project details are complete and has been reviewed by the NSTP Formator</p>';
+                } else if (/^approve/i.test(actionLabel) || /approve/i.test(actionLabel)) {
+                    noteHtml = '<p style="text-align:center;margin-bottom:0.5rem"><strong>Note:</strong> Approving this project means the project was successfully defended by the group.</p>';
+                } else if (/mark as completed/i.test(actionLabel) || /completed/i.test(actionLabel)) {
+                    noteHtml = '<p style="text-align:center;margin-bottom:0.5rem"><strong>Note:</strong> Marking this project as completed means the project was fully implemented.</p>';
+                }
+
                 Swal.fire({
                     title: title,
-                    text: text,
+                    html: (noteHtml ? noteHtml : '') + '<p style="text-align:center;margin-top:0.25rem">' + text + '</p>',
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',

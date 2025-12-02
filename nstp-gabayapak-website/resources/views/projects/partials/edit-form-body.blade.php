@@ -33,23 +33,29 @@
         <!-- Component Dropdown -->
 		<div class="relative">
 			<label class="block text-lg font-medium">Component<span class="text-red-500">*</span></label>
-			<select name="Project_Component" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white relative z-10 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" required>
+      <select name="Project_Component" @if(Auth::user()->student) disabled aria-disabled="true" title="Component is fixed for students" @endif class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white relative z-10 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" required>
 				<option value="">Select Component</option>
 				<option value="LTS" {{ old('Project_Component', $project->Project_Component) === 'LTS' ? 'selected' : '' }}>Literacy Training Service (LTS)</option>
 				<option value="CWTS" {{ old('Project_Component', $project->Project_Component) === 'CWTS' ? 'selected' : '' }}>Civic Welfare Training Service (CWTS)</option>
 				<option value="ROTC" {{ old('Project_Component', $project->Project_Component) === 'ROTC' ? 'selected' : '' }}>Reserve Officers' Training Corps (ROTC)</option>
 			</select>
+            @if(Auth::user()->student)
+              <input type="hidden" name="Project_Component" value="{{ old('Project_Component', $project->Project_Component) }}">
+            @endif
 		</div>
         <!-- Section Dropdown -->
 		<div class="relative">
 			<label class="block text-lg font-medium">Section<span class="text-red-500">*</span></label>
-			<select name="nstp_section" required class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white text-black relative z-10 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors">
+      <select name="nstp_section" @if(Auth::user()->student) disabled aria-disabled="true" title="Section is fixed for students" @endif required class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white text-black relative z-10 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors">
 				<option value="" disabled>Select Section</option>
 				@foreach (range('A', 'Z') as $letter)
 					@php $value = "Section $letter"; @endphp
 					<option value="{{ $value }}" {{ old('nstp_section', $project->Project_Section) === $value ? 'selected' : '' }}>{{ $value }}</option>
 				@endforeach
 			</select>
+            @if(Auth::user()->student)
+              <input type="hidden" name="nstp_section" value="{{ old('nstp_section', $project->Project_Section) }}" />
+            @endif
 		</div>
       </div>
     </div>
@@ -87,12 +93,12 @@
 							<td class="px-6 py-4">
 								<input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" @if(!$isDraftMode) required @endif value="{{ old('member_role.' . $i, $member['role']) }}">
 							</td>
-							<td class="px-6 py-4">
-								<input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" @if(!$isDraftMode) required @endif value="{{ old('member_email.' . $i, $member['email']) }}">
-							</td>
-							<td class="px-6 py-4">
-								<input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" @if(!$isDraftMode) required @endif value="{{ old('member_contact.' . $i, $member['contact']) }}">
-							</td>
+              <td class="px-6 py-4">
+                <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" @if(!$isDraftMode) required @endif @if(Auth::user()->student) readonly title="This email is taken from the student profile and cannot be edited here." @endif value="{{ old('member_email.' . $i, $member['email']) }}">
+              </td>
+              <td class="px-6 py-4">
+                  <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" @if(!$isDraftMode) required @endif @if(Auth::user()->student) readonly title="This contact number is taken from the student profile and cannot be edited here." @endif value="{{ old('member_contact.' . $i, $member['contact']) }}">
+              </td>
 							<td class="px-6 py-4 text-center">
 								<button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">Remove</button>
 							</td>
@@ -122,14 +128,14 @@
 					<label class="block text-xs font-medium text-gray-600">Role/s <span class="text-red-500">*</span></label>
 					<input name="member_role[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" @if(!$isDraftMode) required @endif value="{{ old('member_role.' . $i, $member['role']) }}">
 				</div>
-				<div class="space-y-1">
-					<label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
-					<input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" @if(!$isDraftMode) required @endif value="{{ old('member_email.' . $i, $member['email']) }}">
-				</div>
-				<div class="space-y-1">
-					<label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
-					<input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" @if(!$isDraftMode) required @endif value="{{ old('member_contact.' . $i, $member['contact']) }}">
-				</div>
+          <div class="space-y-1">
+            <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
+            <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" @if(!$isDraftMode) required @endif @if(Auth::user()->student) readonly title="This email is taken from the student profile and cannot be edited here." @endif value="{{ old('member_email.' . $i, $member['email']) }}">
+          </div>
+          <div class="space-y-1">
+            <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
+            <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" @if(!$isDraftMode) required @endif @if(Auth::user()->student) readonly title="This contact number is taken from the student profile and cannot be edited here." @endif value="{{ old('member_contact.' . $i, $member['contact']) }}">
+          </div>
 				<div class="flex justify-end">
 					<button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Remove</button>
 				</div>

@@ -60,12 +60,35 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Only authenticated students can create projects.');
         }
 
+        // Temporary debug: dump raw incoming request to storage/debug for troubleshooting
+        try {
+            if (config('app.debug') || $request->input('debug_dump')) {
+                $dump = [
+                    'time' => now()->toDateTimeString(),
+                    'route' => 'storeDraft_raw_request',
+                    'user_id' => $user->id ?? null,
+                    'request_all' => $request->all(),
+                    'server' => array_intersect_key($_SERVER, array_flip(['REQUEST_METHOD','REQUEST_URI','HTTP_USER_AGENT','REMOTE_ADDR']))
+                ];
+                Storage::put('debug/store-draft-raw-' . time() . '.json', json_encode($dump, JSON_PRETTY_PRINT));
+                Log::debug('storeDraft raw request dumped', ['user' => $user->id ?? null]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed writing storeDraft raw request dump: ' . $e->getMessage());
+        }
+
         // Prevent students who are already attached to an active project from creating another
         if (!$user->isStaff()) {
             try {
                 $existing = $user->activeProject();
                 if ($existing) {
-                    return redirect()->route('projects.create')->with('error', 'You are already attached to an active project and cannot create another.');
+                    $comp = strtoupper(trim($user->student->student_component ?? ''));
+                    if (in_array($comp, ['LTS', 'CWTS'])) {
+                        $msg = 'As a ' . ($user->student->student_component ?? 'student') . ' student, policy allows only one project association (owner or member). You are currently attached to "' . ($existing->Project_Name ?? 'a project') . '" so you cannot create another.';
+                    } else {
+                        $msg = 'You are already attached to an active project and cannot create another.';
+                    }
+                    return redirect()->route('projects.create')->with('error', $msg);
                 }
             } catch (\Throwable $e) {
                 // ignore and allow flow to continue if helper fails for any reason
@@ -151,6 +174,20 @@ class ProjectController extends Controller
         $validated['student_ids'] = $memberResult['student_ids'];
         $validated['member_roles'] = $memberResult['member_roles'] ?? [];
 
+        // Debug: log member inputs and computed student ids for storeDraft
+        try {
+            Log::debug('storeDraft member inputs', [
+                'owner_id' => $validated['student_id'] ?? null,
+                'request_member_student_id' => $request->input('member_student_id'),
+                'request_member_email' => $request->input('member_email'),
+                'request_member_role' => $request->input('member_role'),
+                'computed_student_ids' => $validated['student_ids'],
+                'computed_member_roles' => $validated['member_roles'],
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Failed logging storeDraft member inputs: ' . $e->getMessage());
+        }
+
         DB::transaction(function() use ($validated, $request, &$project) {
             $project = Project::create([
                 'Project_Name' => $validated['Project_Name'],
@@ -168,6 +205,21 @@ class ProjectController extends Controller
                 'member_roles' => $validated['member_roles'],
                 'Project_Section' => $validated['nstp_section'] ?? '',
             ]);
+
+            // Ensure student_ids and member_roles are persisted (force update to avoid any casting/mass-assignment edge cases)
+            try {
+                $project->update([
+                    'student_ids' => $validated['student_ids'],
+                    'member_roles' => $validated['member_roles'],
+                ]);
+                Log::debug('storeDraft persisted project members', [
+                    'project' => $project->Project_ID ?? null,
+                    'student_ids_saved' => $project->student_ids,
+                    'member_roles_saved' => $project->member_roles,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('storeDraft failed persisting project members: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
+            }
 
             // sync activities/budgets for a draft: allow incomplete but skip fully blank rows
             $this->syncActivities($project, $request, true);
@@ -194,7 +246,13 @@ class ProjectController extends Controller
             try {
                 $existing = $user->activeProject();
                 if ($existing) {
-                    return redirect()->route('projects.create')->with('error', 'You are already attached to an active project and cannot submit another.');
+                    $comp = strtoupper(trim($user->student->student_component ?? ''));
+                    if (in_array($comp, ['LTS', 'CWTS'])) {
+                        $msg = 'As a ' . ($user->student->student_component ?? 'student') . ' student, policy allows only one project association (owner or member). You are currently attached to "' . ($existing->Project_Name ?? 'a project') . '" so you cannot submit another.';
+                    } else {
+                        $msg = 'You are already attached to an active project and cannot submit another.';
+                    }
+                    return redirect()->route('projects.create')->with('error', $msg);
                 }
             } catch (\Throwable $e) {
                 // ignore and continue
@@ -247,6 +305,21 @@ class ProjectController extends Controller
                 'member_roles' => $validated['member_roles'],
                 'Project_Section' => $validated['nstp_section'] ?? '',
             ]);
+
+            // Ensure student_ids and member_roles are persisted (force update to avoid any casting/mass-assignment edge cases)
+            try {
+                $project->update([
+                    'student_ids' => $validated['student_ids'],
+                    'member_roles' => $validated['member_roles'],
+                ]);
+                Log::debug('storeSubmit persisted project members', [
+                    'project' => $project->Project_ID ?? null,
+                    'student_ids_saved' => $project->student_ids,
+                    'member_roles_saved' => $project->member_roles,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('storeSubmit failed persisting project members: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
+            }
 
             // sync activities and budgets - strict because this is a submission
             $this->syncActivities($project, $request, false);
@@ -337,6 +410,20 @@ class ProjectController extends Controller
         $studentIds = $memberResult['student_ids'];
         $memberRoles = $memberResult['member_roles'];
 
+        // Debug: log member inputs and computed student ids to diagnose owner replacement
+        try {
+            Log::debug('updateDraft member inputs', [
+                'project' => $project->Project_ID ?? null,
+                'owner_id' => $project->student_id ?? null,
+                'request_member_student_id' => $request->input('member_student_id'),
+                'request_member_email' => $request->input('member_email'),
+                'request_member_role' => $request->input('member_role'),
+                'computed_student_ids' => $studentIds,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Failed logging updateDraft member inputs: ' . $e->getMessage());
+        }
+
         // Debug incoming activity/budget ids to help track why existing rows may not be updated
         Log::debug('updateDraft payload ids', [
             'project' => $project->Project_ID ?? null,
@@ -361,6 +448,16 @@ class ProjectController extends Controller
                 'member_roles' => $memberRoles,
                 'Project_Section' => $request->input('nstp_section') ?? $project->Project_Section,
             ]);
+
+            try {
+                Log::debug('updateDraft persisted project members', [
+                    'project' => $project->Project_ID ?? null,
+                    'student_ids_saved' => $project->student_ids,
+                    'member_roles_saved' => $project->member_roles,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('Failed logging updateDraft persisted members: ' . $e->getMessage());
+            }
 
             $this->syncActivities($project, $request, true);
             $this->syncBudgets($project, $request, true);
@@ -614,6 +711,16 @@ class ProjectController extends Controller
 
             $project->update($update);
 
+            try {
+                Log::debug('updateSubmit persisted project members', [
+                    'project' => $project->Project_ID ?? null,
+                    'student_ids_saved' => $project->student_ids,
+                    'member_roles_saved' => $project->member_roles,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('Failed logging updateSubmit persisted members: ' . $e->getMessage());
+            }
+
             $this->syncActivities($project, $request, false);
             $this->syncBudgets($project, $request, false);
             // Persist computed completed state if all activities are completed
@@ -694,6 +801,16 @@ class ProjectController extends Controller
                 'member_roles' => $memberRoles,
                 'Project_Section' => $request->input('nstp_section') ?? $project->Project_Section,
             ]);
+
+            try {
+                Log::debug('updateStaff persisted project members', [
+                    'project' => $project->Project_ID ?? null,
+                    'student_ids_saved' => $project->student_ids,
+                    'member_roles_saved' => $project->member_roles,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('Failed logging updateStaff persisted members: ' . $e->getMessage());
+            }
 
             // Staff edits: allow partial rows (don't require full submission fields)
             $this->syncActivities($project, $request, true);
@@ -1239,43 +1356,115 @@ class ProjectController extends Controller
         $studentIds = [];
         $memberRoles = [];
 
-        $ownerId = $validated['student_id'] ?? null;
-        if ($ownerId) $studentIds[] = $ownerId;
+        $ownerId = isset($validated['student_id']) ? (int)$validated['student_id'] : null;
+        if ($ownerId && $ownerId > 0) {
+            $studentIds[] = $ownerId;
+        }
 
-        // Map member_student_id if supplied (explicit IDs)
-        if ($request->has('member_student_id')) {
-            foreach ($request->input('member_student_id', []) as $idx => $sid) {
-                if (is_numeric($sid) && !in_array($sid, $studentIds)) {
-                    $studentIds[] = $sid;
-                    if ($role = $request->input("member_role.$idx")) {
-                        $memberRoles[$sid] = $role;
-                    }
+        // Collect raw arrays from request (may be missing/disabled by client)
+        $rawIds = is_array($request->input('member_student_id', [])) ? $request->input('member_student_id', []) : [];
+        $rawEmails = is_array($request->input('member_email', [])) ? $request->input('member_email', []) : [];
+        $rawRoles = is_array($request->input('member_role', [])) ? $request->input('member_role', []) : [];
+
+        // Defensive: normalize rawIds to ints, remove empties and dedupe preserving order
+        $normalizedRawIds = [];
+        foreach ($rawIds as $r) {
+            if (is_numeric($r) && (int)$r > 0) {
+                $i = (int)$r;
+                if (!in_array($i, $normalizedRawIds, true)) $normalizedRawIds[] = $i;
+            }
+        }
+        $rawIds = $normalizedRawIds;
+
+        $max = max(count($rawIds), count($rawEmails), count($rawRoles));
+
+        // Preload students by email to avoid per-iteration DB hits
+        $emailsToLookup = array_values(array_filter($rawEmails));
+        $studentsByEmail = [];
+        if (!empty($emailsToLookup)) {
+            try {
+                $found = Student::whereHas('user', function($q) use ($emailsToLookup) {
+                    $q->whereIn('user_Email', $emailsToLookup);
+                })->with('user')->get();
+                foreach ($found as $s) {
+                    $emailKey = strtolower($s->user->user_Email ?? '');
+                    if ($emailKey !== '') $studentsByEmail[$emailKey] = $s;
                 }
+            } catch (\Throwable $e) {
+                // ignore lookup errors
             }
         }
 
-        // Map by email -> student if provided (prefer explicit ids)
-        $emails = array_filter($request->input('member_email', []));
-        $roles  = $request->input('member_role', []);
-        if (!empty($emails)) {
-            $students = Student::whereHas('user', function($q) use ($emails) {
-                $q->whereIn('user_Email', $emails);
-            })->with('user')->get();
-
-            foreach ($students as $s) {
-                if (!in_array($s->id, $studentIds)) {
-                    $studentIds[] = $s->id;
-                }
-                $email = $s->user->user_Email ?? null;
-                if ($email) {
-                    // Find first matching index in request
-                    $idx = array_search($email, $emails);
-                    if ($idx !== false && isset($roles[$idx]) && $roles[$idx] !== '') {
-                        $memberRoles[$s->id] = $roles[$idx];
-                    }
-                }
+        // Build a mapping of email index -> role when possible. This helps when arrays
+        // are misaligned (e.g., member_role[] shorter than member_student_id[])
+        $roleByEmail = [];
+        for ($i = 0; $i < count($rawEmails); $i++) {
+            $e = $rawEmails[$i] ?? null;
+            $r = array_key_exists($i, $rawRoles) ? $rawRoles[$i] : null;
+            if ($e && $r !== null && $r !== '') {
+                $roleByEmail[strtolower($e)] = (string)$r;
             }
         }
+
+        // Build entries and resolve sids, preferring same-index role, then email->role mapping
+        for ($i = 0; $i < $max; $i++) {
+            $sidRaw = $rawIds[$i] ?? null;
+            $emailRaw = $rawEmails[$i] ?? null;
+            $roleRaw = array_key_exists($i, $rawRoles) ? $rawRoles[$i] : null; // allow empty string to be intentional
+
+            $sid = (is_numeric($sidRaw) && (int)$sidRaw > 0) ? (int)$sidRaw : null;
+            $email = is_string($emailRaw) ? trim($emailRaw) : null;
+            $emailKey = $email ? strtolower($email) : null;
+
+            $resolvedSid = null;
+            if ($sid) {
+                $resolvedSid = $sid;
+            } elseif ($emailKey && isset($studentsByEmail[$emailKey])) {
+                $resolvedSid = (int)$studentsByEmail[$emailKey]->id;
+            }
+
+            if ($resolvedSid && $resolvedSid > 0) {
+                if (!in_array($resolvedSid, $studentIds, true)) {
+                    $studentIds[] = $resolvedSid;
+                }
+
+                // Determine role: prefer same-index role when provided; otherwise try role mapped by email
+                $roleToAssign = null;
+                if ($roleRaw !== null) {
+                    // Explicit role submitted at this index (may be empty string intentionally)
+                    $roleToAssign = (string)$roleRaw;
+                    // Defensive: if this index-based role exists but the email at this index maps
+                    // to a different student, and we have an email->role mapping for that email,
+                    // prefer assigning role by email to the student resolved by email.
+                    if ($emailKey && isset($roleByEmail[$emailKey]) && isset($studentsByEmail[$emailKey])) {
+                        $sidByEmail = (int)$studentsByEmail[$emailKey]->id;
+                        if ($sidByEmail !== $resolvedSid) {
+                            // prefer email-resolved role for the student matched by email
+                            $memberRoles[$sidByEmail] = (string)$roleByEmail[$emailKey];
+                            // ensure we don't clobber later; continue to next index
+                            continue;
+                        }
+                    }
+                } elseif ($emailKey && isset($roleByEmail[$emailKey])) {
+                    $roleToAssign = $roleByEmail[$emailKey];
+                }
+
+                // Assign role even if empty or null (treat null as intentionally cleared)
+                $memberRoles[$resolvedSid] = is_null($roleToAssign) ? '' : (string)$roleToAssign;
+            }
+        }
+
+        // Ensure owner is present and first
+        if ($ownerId && $ownerId > 0) {
+            if (!in_array($ownerId, $studentIds, true)) {
+                array_unshift($studentIds, $ownerId);
+            } else {
+                $studentIds = array_values(array_unique(array_merge([$ownerId], array_diff($studentIds, [$ownerId]))));
+            }
+        }
+
+        // Final normalization: ints only and positive
+        $studentIds = array_values(array_filter(array_map(function($s){ return is_numeric($s) ? (int)$s : 0; }, $studentIds), function($v){ return $v > 0; }));
 
         return [
             'student_ids' => $studentIds,
@@ -1296,19 +1485,36 @@ class ProjectController extends Controller
         }
 
         $studentIds = is_array($existing) && count($existing) ? $existing : [$project->student_id];
-        $memberRoles = $project->member_roles ?? [];
+        $memberRoles = is_array($project->member_roles) ? $project->member_roles : ($project->member_roles ? json_decode($project->member_roles, true) : []);
 
-        // Handle explicit member_student_id
+        // If the request provides member_student_id[], treat it as the authoritative list
+        // for membership on update. This allows removing members by omitting them from
+        // the submitted array. We will still ensure the owner remains present.
         if ($request->has('member_student_id')) {
-            foreach ($request->input('member_student_id', []) as $idx => $sid) {
-                if (is_numeric($sid) && !in_array($sid, $studentIds)) {
-                    $studentIds[] = $sid;
-                }
-                if (isset($request->input('member_role', [])[$idx]) && $request->input('member_role')[$idx] !== '') {
-                    $memberRoles[$sid] = $request->input('member_role')[$idx];
+            $submittedIds = array_values(array_filter($request->input('member_student_id', []), function($v){ return is_numeric($v) && (int)$v > 0; }));
+            // Normalize to ints
+            $submittedIds = array_map('intval', $submittedIds);
+            $studentIds = $submittedIds;
+            // Build memberRoles from submitted roles aligning by index to submittedIds
+            // If the request included any member_role inputs, treat missing indexes as
+            // intentionally cleared (empty string). If member_role is entirely absent
+            // from the request, preserve existing roles.
+            $submittedRoles = $request->has('member_role') ? $request->input('member_role', []) : null;
+            $newRoles = [];
+            foreach ($submittedIds as $idx => $sid) {
+                if ($submittedRoles !== null) {
+                    // member_role array was submitted: use empty string when index missing
+                    $role = array_key_exists($idx, $submittedRoles) ? $submittedRoles[$idx] : '';
+                    $newRoles[$sid] = (string)$role;
+                } else {
+                    // No member_role submitted at all: preserve existing role if any
+                    if (isset($memberRoles[$sid])) $newRoles[$sid] = $memberRoles[$sid];
                 }
             }
+            $memberRoles = $newRoles;
         }
+
+        // Note: explicit member_student_id handling moved above to treat submitted list as authoritative.
 
         // Map by email as well
         $emails = array_filter($request->input('member_email', []));
@@ -1318,17 +1524,76 @@ class ProjectController extends Controller
                 $q->whereIn('user_Email', $emails);
             })->with('user')->get();
 
-            foreach ($students as $s) {
-                if (!in_array($s->id, $studentIds)) {
-                    $studentIds[] = $s->id;
-                }
-                $email = $s->user->user_Email ?? null;
-                if ($email) {
-                    $idx = array_search($email, $emails);
-                    if ($idx !== false && isset($roles[$idx]) && $roles[$idx] !== '') {
-                        $memberRoles[$s->id] = $roles[$idx];
+            // For ROTC projects, preserve the request order of the members so
+            // editing/saving member profiles doesn't reorder them by DB id.
+            $component = $project->Project_Component ?? null;
+            if (strtoupper((string)$component) === 'ROTC') {
+                $studentsByEmail = $students->filter(function($s){ return !empty($s->user->user_Email); })
+                    ->keyBy(function($s){ return strtolower($s->user->user_Email ?? ''); });
+
+                foreach (array_values($emails) as $idx => $email) {
+                    $emailKey = strtolower($email);
+                    if (isset($studentsByEmail[$emailKey])) {
+                        $s = $studentsByEmail[$emailKey];
+                        if (!in_array($s->id, $studentIds)) {
+                            $studentIds[] = $s->id;
+                        }
+                        if ($idx !== false && isset($roles[$idx]) && $roles[$idx] !== '') {
+                            $memberRoles[$s->id] = $roles[$idx];
+                        }
                     }
                 }
+            } else {
+                foreach ($students as $s) {
+                    if (!in_array($s->id, $studentIds)) {
+                        $studentIds[] = $s->id;
+                    }
+                    $email = $s->user->user_Email ?? null;
+                    if ($email) {
+                        $idx = array_search($email, $emails);
+                        if ($idx !== false && isset($roles[$idx]) && $roles[$idx] !== '') {
+                            $memberRoles[$s->id] = $roles[$idx];
+                        }
+                    }
+                }
+            }
+        }
+
+        // Apply any roles or missing student ids using submitted emails as a fallback.
+        if (!empty($emails) && !empty($roles)) {
+            foreach (array_values($emails) as $idx => $email) {
+                $email = (string)$email;
+                if ($email === '') continue;
+                try {
+                    $s = Student::whereHas('user', function($q) use ($email) {
+                        $q->whereRaw('LOWER(user_Email) = ?', [strtolower($email)]);
+                    })->first();
+                    if ($s) {
+                        $sid = (int)$s->id;
+                        if (!in_array($sid, $studentIds)) {
+                            $studentIds[] = $sid;
+                        }
+                        if (isset($roles[$idx]) && $roles[$idx] !== '') {
+                            $memberRoles[$sid] = $roles[$idx];
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // ignore lookup errors
+                }
+            }
+        }
+
+        // Defensive normalization: ensure numeric ints and remove empty/non-numeric entries
+        $studentIds = array_values(array_filter(array_map(function($s){ return is_numeric($s) ? (int)$s : 0; }, $studentIds), function($v){ return $v > 0; }));
+
+        // Ensure owner is present and first to avoid owner being dropped by malformed payloads
+        $ownerId = isset($project->student_id) ? (int)$project->student_id : null;
+        if (!empty($ownerId) && $ownerId > 0) {
+            if (!in_array($ownerId, $studentIds, true)) {
+                array_unshift($studentIds, $ownerId);
+            } else {
+                // Move owner to front while preserving order of other members
+                $studentIds = array_values(array_unique(array_merge([$ownerId], array_diff($studentIds, [$ownerId]))));
             }
         }
 

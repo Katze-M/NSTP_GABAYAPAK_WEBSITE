@@ -194,17 +194,40 @@ class User extends Authenticatable
         }
 
         $sid = $this->student->id;
-        $blocking = ['draft', 'pending', 'endorsed', 'approved'];
+                // Component-aware rules:
+                // - ROTC students: allowed to be tied to multiple projects (do not block creation)
+                // - LTS/CWTS students: any project association (owner or member) is blocking
+                // - Others: only certain 'active' statuses block creation
+                $component = strtoupper(trim($this->student->student_component ?? ''));
 
-        return Project::where(function($q) use ($sid) {
-            $q->where('student_id', $sid)
-              // JSON columns may contain numbers or strings depending on how they were written.
-              // Check both numeric and string forms to be robust for legacy data.
-              ->orWhereJsonContains('student_ids', $sid)
-              ->orWhereJsonContains('student_ids', (string) $sid);
-            })
-            ->whereIn('Project_Status', $blocking)
-            ->orderByDesc('created_at')
-            ->first();
+                // ROTC students are exempt from the single-project rule: return null so
+                // create page won't be blocked by existing associations.
+                if ($component === 'ROTC') {
+                    return null;
+                }
+
+                // For LTS/CWTS students: any project association (owner or member) should
+                // be considered blocking — they may only ever be tied to one project
+                // regardless of the project's status (including completed/archived).
+                if (in_array($component, ['LTS', 'CWTS'])) {
+                    return Project::where(function($q) use ($sid) {
+                        $q->where('student_id', $sid)
+                            // JSON columns may contain numbers or strings depending on how they were written.
+                            // Check both numeric and string forms to be robust for legacy data.
+                            ->orWhereJsonContains('student_ids', $sid)
+                            ->orWhereJsonContains('student_ids', (string) $sid);
+                    })->orderByDesc('created_at')->first();
+                }
+
+                // Default behavior for other components: only certain 'active' statuses block
+                $blocking = ['draft', 'pending', 'endorsed', 'approved'];
+
+                return Project::where(function($q) use ($sid) {
+                    $q->where('student_id', $sid)
+                        ->orWhereJsonContains('student_ids', $sid)
+                        ->orWhereJsonContains('student_ids', (string) $sid);
+                })->whereIn('Project_Status', $blocking)
+                    ->orderByDesc('created_at')
+                    ->first();
     }
 }

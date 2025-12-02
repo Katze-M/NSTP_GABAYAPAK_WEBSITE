@@ -86,16 +86,48 @@
 @endif
 
 
-  @if(!empty($existingProject) && empty($isOwnerOfExisting))
-<div class="mb-4 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 p-4">
+  @php $showExistingBanner = false; @endphp
+  @if(!empty($existingProject))
+    {{-- Show banner for members OR owners, but if the student is the owner and the project's status is 'draft', prefer the draft banner above --}}
+    @php
+      $showExistingBanner = true;
+      if (!empty($isOwnerOfExisting) && ($existingProject->Project_Status === 'draft')) {
+        $showExistingBanner = false;
+      }
+    @endphp
+  @endif
+
+  @if($showExistingBanner)
+  <div class="mb-4 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 p-4">
     <div class="flex items-center justify-between gap-4">
         <div class="flex-1 min-w-0">
-            <p class="font-semibold text-emerald-800">You are already a member of a project</p>
-            <p class="text-sm text-emerald-700">
-                You are currently attached to 
-                "<strong>{{ $existingProject->Project_Name ?? 'a project' }}</strong>".
-                You may still fill out the form below, but you cannot create multiple active projects while attached to one.
-            </p>
+            @if(!empty($isOwnerOfExisting))
+              <p class="font-semibold text-emerald-800">You already own a project</p>
+            @else
+              <p class="font-semibold text-emerald-800">You are already a member of a project</p>
+            @endif
+            @php $comp = strtoupper(trim($student->student_component ?? '')) ?? ''; @endphp
+            @if(in_array($comp, ['LTS','CWTS']))
+              <p class="text-sm text-emerald-700">
+                As a <strong>{{ $student->student_component }}</strong> student, policy allows only one project association per student (owner or member). This applies even if the project is completed or archived. You are currently attached to "<strong>{{ $existingProject->Project_Name ?? 'a project' }}</strong>", so you cannot create another project.
+              </p>
+            @else
+              @if(!empty($isOwnerOfExisting))
+                <p class="text-sm text-emerald-700">
+                  You currently own "<strong>{{ $existingProject->Project_Name ?? 'a project' }}</strong>". You may still fill out the form below, but you cannot create another project while this one exists.
+                </p>
+              @else
+                <p class="text-sm text-emerald-700">
+                  You are currently attached to "<strong>{{ $existingProject->Project_Name ?? 'a project' }}</strong>".
+                  You may still fill out the form below, but you cannot create multiple active projects while attached to one.
+                </p>
+                @if(empty($isOwnerOfExisting))
+                  <p class="text-sm text-emerald-700 mt-2">
+                    <strong>Note:</strong> As a team member (not the project leader), you cannot edit the project's details, submit or resubmit the project, or delete it. Only the project leader (owner) can perform those actions.
+                  </p>
+                @endif
+              @endif
+            @endif
         </div>
         <div class="flex-none">
             <a href="{{ route('projects.show', $existingProject) }}"
@@ -105,8 +137,8 @@
         </div>
 
     </div>
-</div>
-@endif
+  </div>
+  @endif
 
 
   @if(!$existingDraft && ($hasPending || $hasRejected))
@@ -137,7 +169,21 @@
           <label class="block text-lg font-medium">Project Name<span class="text-red-500">*</span></label>
           <input name="Project_Name" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" placeholder="Name of Project" required>
         </div>
-        <div>
+        @php
+          // If the existing-project banner is being shown, disable save/submit buttons
+          if (!empty($showExistingBanner) && $showExistingBanner) {
+            $disableDraftBtn = true;
+            $disableSubmit = true;
+            // Provide clear tooltips if not already set
+            if (empty($draftTooltip)) {
+              $draftTooltip = 'You cannot save a draft while you are already attached to another project.';
+            }
+            if (empty($submitTooltip)) {
+              $submitTooltip = 'You cannot submit a project while you are already attached to another project.';
+            }
+          }
+        @endphp
+
           <label class="block text-lg font-medium">Team Name<span class="text-red-500">*</span></label>
           <input name="Project_Team_Name" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" placeholder="Name of Team" required>
         </div>
@@ -146,27 +192,30 @@
           <input type="file" name="Project_Logo" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors">
           <p class="text-sm text-gray-600 mt-1">Note: Logo is required when submitting a project, but optional when saving as draft.</p>
         </div>
-        <!-- Component Dropdown -->
+        <!-- Component Dropdown (readonly) -->
         <div class="relative">
           <label class="block text-lg font-medium">Component<span class="text-red-500">*</span></label>
-          <select name="Project_Component" class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white relative z-10 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors" required>
+          {{-- show as disabled/select so students cannot change; include hidden input so value is submitted --}}
+          <select disabled title="This value comes from your student profile and cannot be changed here." class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-gray-100 relative z-10 focus:outline-none transition-colors">
             <option value="">Select Component</option>
             <option value="LTS" {{ (Auth::user()->student->student_component ?? '') === 'LTS' ? 'selected' : '' }}>Literacy Training Service (LTS)</option>
             <option value="CWTS" {{ (Auth::user()->student->student_component ?? '') === 'CWTS' ? 'selected' : '' }}>Civic Welfare Training Service (CWTS)</option>
             <option value="ROTC" {{ (Auth::user()->student->student_component ?? '') === 'ROTC' ? 'selected' : '' }}>Reserve Officers' Training Corps (ROTC)</option>
           </select>
+          <input type="hidden" name="Project_Component" value="{{ Auth::user()->student->student_component ?? '' }}">
         </div>
         <!-- Section Dropdown -->
         <div class="relative">
           <label class="block text-lg font-medium">Section<span class="text-red-500">*</span></label>
-          <select name="nstp_section" required
-                  class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-white text-black relative z-10 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors">
+          {{-- readonly section: disabled select with hidden input to preserve value on submit --}}
+          <select disabled title="This value comes from your student profile and cannot be changed here." class="w-full px-3 py-2 rounded-lg border-2 border-gray-400 bg-gray-100 text-black relative z-10 focus:outline-none transition-colors">
             <option value="" disabled>Select Section</option>
             @foreach (range('A', 'Z') as $letter):
               @php $value = "Section $letter"; @endphp
               <option value="{{ $value }}" {{ (Auth::user()->student->student_section ?? '') === $value ? 'selected' : '' }}>{{ $value }}</option>
             @endforeach
           </select>
+            <input type="hidden" name="nstp_section" value="{{ Auth::user()->student->student_section ?? '' }}" />
         </div>
       </div>
     </div>
@@ -206,15 +255,16 @@
               <tr class="hover:bg-gray-50 transition-colors">
                 <td class="px-6 py-4">
                   <input name="member_name[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="Enter full name" required value="{{ Auth::user()->user_Name }}" readonly>
+                  <input type="hidden" name="member_student_id[]" value="{{ Auth::user()->student->id }}">
                 </td>
                 <td class="px-6 py-4">
                   <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Project Leader" required>
                 </td>
                 <td class="px-6 py-4">
-                  <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" required value="{{ Auth::user()->user_Email }}" readonly>
+                  <input type="email" name="member_email[]" title="This email comes from your student profile and cannot be changed here." class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" required value="{{ Auth::user()->user_Email }}" readonly>
                 </td>
                 <td class="px-6 py-4">
-                  <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" required value="{{ Auth::user()->student->student_contact_number ?? '' }}" readonly>
+                  <input type="tel" name="member_contact[]" title="This contact number comes from your student profile and cannot be changed here." class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" required value="{{ Auth::user()->student->student_contact_number ?? '' }}" readonly>
                 </td>
                 <td class="px-6 py-4 text-center">
                   <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm" disabled>
@@ -249,11 +299,11 @@
           </div>
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
-            <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" required value="{{ Auth::user()->user_Email }}" readonly>
+            <input type="email" name="member_email[]" title="This email comes from your student profile and cannot be changed here." class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="co230123@adzu.edu.ph" required value="{{ Auth::user()->user_Email }}" readonly>
           </div>
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
-            <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="{{ Auth::user()->student->student_contact_number ?? '' }}" readonly>
+            <input type="tel" name="member_contact[]" title="This contact number comes from your student profile and cannot be changed here." class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" required value="{{ Auth::user()->student->student_contact_number ?? '' }}" readonly>
           </div>
           <div class="flex justify-end">
             <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs" disabled>Remove</button>
@@ -487,6 +537,8 @@
 
 
     <!-- Hidden input to track if it's a draft or submission -->
+    <!-- Canonical member payload: authoritative hidden inputs for member arrays (prevents duplicate/hidden DOM issues) -->
+    <div id="memberPayload" style="display:none"></div>
     <input type="hidden" name="save_draft" id="saveDraftInput" value="0">
     <input type="hidden" name="submit_project" id="submitProjectInput" value="0">
 
@@ -545,6 +597,8 @@
 <script>
 // Track added member emails to prevent duplicates
 let addedMemberEmails = new Set();
+// Owner SID (server-side rendered) - used to ensure cloned payload keeps owner first
+const OWNER_SID = '{{ Auth::user()->student->id }}';
 
 /* Helper: safeAddListener */
 function safeAddListener(id, event, handler) {
@@ -654,6 +708,30 @@ function removeAllEmptyBudgetRows() {
   }
 }
 
+// Ensure visible member inputs are enabled (override any prior disabling)
+function enableVisibleMemberInputs(form) {
+  try {
+    // Find visible member rows (desktop table rows OR mobile cards)
+    const visibleMemberRows = Array.from(document.querySelectorAll('#memberTable tbody tr, .member-card')).filter(r => r && r.offsetParent !== null);
+    if (visibleMemberRows.length > 0) {
+      visibleMemberRows.forEach(row => {
+        try {
+          row.querySelectorAll('input[name^="member_"], select[name^="member_"], textarea[name^="member_"]').forEach(i => { try { i.disabled = false; } catch(e){} });
+        } catch (e) { /* ignore malformed row */ }
+      });
+    } else {
+      // Fallback: enable desktop member inputs
+      const desktopMemberTable = document.getElementById('memberTable');
+      if (desktopMemberTable) desktopMemberTable.querySelectorAll('input[name^="member_"], select[name^="member_"], textarea[name^="member_"]').forEach(i => { try { i.disabled = false; } catch(e){} });
+    }
+  } catch (e) { /* ignore */ }
+}
+
+// Debug toggle: if true, show a preview modal of FormData member fields before submit
+const ENABLE_FORMDATA_PREVIEW = true;
+// If true, skip showing the FormData preview for Save-as-Draft (user requested)
+const SKIP_DRAFT_PREVIEW = true;
+
 /* --------------------
    prepareFormForSubmit: disable inputs that are not visible (so only visible ones get sent)
    -------------------- */
@@ -713,14 +791,15 @@ function prepareFormForSubmit(form) {
   
   // Disable member inputs from the hidden view
   if (desktopVisible && !mobileVisible) {
-    // Desktop is visible, disable mobile member inputs
+    // Desktop is visible, disable all member inputs in the mobile view (including hidden ids)
+    // Desktop initial row includes a hidden `member_student_id[]` so owner id will be present.
     if (mobileContainer) {
       mobileContainer.querySelectorAll('input[name^="member_"], select[name^="member_"], textarea[name^="member_"]').forEach(el => {
         el.disabled = true;
       });
     }
   } else if (mobileVisible && !desktopVisible) {
-    // Mobile is visible, disable desktop member inputs
+    // Mobile is visible, disable all member inputs in the desktop table (including hidden ids)
     if (desktopMemberTable) {
       desktopMemberTable.querySelectorAll('input[name^="member_"], select[name^="member_"], textarea[name^="member_"]').forEach(el => {
         el.disabled = true;
@@ -731,6 +810,8 @@ function prepareFormForSubmit(form) {
   // Then disable other hidden elements except hidden inputs / csrf / method
   form.querySelectorAll('input, textarea, select').forEach(el => {
     try {
+      // Never disable inputs that were manually added by the user (they are authoritative)
+      if (el.dataset && (el.dataset.manuallyAdded === '1' || el.dataset.manuallyAdded === 'true')) return;
       const t = (el.type || '').toLowerCase();
       if (t === 'hidden') return;
       if (el.name && (el.name === '_token' || el.name === '_method')) return;
@@ -814,14 +895,73 @@ document.addEventListener('click', function(e) {
       if (result.isConfirmed) {
         const row = btn.closest('tr, .proposal-table-row, .activity-row, .budget-row, .member-card');
         if (row) {
-          // If removing member, remove email from tracking set
-          if (row.querySelector && row.querySelector('input[name="member_email[]"]')) {
+          // If removing member, remove email/student id from tracking set and
+          // also remove any duplicate DOM representation (desktop vs mobile)
+          // so validation does not see an orphaned duplicate.
+          let emailVal = null;
+          let sidVal = null;
+          if (row.querySelector) {
             const emailInput = row.querySelector('input[name="member_email[]"]');
             if (emailInput && emailInput.value) {
-              addedMemberEmails.delete(emailInput.value);
+              emailVal = emailInput.value.trim();
+              addedMemberEmails.delete(emailVal);
+            }
+            const sidInput = row.querySelector('input[name="member_student_id[]"]');
+            if (sidInput && sidInput.value) {
+              sidVal = sidInput.value.trim();
             }
           }
+
+          // Remove any other rows/cards that reference the same student id or email
+          if (sidVal) {
+            // find hidden inputs with same sid and remove their closest row/card
+              document.querySelectorAll('input[name="member_student_id[]"]').forEach(el => {
+                try {
+                  if ((el.value || '').toString().trim() === sidVal) {
+                    const other = el.closest('tr, .member-card, .proposal-table-row');
+                    if (other && other !== row) other.remove();
+                  }
+                } catch (e) { /* ignore */ }
+              });
+              // Also remove canonical payload inputs matching this sid
+              try {
+                const payload = document.getElementById('memberPayload');
+                if (payload) payload.querySelectorAll('[data-manual-sid="' + sidVal + '"]').forEach(i => i.remove());
+              } catch (e) { /* ignore */ }
+          }
+          if (emailVal) {
+            document.querySelectorAll('input[name="member_email[]"]').forEach(el => {
+              try {
+                if ((el.value || '').toString().trim() === emailVal) {
+                  const other = el.closest('tr, .member-card, .proposal-table-row');
+                  if (other && other !== row) other.remove();
+                }
+              } catch (e) { /* ignore */ }
+            });
+              // Also remove canonical payload inputs matching this email
+              try {
+                const payload = document.getElementById('memberPayload');
+                if (payload) payload.querySelectorAll('[data-manual-email="' + emailVal + '"]').forEach(i => i.remove());
+              } catch (e) { /* ignore */ }
+          }
+
+          // Finally remove the clicked row itself
+          // Also remove any canonical payload clones that may have been cloned into the form
+          try {
+            const form = document.getElementById('projectForm');
+            if (form) {
+              form.querySelectorAll('input[data-cloned-from="memberPayload"]').forEach(i => {
+                try {
+                  if (sidVal && (i.dataset.manualSid === sidVal || i.value === sidVal)) i.remove();
+                  if (emailVal && (i.dataset.manualEmail === emailVal || i.value === emailVal)) i.remove();
+                } catch (e) { /* ignore per-input errors */ }
+              });
+            }
+          } catch (e) { /* ignore */ }
+
           row.remove();
+          // Ensure canonical payload reflects the current visible rows
+          try { syncCanonicalPayloadWithVisible(); } catch(e) { /* ignore */ }
         }
         Swal.fire(
           'Removed!',
@@ -1006,21 +1146,73 @@ document.addEventListener('click', function(e) {
         
         //prepare visible fields only
         prepareFormForSubmit(form);
+        // Ensure visible member inputs are enabled (fix for draft saves missing added members)
+        try { enableVisibleMemberInputs(form); } catch (e) { /* ignore */ }
 
-        // Debug: Log budget data being submitted for draft
-        console.log('Draft - Budget Activities:', form.querySelectorAll('input[name="budget_activity[]"]:not([disabled])').length);
-        console.log('Draft - Budget Amounts:', form.querySelectorAll('input[name="budget_amount[]"]:not([disabled])').length);
-        console.log('Draft - Member names:', form.querySelectorAll('input[name="member_name[]"]:not([disabled])').length);
-        console.log('Draft - Member emails:', form.querySelectorAll('input[name="member_email[]"]:not([disabled])').length);
-        console.log('Draft - Member student IDs:', form.querySelectorAll('input[name="member_student_id[]"]:not([disabled])').length);
+        // Debug: Log budget and member arrays being submitted for draft (detailed values)
+        const draftBudgetActivities = Array.from(form.querySelectorAll('input[name="budget_activity[]"]:not([disabled])')).map(i => i.value || '');
+        const draftBudgetAmounts = Array.from(form.querySelectorAll('input[name="budget_amount[]"]:not([disabled])')).map(i => i.value || '');
+        const draftMemberNames = Array.from(form.querySelectorAll('input[name="member_name[]"]:not([disabled])')).map(i => i.value || '');
+        const draftMemberEmails = Array.from(form.querySelectorAll('input[name="member_email[]"]:not([disabled])')).map(i => i.value || '');
+        const draftMemberStudentIds = Array.from(form.querySelectorAll('input[name="member_student_id[]"]:not([disabled])')).map(i => i.value || '');
+        const draftMemberRoles = Array.from(form.querySelectorAll('input[name="member_role[]"]:not([disabled])')).map(i => i.value || '');
+        console.debug('Draft - Budget Activities values:', draftBudgetActivities);
+        console.debug('Draft - Budget Amounts values:', draftBudgetAmounts);
+        console.debug('Draft - Member names values:', draftMemberNames);
+        console.debug('Draft - Member emails values:', draftMemberEmails);
+        console.debug('Draft - Member student IDs values:', draftMemberStudentIds);
+        console.debug('Draft - Member roles values:', draftMemberRoles);
 
         const saveDraftInput = document.getElementById('saveDraftInput');
         const submitProjectInput = document.getElementById('submitProjectInput');
         if (saveDraftInput) saveDraftInput.value = '1';
         if (submitProjectInput) submitProjectInput.value = '0';
 
-        // final submit
-        form.submit();
+        // final submit (with FormData preview if enabled)
+        try {
+          // Force-enable all member inputs to ensure they are included in FormData
+          try { form.querySelectorAll('input[name^="member_"], select[name^="member_"], textarea[name^="member_"]').forEach(i => i.disabled = false); } catch(e) { /* ignore */ }
+          // Ensure canonical payload inputs are present directly inside the form as hidden clones
+          try { ensureCanonicalPayloadClones(form); } catch(e) { /* ignore */ }
+          const fdPreview = new FormData(form);
+          console.debug('Draft FormData member_student_id[]=', fdPreview.getAll('member_student_id[]'));
+          console.debug('Draft FormData member_email[]=', fdPreview.getAll('member_email[]'));
+          console.debug('Draft FormData member_role[]=', fdPreview.getAll('member_role[]'));
+
+          if (ENABLE_FORMDATA_PREVIEW && !SKIP_DRAFT_PREVIEW) {
+            const membersHtml = fdPreview.getAll('member_student_id[]').map((sid, idx) => {
+              const email = fdPreview.getAll('member_email[]')[idx] || '';
+              const role = fdPreview.getAll('member_role[]')[idx] || '';
+              return `<div class="text-left"><strong>#${idx+1}</strong> SID: ${sid} <br/> Email: ${email} <br/> Role: ${role}</div><hr/>`;
+            }).join('');
+            Swal.fire({
+              title: 'Draft FormData Preview',
+              html: `<div class="max-h-64 overflow-auto text-sm">${membersHtml || '<em>No member fields detected</em>'}</div>`,
+              width: 600,
+              showCancelButton: true,
+              confirmButtonText: 'Proceed',
+              cancelButtonText: 'Cancel',
+              confirmButtonColor: '#3085d6'
+            }).then((res) => {
+              if (res.isConfirmed) {
+                try { Swal.close(); } catch(e) {}
+                setTimeout(() => { try { form.submit(); } catch(e) {} }, 50);
+              } else {
+                // user cancelled preview - re-enable required and stop
+                isSavingDraft = false;
+                return;
+              }
+            });
+          } else {
+            // Skip preview for draft saves: close any open modals then submit immediately
+            try { Swal.close(); } catch(e) {}
+            try { ensureCanonicalPayloadClones(form); } catch(e) {}
+            setTimeout(() => { try { form.submit(); } catch(e) {} }, 50);
+          }
+        } catch (e) {
+          console.error('Error preparing FormData preview for draft', e);
+          form.submit();
+        }
         // reset flag after short delay to prevent double-click issues (form navigation will usually occur)
         setTimeout(() => { isSavingDraft = false; }, 2000);
       });
@@ -1075,27 +1267,27 @@ document.addEventListener('click', function(e) {
     const solution = formData.get('Project_Solution') || 'N/A';
     const outcomes = formData.get('Project_Expected_Outcomes') || 'N/A';
 
-    // Members - take unique (avoid duplicates from mobile/desktop)
-    const allMemberNames = formData.getAll('member_name[]');
-    const allMemberRoles = formData.getAll('member_role[]');
-    const allMemberEmails = formData.getAll('member_email[]');
-    const allMemberContacts = formData.getAll('member_contact[]');
-    const uniqueMemberCount = Math.ceil(allMemberNames.length / 2);
-
+    // Members - extract from visible DOM rows (desktop table rows or mobile cards)
+    try { enableVisibleMemberInputs(form); } catch (e) { /* ignore */ }
+    const visibleMemberRows = Array.from(document.querySelectorAll('#memberTable tbody tr, .member-card')).filter(r => r && r.offsetParent !== null);
     const memberNames = [];
     const memberRoles = [];
     const memberEmails = [];
     const memberContacts = [];
-
-    for (let idx = 0; idx < uniqueMemberCount; idx++) {
-      const name = allMemberNames[idx];
-      if (name && name.trim() !== '') {
-        memberNames.push(name);
-        memberRoles.push(allMemberRoles[idx] || '');
-        memberEmails.push(allMemberEmails[idx] || '');
-        memberContacts.push(allMemberContacts[idx] || '');
-      }
-    }
+    visibleMemberRows.forEach(row => {
+      try {
+        const name = (row.querySelector('input[name="member_name[]"]')?.value || '').trim();
+        const role = (row.querySelector('input[name="member_role[]"]')?.value || '').trim();
+        const email = (row.querySelector('input[name="member_email[]"]')?.value || '').trim();
+        const contact = (row.querySelector('input[name="member_contact[]"]')?.value || '').trim();
+        if (name || role || email || contact) {
+          memberNames.push(name);
+          memberRoles.push(role);
+          memberEmails.push(email);
+          memberContacts.push(contact);
+        }
+      } catch (e) { /* ignore */ }
+    });
 
     // Build members HTML for modal display
     let membersHTML = '<div class="text-left max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">';
@@ -1374,19 +1566,198 @@ document.addEventListener('click', function(e) {
 
             // disable hidden inputs so only visible values are submitted
             prepareFormForSubmit(form);
+            // Ensure visible member inputs are enabled (fix for submit/draft mismatch)
+            try { enableVisibleMemberInputs(form); } catch (e) { /* ignore */ }
+            // Final safety: force-enable all member inputs so none are omitted from FormData
+            try { form.querySelectorAll('input[name^="member_"], select[name^="member_"], textarea[name^="member_"]').forEach(i => i.disabled = false); } catch(e) { /* ignore */ }
+            // Ensure canonical payload inputs are present directly inside the form as hidden clones
+            try { ensureCanonicalPayloadClones(form); } catch(e) { /* ignore */ }
+            // Debug: Log budget data being submitted and preview FormData members
+            try {
+              const fdFinal = new FormData(form);
+              console.debug('Final FormData member_student_id[]=', fdFinal.getAll('member_student_id[]'));
+              console.debug('Final FormData member_email[]=', fdFinal.getAll('member_email[]'));
+              console.debug('Final FormData member_role[]=', fdFinal.getAll('member_role[]'));
 
-            // Debug: Log budget data being submitted
-            console.log('Budget Activities:', formData.getAll('budget_activity[]'));
-            console.log('Budget Amounts:', formData.getAll('budget_amount[]'));
-
-            // submit
-            form.submit();
+              if (ENABLE_FORMDATA_PREVIEW) {
+                const membersHtml = fdFinal.getAll('member_student_id[]').map((sid, idx) => {
+                  const email = fdFinal.getAll('member_email[]')[idx] || '';
+                  const role = fdFinal.getAll('member_role[]')[idx] || '';
+                  return `<div class="text-left"><strong>#${idx+1}</strong> SID: ${sid} <br/> Email: ${email} <br/> Role: ${role}</div><hr/>`;
+                }).join('');
+                Swal.fire({
+                  title: 'Final FormData Preview',
+                  html: `<div class="max-h-64 overflow-auto text-sm">${membersHtml || '<em>No member fields detected</em>'}</div>`,
+                  width: 600,
+                  showCancelButton: true,
+                  confirmButtonText: 'Proceed',
+                  cancelButtonText: 'Cancel',
+                  confirmButtonColor: '#3085d6'
+                }).then((res) => {
+                  if (res.isConfirmed) {
+                    try { Swal.close(); } catch(e) {}
+                    setTimeout(() => { try { form.submit(); } catch(e) {} }, 50);
+                  } else {
+                    return;
+                  }
+                });
+              } else {
+                form.submit();
+              }
+            } catch (e) {
+              console.error('Error preparing final FormData preview', e);
+              form.submit();
+            }
           }
         });
       }
     });
   }
 
+
+    // Ensure canonical payload inputs are cloned into the form as hidden inputs
+    function ensureCanonicalPayloadClones(form) {
+      try {
+        if (!form) return;
+        const payload = document.getElementById('memberPayload');
+        if (!payload) return;
+        // Make sure payload reflects visible UI before cloning
+        try { syncCanonicalPayloadWithVisible(); } catch(e) { /* ignore */ }
+        // Remove any previous clones we added
+        Array.from(form.querySelectorAll('input[data-cloned-from="memberPayload"], select[data-cloned-from="memberPayload"], textarea[data-cloned-from="memberPayload"]')).forEach(n => n.remove());
+        // Build canonical records by student id from payload (group email/role by sid)
+        const sidInputs = Array.from(payload.querySelectorAll('input[name="member_student_id[]"]'));
+        const emailInputs = Array.from(payload.querySelectorAll('input[name="member_email[]"]'));
+        const roleInputs = Array.from(payload.querySelectorAll('input[name="member_role[]"]'));
+        const records = [];
+        // Map by data-manual-sid when available
+        const seenSids = new Set();
+        sidInputs.forEach(sidEl => {
+          const sid = (sidEl.value || '').toString();
+          if (!sid) return;
+          if (seenSids.has(sid)) return;
+          seenSids.add(sid);
+          // find matching email/role inputs by data-manual-sid
+          const emailEl = payload.querySelector('input[name="member_email[]"][data-manual-sid="' + sid + '"]');
+          const roleEl = payload.querySelector('input[name="member_role[]"][data-manual-sid="' + sid + '"]');
+          const email = emailEl ? (emailEl.value || '') : '';
+          const role = roleEl ? (roleEl.value || '') : '';
+          records.push({ sid: sid, email: email, role: role });
+        });
+
+        // If payload had no explicit sid inputs but had email-only entries, map them
+        if (records.length === 0 && emailInputs.length > 0) {
+          emailInputs.forEach((eEl, idx) => {
+            const email = (eEl.value || '').toString();
+            if (!email) return;
+            const roleEl = roleInputs[idx] || null;
+            const role = roleEl ? (roleEl.value || '') : '';
+            records.push({ sid: '', email: email, role: role });
+          });
+        }
+
+        // Build ordered list: owner first if present among payload sids; otherwise keep payload order.
+        const ordered = [];
+        // If owner present in records, put first
+        const ownerIndex = records.findIndex(r => r.sid && r.sid.toString() === OWNER_SID?.toString());
+        if (ownerIndex !== -1) {
+          ordered.push(records[ownerIndex]);
+        }
+        // Add remaining records skipping owner duplicate
+        records.forEach(r => {
+          if (r.sid && r.sid.toString() === OWNER_SID?.toString()) return;
+          ordered.push(r);
+        });
+
+        // Append clones into the form in computed order, avoid duplicates
+        const appended = new Set();
+        ordered.forEach(rec => {
+          try {
+            const sidKey = rec.sid || rec.email || ('__' + Math.random().toString(36).slice(2,8));
+            if (appended.has(sidKey)) return;
+            appended.add(sidKey);
+
+            if (rec.sid) {
+              const hiddenSid = document.createElement('input');
+              hiddenSid.type = 'hidden'; hiddenSid.name = 'member_student_id[]'; hiddenSid.value = rec.sid;
+              hiddenSid.dataset.clonedFrom = 'memberPayload'; hiddenSid.dataset.manualSid = rec.sid;
+              form.appendChild(hiddenSid);
+            }
+
+            const hiddenEmail = document.createElement('input');
+            hiddenEmail.type = 'hidden'; hiddenEmail.name = 'member_email[]'; hiddenEmail.value = rec.email || '';
+            if (rec.sid) hiddenEmail.dataset.manualSid = rec.sid;
+            hiddenEmail.dataset.clonedFrom = 'memberPayload';
+            form.appendChild(hiddenEmail);
+
+            const hiddenRole = document.createElement('input');
+            hiddenRole.type = 'hidden'; hiddenRole.name = 'member_role[]'; hiddenRole.value = rec.role || '';
+            if (rec.sid) hiddenRole.dataset.manualSid = rec.sid;
+            hiddenRole.dataset.clonedFrom = 'memberPayload';
+            form.appendChild(hiddenRole);
+          } catch (e) { /* ignore per-record errors */ }
+        });
+      } catch (e) { /* ignore */ }
+    }
+
+    // Sync memberPayload with currently visible member rows.
+    // Ensures canonical payload contains only members visible in the UI (owner always kept).
+    function syncCanonicalPayloadWithVisible() {
+      try {
+        const payload = document.getElementById('memberPayload');
+        if (!payload) return;
+
+        // Collect visible member emails (desktop OR mobile rows)
+        const visibleRows = Array.from(document.querySelectorAll('#memberTable tbody tr, .member-card')).filter(r => r && r.offsetParent !== null);
+        const visibleEmails = new Set();
+        visibleRows.forEach(row => {
+          try {
+            const emailInput = row.querySelector('input[name="member_email[]"]');
+            if (emailInput && emailInput.value) visibleEmails.add(emailInput.value.toString().trim());
+          } catch (e) { /* ignore */ }
+        });
+
+        // Keep owner always (by manualSid matching OWNER_SID)
+        const keepSids = new Set();
+        if (typeof OWNER_SID !== 'undefined' && OWNER_SID) {
+          keepSids.add(OWNER_SID.toString());
+        }
+
+        // Walk payload and remove any canonical inputs that do not match visible emails or owner
+        // Group payload inputs by manualSid/manualEmail for safety
+        const payloadInputs = Array.from(payload.querySelectorAll('input'));
+        // Determine manualSids present in payload that match visible emails
+        const payloadSidsToKeep = new Set();
+        payloadInputs.forEach(pi => {
+          try {
+            const manualEmail = pi.dataset && pi.dataset.manualEmail ? pi.dataset.manualEmail.toString() : '';
+            const manualSid = pi.dataset && pi.dataset.manualSid ? pi.dataset.manualSid.toString() : '';
+            if (manualSid && keepSids.has(manualSid)) payloadSidsToKeep.add(manualSid);
+            if (manualEmail && visibleEmails.has(manualEmail)) {
+              if (manualSid) payloadSidsToKeep.add(manualSid);
+            }
+          } catch (e) { /* ignore */ }
+        });
+
+        // Remove payload children that are not in payloadSidsToKeep (and not owner)
+        payload.querySelectorAll('input').forEach(pi => {
+          try {
+            const manualSid = pi.dataset && pi.dataset.manualSid ? pi.dataset.manualSid.toString() : '';
+            const manualEmail = pi.dataset && pi.dataset.manualEmail ? pi.dataset.manualEmail.toString() : '';
+            // If has a manualSid, keep only if in payloadSidsToKeep
+            if (manualSid) {
+              if (!payloadSidsToKeep.has(manualSid)) pi.remove();
+            } else if (manualEmail) {
+              // email-only entries: keep only if email present in visible
+              if (!visibleEmails.has(manualEmail)) pi.remove();
+            } else {
+              // Unmarked inputs: safe to remove
+              pi.remove();
+            }
+          } catch (e) { /* ignore */ }
+        });
+      } catch (e) { console.debug('syncCanonicalPayloadWithVisible error', e); }
+    }
 
 
 
@@ -1519,7 +1890,7 @@ document.addEventListener('click', function(e) {
             <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
           </td>
           <td class="px-6 py-4">
-            <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required>
+              <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required readonly>
           </td>
           <td class="px-6 py-4 text-center">
             <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
@@ -1527,8 +1898,50 @@ document.addEventListener('click', function(e) {
             </button>
           </td>
         `;
+        // Mark as manually added and ensure inputs enabled
+        newRow.querySelectorAll('input, select, textarea').forEach(i => { try { i.disabled = false; i.dataset.manuallyAdded = '1'; } catch(e){} });
         // Add new member at the end of the table
         desktopTable.appendChild(newRow);
+        // Move the hidden student_id from the visible row into the canonical payload
+          try {
+            const payload = document.getElementById('memberPayload');
+            const sidInput = newRow.querySelector('input[name="member_student_id[]"]');
+            if (payload) {
+              // Always remove the visible row's hidden sid to avoid duplicate inputs.
+              if (sidInput) sidInput.remove();
+              // If a canonical entry for this sid already exists, do not create duplicates.
+              const existing = payload.querySelector('[data-manual-sid="' + memberId + '"]');
+              if (!existing) {
+                // Create a canonical hidden student id input (do NOT move the visible one)
+                const hiddenSid = document.createElement('input');
+                hiddenSid.type = 'hidden'; hiddenSid.name = 'member_student_id[]'; hiddenSid.value = memberId;
+                hiddenSid.dataset.manuallyAdded = '1'; hiddenSid.dataset.manualSid = memberId;
+                payload.appendChild(hiddenSid);
+
+                // Create canonical hidden email and role inputs and attach dataset markers
+                const hiddenEmail = document.createElement('input');
+                hiddenEmail.type = 'hidden'; hiddenEmail.name = 'member_email[]'; hiddenEmail.value = memberEmail || '';
+                hiddenEmail.dataset.manuallyAdded = '1'; hiddenEmail.dataset.manualSid = memberId; hiddenEmail.dataset.manualEmail = memberEmail || '';
+                payload.appendChild(hiddenEmail);
+                const hiddenRole = document.createElement('input');
+                hiddenRole.type = 'hidden'; hiddenRole.name = 'member_role[]'; hiddenRole.value = '';
+                hiddenRole.dataset.manuallyAdded = '1'; hiddenRole.dataset.manualSid = memberId; hiddenRole.dataset.manualEmail = memberEmail || '';
+                payload.appendChild(hiddenRole);
+                // Sync visible role input to hidden role
+                const visibleRole = newRow.querySelector('input[name="member_role[]"]');
+                if (visibleRole) {
+                  visibleRole.addEventListener('input', function(e){ try { hiddenRole.value = e.target.value; } catch(err){} });
+                }
+              } else {
+                // canonical entry exists: ensure visible role syncs to existing hidden role
+                const visibleRole = newRow.querySelector('input[name="member_role[]"]');
+                const existingHiddenRole = payload.querySelector('input[name="member_role[]"][data-manual-sid="' + memberId + '"]');
+                if (visibleRole && existingHiddenRole) {
+                  visibleRole.addEventListener('input', function(e){ try { existingHiddenRole.value = e.target.value; } catch(err){} });
+                }
+              }
+            }
+          } catch (e) { /* ignore payload append errors */ }
       }
      
       // Add to mobile view
@@ -1552,14 +1965,50 @@ document.addEventListener('click', function(e) {
           </div>
           <div class="space-y-1">
             <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
-            <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required>
+            <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required readonly>
           </div>
           <div class="flex justify-end">
             <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Remove</button>
           </div>
         `;
+        // Mark as manually added and ensure inputs enabled
+        newCard.querySelectorAll('input, select, textarea').forEach(i => { try { i.disabled = false; i.dataset.manuallyAdded = '1'; } catch(e){} });
         // Add new member card at the end of the container
         mobileContainer.appendChild(newCard);
+        // Move hidden student id into memberPayload and create canonical hidden inputs
+        try {
+          const payload = document.getElementById('memberPayload');
+          const sidInput = newCard.querySelector('input[name="member_student_id[]"]');
+          if (payload) {
+            // Always remove the visible row's hidden sid to avoid duplicate inputs.
+            if (sidInput) sidInput.remove();
+            const existing = payload.querySelector('[data-manual-sid="' + memberId + '"]');
+            if (!existing) {
+              const hiddenSid = document.createElement('input');
+              hiddenSid.type = 'hidden'; hiddenSid.name = 'member_student_id[]'; hiddenSid.value = memberId;
+              hiddenSid.dataset.manuallyAdded = '1'; hiddenSid.dataset.manualSid = memberId;
+              payload.appendChild(hiddenSid);
+              const hiddenEmail = document.createElement('input');
+              hiddenEmail.type = 'hidden'; hiddenEmail.name = 'member_email[]'; hiddenEmail.value = memberEmail || '';
+              hiddenEmail.dataset.manuallyAdded = '1'; hiddenEmail.dataset.manualSid = memberId; hiddenEmail.dataset.manualEmail = memberEmail || '';
+              payload.appendChild(hiddenEmail);
+              const hiddenRole = document.createElement('input');
+              hiddenRole.type = 'hidden'; hiddenRole.name = 'member_role[]'; hiddenRole.value = '';
+              hiddenRole.dataset.manuallyAdded = '1'; hiddenRole.dataset.manualSid = memberId; hiddenRole.dataset.manualEmail = memberEmail || '';
+              payload.appendChild(hiddenRole);
+              const visibleRole = newCard.querySelector('input[name="member_role[]"]');
+              if (visibleRole) {
+                visibleRole.addEventListener('input', function(e){ try { hiddenRole.value = e.target.value; } catch(err){} });
+              }
+            } else {
+              const visibleRole = newCard.querySelector('input[name="member_role[]"]');
+              const existingHiddenRole = payload.querySelector('input[name="member_role[]"][data-manual-sid="' + memberId + '"]');
+              if (visibleRole && existingHiddenRole) {
+                visibleRole.addEventListener('input', function(e){ try { existingHiddenRole.value = e.target.value; } catch(err){} });
+              }
+            }
+          }
+        } catch(e) { /* ignore */ }
       }
     });
    
@@ -1575,6 +2024,18 @@ document.addEventListener('click', function(e) {
       timer: 2000,
       showConfirmButton: false
     });
+    // Debug: after adding, print current member arrays in the DOM and persist last added set
+    try {
+      const names = Array.from(document.querySelectorAll('input[name="member_name[]"]')).map(i => i.value || '');
+      const emails = Array.from(document.querySelectorAll('input[name="member_email[]"]')).map(i => i.value || '');
+      const ids = Array.from(document.querySelectorAll('input[name="member_student_id[]"]')).map(i => i.value || '');
+      // Ensure payload canonical entries are in sync with visible rows
+      try { syncCanonicalPayloadWithVisible(); } catch(e) {}
+      console.debug('After addSelectedMembers - member names:', names);
+      console.debug('After addSelectedMembers - member emails:', emails);
+      console.debug('After addSelectedMembers - member student ids:', ids);
+      try { localStorage.setItem('lastAddedMembers', JSON.stringify({names, emails, ids})); } catch(e) {}
+    } catch (e) { console.debug('Debug after addSelectedMembers failed', e); }
   });
 
 
@@ -1621,27 +2082,40 @@ document.addEventListener('click', function(e) {
     }
 
     // Validate team members
-    const allMemberNames = formData.getAll('member_name[]');
-    const allMemberRoles = formData.getAll('member_role[]');
-    const allMemberEmails = formData.getAll('member_email[]');
-    const allMemberContacts = formData.getAll('member_contact[]');
-
-    // Filter out duplicates and empty entries (from desktop/mobile views)
+    // Prefer extracting members from visible DOM rows (desktop table rows or mobile cards)
+    try { enableVisibleMemberInputs(form); } catch (e) { /* ignore */ }
+    const visibleMemberRows = Array.from(document.querySelectorAll('#memberTable tbody tr, .member-card')).filter(r => r && r.offsetParent !== null);
+    // Filter out duplicates and empty entries; use student id when available, fallback to email.
     const uniqueMembers = [];
-    const processedEmails = new Set();
-    
-    for (let i = 0; i < allMemberNames.length; i++) {
-      const name = allMemberNames[i]?.trim();
-      const role = allMemberRoles[i]?.trim();
-      const email = allMemberEmails[i]?.trim();
-      const contact = allMemberContacts[i]?.trim();
-      
-      // Only process if there's actual data and email hasn't been processed
-      if ((name || role || email || contact) && (!email || !processedEmails.has(email))) {
-        if (email) processedEmails.add(email);
-        uniqueMembers.push({ name, role, email, contact, index: uniqueMembers.length + 1 });
-      }
-    }
+    const memberMap = new Map();
+    visibleMemberRows.forEach((row, i) => {
+      try {
+        const name = (row.querySelector('input[name="member_name[]"]')?.value || '').trim();
+        const role = (row.querySelector('input[name="member_role[]"]')?.value || '').trim();
+        const email = (row.querySelector('input[name="member_email[]"]')?.value || '').trim();
+        const contact = (row.querySelector('input[name="member_contact[]"]')?.value || '').trim();
+        const sid = (row.querySelector('input[name="member_student_id[]"]')?.value || '').trim();
+
+        if (!(name || role || email || contact || sid)) return;
+
+        const key = sid || (email ? email.toLowerCase() : '__idx_' + i);
+        const score = (name ? 1 : 0) + (role ? 4 : 0) + (email ? 1 : 0) + (contact ? 1 : 0);
+
+        if (memberMap.has(key)) {
+          const existing = memberMap.get(key);
+          if (score > existing._score) {
+            memberMap.set(key, { name, role, email, contact, _score: score });
+          }
+        } else {
+          memberMap.set(key, { name, role, email, contact, _score: score });
+        }
+      } catch (e) { /* ignore malformed row */ }
+    });
+
+    // Re-index uniqueMembers in stable order
+    Array.from(memberMap.values()).forEach((m, idx) => {
+      uniqueMembers.push({ name: m.name, role: m.role, email: m.email, contact: m.contact, index: idx + 1 });
+    });
 
     let validMembers = 0;
     uniqueMembers.forEach((member) => {
@@ -1650,7 +2124,7 @@ document.addEventListener('click', function(e) {
       if (!member.role) missingFields.push('Role');
       if (!member.email) missingFields.push('Email');
       if (!member.contact) missingFields.push('Contact');
-      
+
       if (missingFields.length > 0) {
         errors.push(`Team member ${member.index}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
       } else {

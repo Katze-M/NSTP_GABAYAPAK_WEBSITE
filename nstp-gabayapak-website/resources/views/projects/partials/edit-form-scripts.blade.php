@@ -76,11 +76,45 @@ function attachRemoveButtons() {
       if (result.isConfirmed) {
         const row = btn.closest('tr, .grid, .activity-row, .budget-row, .member-card');
         if (row) {
-          // if member row, remove email from set
-          if (row.querySelector && row.querySelector('input[name="member_email[]"]')) {
+          // If removing a member row/card, remove any duplicate representations
+          // (desktop table vs mobile card) that reference the same student id or email.
+          let emailVal = null;
+          let sidVal = null;
+          if (row.querySelector) {
             const emailInput = row.querySelector('input[name="member_email[]"]');
-            if (emailInput && emailInput.value) addedMemberEmails.delete(emailInput.value);
+            if (emailInput && emailInput.value) {
+              emailVal = emailInput.value.toString().trim();
+              addedMemberEmails.delete(emailVal);
+            }
+            const sidInput = row.querySelector('input[name="member_student_id[]"]');
+            if (sidInput && sidInput.value) sidVal = sidInput.value.toString().trim();
           }
+
+          // Remove matching rows/cards by student id
+          if (sidVal) {
+            document.querySelectorAll('input[name="member_student_id[]"]').forEach(el => {
+              try {
+                if ((el.value || '').toString().trim() === sidVal) {
+                  const other = el.closest('tr, .member-card, .proposal-table-row');
+                  if (other && other !== row) other.remove();
+                }
+              } catch (e) { /* ignore */ }
+            });
+          }
+
+          // Remove matching rows/cards by email
+          if (emailVal) {
+            document.querySelectorAll('input[name="member_email[]"]').forEach(el => {
+              try {
+                if ((el.value || '').toString().trim() === emailVal) {
+                  const other = el.closest('tr, .member-card, .proposal-table-row');
+                  if (other && other !== row) other.remove();
+                }
+              } catch (e) { /* ignore */ }
+            });
+          }
+
+          // Finally remove the clicked row itself
           row.remove();
         }
         Swal.fire('Removed!', 'The item has been removed.', 'success');
@@ -508,29 +542,79 @@ function validateFormRequirements() {
     errors.push('A team logo is required for project submission.');
   }
 
-  // Validate team members
-  const allMemberNames = formData.getAll('member_name[]');
-  const allMemberRoles = formData.getAll('member_role[]');
-  const allMemberEmails = formData.getAll('member_email[]');
-  const allMemberContacts = formData.getAll('member_contact[]');
-
-  // Filter out duplicates and empty entries (from desktop/mobile views)
+  // Validate team members - gather visible rows from the DOM (desktop table rows or mobile cards)
+  // This avoids reading disabled/hidden duplicate inputs and ensures indexes match what the user sees.
   const uniqueMembers = [];
-  const processedEmails = new Set();
+  try {
+    const memberRowNodes = Array.from(document.querySelectorAll('#memberTable tbody tr, .member-card'))
+      .filter(r => r && r.offsetParent !== null);
 
-  // Use max length across arrays to ensure dynamically added rows in desktop/mobile are captured
-  const maxMemberEntries = Math.max(allMemberNames.length, allMemberRoles.length, allMemberEmails.length, allMemberContacts.length);
-  for (let i = 0; i < maxMemberEntries; i++) {
-    const name = (allMemberNames[i] || '').trim();
-    const role = (allMemberRoles[i] || '').trim();
-    const email = (allMemberEmails[i] || '').trim();
-    const contact = (allMemberContacts[i] || '').trim();
+    const memberMap = new Map();
+    const orderedKeys = [];
 
-    // Only process if there's actual data and email hasn't been processed
-    if ((name || role || email || contact) && (!email || !processedEmails.has(email))) {
-      if (email) processedEmails.add(email);
-      uniqueMembers.push({ name, role, email, contact, index: uniqueMembers.length + 1 });
+    memberRowNodes.forEach((row) => {
+      try {
+        const nameEl = row.querySelector('input[name="member_name[]"]');
+        const roleEl = row.querySelector('input[name="member_role[]"]');
+        const emailEl = row.querySelector('input[name="member_email[]"]');
+        const contactEl = row.querySelector('input[name="member_contact[]"]');
+        const sidEl = row.querySelector('input[name="member_student_id[]"]');
+
+        const name = nameEl ? (nameEl.value || '').toString().trim() : '';
+        const role = roleEl ? (roleEl.value || '').toString().trim() : '';
+        const email = emailEl ? (emailEl.value || '').toString().trim() : '';
+        const contact = contactEl ? (contactEl.value || '').toString().trim() : '';
+        const sid = sidEl ? (sidEl.value || '').toString().trim() : '';
+
+        // Skip fully empty rows
+        if (!(name || role || email || contact || sid)) return;
+
+        const key = sid || (email ? email.toLowerCase() : '__row_' + Math.random().toString(36).slice(2,8));
+
+        const score = (name ? 1 : 0) + (role ? 4 : 0) + (email ? 1 : 0) + (contact ? 1 : 0);
+
+        if (memberMap.has(key)) {
+          const existing = memberMap.get(key);
+          if (score > existing._score) {
+            memberMap.set(key, { name, role, email, contact, _score: score });
+          }
+        } else {
+          memberMap.set(key, { name, role, email, contact, _score: score });
+          orderedKeys.push(key);
+        }
+      } catch (e) { /* ignore malformed row */ }
+    });
+
+    orderedKeys.forEach((k, idx) => {
+      const m = memberMap.get(k);
+      if (m) uniqueMembers.push({ name: m.name, role: m.role, email: m.email, contact: m.contact, index: idx + 1 });
+    });
+  } catch (e) {
+    // Fallback: if anything goes wrong, try to read from FormData as before
+    const allMemberNames = formData.getAll('member_name[]');
+    const allMemberRoles = formData.getAll('member_role[]');
+    const allMemberEmails = formData.getAll('member_email[]');
+    const allMemberContacts = formData.getAll('member_contact[]');
+    const allMemberIds = formData.getAll('member_student_id[]');
+    const memberMap = new Map();
+    const maxMemberEntries = Math.max(allMemberNames.length, allMemberRoles.length, allMemberEmails.length, allMemberContacts.length, allMemberIds.length);
+    for (let i = 0; i < maxMemberEntries; i++) {
+      const name = (allMemberNames[i] || '').toString().trim();
+      const role = (allMemberRoles[i] || '').toString().trim();
+      const email = (allMemberEmails[i] || '').toString().trim();
+      const contact = (allMemberContacts[i] || '').toString().trim();
+      const sid = (allMemberIds && allMemberIds[i]) ? String(allMemberIds[i]).trim() : '';
+      if (!(name || role || email || contact || sid)) continue;
+      const key = sid || (email ? email.toLowerCase() : '__idx_' + i);
+      const score = (name ? 1 : 0) + (role ? 4 : 0) + (email ? 1 : 0) + (contact ? 1 : 0);
+      if (memberMap.has(key)) {
+        const existing = memberMap.get(key);
+        if (score > existing._score) memberMap.set(key, { name, role, email, contact, _score: score });
+      } else {
+        memberMap.set(key, { name, role, email, contact, _score: score });
+      }
     }
+    Array.from(memberMap.values()).forEach((m, idx) => uniqueMembers.push({ name: m.name, role: m.role, email: m.email, contact: m.contact, index: idx + 1 }));
   }
 
   let validMembers = 0;
@@ -815,10 +899,10 @@ function addSelectedMembersToForm() {
           <input name="member_role[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="e.g., Member" required>
         </td>
         <td class="px-6 py-4">
-          <input type="email" name="member_email[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
+          <input type="email" name="member_email[]" title="This email is taken from the student profile and cannot be edited here." class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
         </td>
         <td class="px-6 py-4">
-          <input type="tel" name="member_contact[]" class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required>
+          <input type="tel" name="member_contact[]" title="This contact number is taken from the student profile and cannot be edited here." class="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required readonly>
         </td>
         <td class="px-6 py-4 text-center">
           <button type="button" class="removeRow bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
@@ -847,11 +931,11 @@ function addSelectedMembersToForm() {
         </div>
         <div class="space-y-1">
           <label class="block text-xs font-medium text-gray-600">School Email <span class="text-red-500">*</span></label>
-          <input type="email" name="member_email[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
+          <input type="email" name="member_email[]" title="This email is taken from the student profile and cannot be edited here." class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" value="${memberEmail}" readonly>
         </div>
         <div class="space-y-1">
           <label class="block text-xs font-medium text-gray-600">Contact Number <span class="text-red-500">*</span></label>
-          <input type="tel" name="member_contact[]" class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required>
+          <input type="tel" name="member_contact[]" title="This contact number is taken from the student profile and cannot be edited here." class="w-full px-2 py-1 border-2 border-gray-400 rounded text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" placeholder="09XX XXX XXXX" value="${memberContact}" required readonly>
         </div>
         <div class="flex justify-end">
           <button type="button" class="removeRow bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Remove</button>

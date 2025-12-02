@@ -531,6 +531,28 @@
                         @if($project->Project_Status === 'completed')
                             <p class="text-xs text-gray-600 mt-2">Note: Project marked <strong>Completed</strong>. Activities and proofs are preserved.</p>
                         @endif
+                        @if(Auth::check() && Auth::user()->isStudent())
+                            @php
+                                $currentSid = Auth::user()->student->id ?? null;
+                                $isOwner = $currentSid && $currentSid === ($project->student_id ?? null);
+                                $isMember = false;
+                                try {
+                                    $sids = $project->student_ids ?? [];
+                                    if (!is_array($sids)) {
+                                        $sids = json_decode($sids, true) ?: [];
+                                    }
+                                    foreach ($sids as $sid) {
+                                        if ((string)$sid === (string)$currentSid) { $isMember = true; break; }
+                                    }
+                                } catch (\Exception $e) { $isMember = false; }
+                            @endphp
+                            @php
+                                $statusNorm = strtolower(trim((string)($project->Project_Status ?? '')));
+                            @endphp
+                            @if($isMember && !$isOwner && !in_array($statusNorm, ['completed', 'archived']))
+                                <p class="text-xs text-gray-600 mt-2">Note: As a <strong> team member </strong>, you cannot edit, submit, or resubmit the project. <strong> Only the project leader (owner) can perform those actions.</strong></p>
+                            @endif
+                        @endif
                         
                         @if($isStaff && ($section ?? '') === 'Archived Projects')
                             {{-- Unarchive (icon), Delete (icon) for archived projects. Edit removed. --}}

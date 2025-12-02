@@ -587,11 +587,17 @@ function validateFormRequirements() {
   if (validActivities === 0) errors.push('At least one complete activity is required.');
 
   // Validate budget rows (optional, but if partially filled must be complete)
-  // Validate budget rows by reading visible budget-row DOM nodes so indices match visible UI
-  const budgetRowNodes = Array.from(document.querySelectorAll('.proposal-table-row.budget-row, .budget-row'))
-    .filter(r => r && r.offsetParent !== null);
+  // Select candidate rows that actually contain budget inputs so server-rendered rows
+  // (which may not include the `budget-row` class) are also validated.
+  const budgetRowCandidates = Array.from(document.querySelectorAll('.proposal-table-row, .budget-row'))
+    .filter(r => r && r.querySelector && r.offsetParent !== null && (
+      r.querySelector('input[name="budget_amount[]"]') ||
+      r.querySelector('textarea[name="budget_activity[]"]') ||
+      r.querySelector('textarea[name="budget_resources[]"]') ||
+      r.querySelector('textarea[name="budget_partners[]"]')
+    ));
 
-  budgetRowNodes.forEach((rowNode, idx) => {
+  budgetRowCandidates.forEach((rowNode, idx) => {
     const actEl = rowNode.querySelector('textarea[name="budget_activity[]"]');
     const resEl = rowNode.querySelector('textarea[name="budget_resources[]"]');
     const partEl = rowNode.querySelector('textarea[name="budget_partners[]"]');

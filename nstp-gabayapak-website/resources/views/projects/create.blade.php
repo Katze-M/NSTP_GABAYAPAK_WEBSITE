@@ -69,33 +69,45 @@
     }
   @endphp
 
-  @if($existingDraft)
-    <div class="mb-4 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="font-semibold text-blue-800">You already have a saved draft project</p>
-          <p class="text-sm text-blue-700">Continue editing your draft or submit it when ready.</p>
+@if($existingDraft)
+<div class="mb-4 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
+    <div class="flex items-center justify-between">
+        <div class="flex-1 min-w-0">
+            <p class="font-semibold text-blue-800">You already have a saved draft project</p>
+            <p class="text-sm text-blue-700">Continue editing your draft or submit it when ready.</p>
         </div>
-        <div class="flex items-center gap-2">
-          <a href="{{ route('projects.edit', $existingDraft) }}" class="inline-block bg-blue-600 text-white px-3 py-2 rounded-lg">Open Draft</a>
-        </div>
-      </div>
+
+        <a href="{{ route('projects.edit', $existingDraft) }}"
+           class="inline-block bg-blue-600 text-white px-3 py-2 rounded-lg">
+            Open Draft
+        </a>
     </div>
-  @endif
+</div>
+@endif
+
 
   @if(!empty($existingProject) && empty($isOwnerOfExisting))
-    <div class="mb-4 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 p-4">
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="font-semibold text-emerald-800">You are already a member of a project</p>
-          <p class="text-sm text-emerald-700">You are currently attached to "<strong>{{ $existingProject->Project_Name ?? 'a project' }}</strong>". You may still fill out the form below, but you cannot create multiple active projects while attached to one.</p>
+<div class="mb-4 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 p-4">
+    <div class="flex items-center justify-between gap-4">
+        <div class="flex-1 min-w-0">
+            <p class="font-semibold text-emerald-800">You are already a member of a project</p>
+            <p class="text-sm text-emerald-700">
+                You are currently attached to 
+                "<strong>{{ $existingProject->Project_Name ?? 'a project' }}</strong>".
+                You may still fill out the form below, but you cannot create multiple active projects while attached to one.
+            </p>
         </div>
-        <div class="flex items-center gap-2">
-          <a href="{{ route('projects.show', $existingProject) }}" class="inline-block bg-emerald-600 text-white px-3 py-2 rounded-lg">View Project</a>
+        <div class="flex-none">
+            <a href="{{ route('projects.show', $existingProject) }}"
+               class="inline-block whitespace-nowrap bg-emerald-600 text-white px-3 py-2 rounded-lg">
+                View Project
+            </a>
         </div>
-      </div>
+
     </div>
-  @endif
+</div>
+@endif
+
 
   @if(!$existingDraft && ($hasPending || $hasRejected))
     <div class="mb-4 rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">

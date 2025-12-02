@@ -12,8 +12,17 @@
                         <button onclick="history.back()" class="inline-flex items-center px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg shadow transition">Back</button>
                     </div>
                     @if(Auth::user() && Auth::user()->staff)
+                        @php
+                            $projStatusTop = strtolower(trim((string)($project->Project_Status ?? '')));
+                        @endphp
                         <div>
-                            <a href="{{ route('projects.edit', $project) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow">Edit Project</a>
+                            @if($projStatusTop === 'approved')
+                                <a href="{{ route('projects.edit', $project) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow">Edit Project</a>
+                            @elseif(in_array($projStatusTop, ['completed','archived']))
+                                <button type="button" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg shadow opacity-70 cursor-not-allowed" title="Completed or archived projects cannot be edited" aria-disabled="true" tabindex="-1">Edit Project</button>
+                            @else
+                                <button type="button" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg shadow opacity-70 cursor-not-allowed" title="Staff can only edit approved projects" aria-disabled="true" tabindex="-1">Edit Project</button>
+                            @endif
                         </div>
                     @endif
                 </div>
@@ -76,7 +85,11 @@
 
                             $st = strtolower(trim((string)($project->Project_Status ?? '')));
                         @endphp
-                        @if($allActivitiesCompleted)
+
+                        {{-- Prefer explicit archived state over computed "all activities completed" --}}
+                        @if($st === 'archived')
+                            @include('components.status-badge', ['status' => 'archived', 'size' => 'large', 'extraClass' => 'bg-gray-600 text-white'])
+                        @elseif($allActivitiesCompleted)
                             @include('components.status-badge', ['status' => 'completed', 'size' => 'large'])
                         @elseif(in_array($st, ['pending','submitted','under review']))
                             @include('components.status-badge', ['status' => $project->Project_Status, 'size' => 'large', 'extraClass' => 'bg-orange-500 text-white'])

@@ -14,6 +14,47 @@
         #mobileMenuBtn { display: none !important; }
       }
       
+      /* Prevent action buttons (eg. "View Project") from being squished when the
+         adjacent title/description is long. This targets common alert/notice/banner
+         patterns and makes the text area break/wrap while keeping the button size. */
+      .banner-flex,
+      .alert,
+      .notice,
+      .project-banner,
+      .info-banner,
+      .attached-project {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+      }
+
+      .banner-flex .banner-text,
+      .alert .banner-text,
+      .notice .banner-text,
+      .project-banner .banner-text,
+      .info-banner .banner-text,
+      .attached-project .banner-text {
+        flex: 1 1 auto;
+        min-width: 0; /* allow the text to shrink and wrap correctly inside flex */
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .banner-flex .btn,
+      .alert .btn,
+      .notice .btn,
+      .project-banner .btn,
+      .info-banner .btn,
+      .attached-project .btn {
+        flex: 0 0 auto; /* don't let the button shrink */
+        white-space: nowrap; /* keep button text on one line */
+      }
+
+      /* Utility: make long sentences break at a chosen spot using <wbr> or by adding
+         a span with class 'banner-text' around the message in your template. */
+      
       /* Mobile optimizations for small screens (360x600 and similar) */
       @media (max-width: 400px) {
         /* Adjust header and buttons */
@@ -436,12 +477,11 @@
       applyFilters();
 
       function downloadCSV() {
-        // Build CSV using visible DOM values so the file exactly matches the report page
+        // Generate an Excel-compatible HTML file (saved as .xls) so styling is preserved
         const compFilter = (document.getElementById('filterComponent') || {}).value || 'All';
         const secEl = document.getElementById('filterSection');
         const secFilter = secEl ? secEl.value : 'All';
 
-        // Read visible summary numbers from DOM (these represent what's on the page)
         const approved = document.getElementById('approvedProposals')?.textContent.trim() || '0';
         const pending = document.getElementById('pendingProposals')?.textContent.trim() || '0';
         const draft = document.getElementById('draftProposals')?.textContent.trim() || '0';
@@ -451,21 +491,20 @@
         const completed = document.getElementById('statusCompleted')?.textContent.trim() || '0';
         const archived = document.getElementById('statusArchived')?.textContent.trim() || '0';
 
-        // Component breakdown: prefer Chart data if available, otherwise compute from DOM/list
+        // Component breakdown
         let compRows = [];
         if (window.componentChart && componentChart.data && Array.isArray(componentChart.data.labels)) {
           componentChart.data.labels.forEach((label, i) => {
             const val = (componentChart.data.datasets && componentChart.data.datasets[0] && componentChart.data.datasets[0].data && componentChart.data.datasets[0].data[i]) || 0;
-            compRows.push([label, String(val)]);
+            compRows.push({component: label, count: Number(val)});
           });
         } else {
-          // Fallback: compute from currentFilteredProjects
           const compCounts = {};
           (Array.isArray(currentFilteredProjects) ? currentFilteredProjects : []).forEach(p => { const k = p.component || 'Unknown'; compCounts[k] = (compCounts[k] || 0) + 1; });
-          ['ROTC','LTS','CWTS'].forEach(k => compRows.push([k, String(compCounts[k] || 0)]));
+          ['ROTC','LTS','CWTS'].forEach(k => compRows.push({component:k, count: compCounts[k] || 0}));
         }
 
-        // Progress details: read rendered project progress entries so ordering matches the page
+        // Progress rows
         const progressRows = [];
         const container = document.querySelector('#reports .space-y-4');
         if (container) {
@@ -478,7 +517,6 @@
               const progressText = progressSpan ? progressSpan.textContent.trim() : '';
               const budgetText = budgetSpan ? budgetSpan.textContent.trim().replace('₱','').replace(/,/g,'') : '';
 
-              // Parse title like: "Project Name (COMP — Section A)"
               let name = title;
               let component = '';
               let section = '';
@@ -490,58 +528,90 @@
                 section = meta[1] || '';
               }
 
-              progressRows.push([name, component, section, progressText, budgetText]);
+              progressRows.push({name, component, section, progress: progressText, budget: budgetText});
             } catch (e) { /* ignore parse errors for a row */ }
           });
         }
 
-        // Build CSV using the DOM-derived values
-        const csvData = [];
-        csvData.push(["NSTP Project Management System - Reports Export"]);
-        csvData.push(["Generated on: " + new Date().toLocaleString()]);
-        csvData.push(["Active Filters:", `Component: ${compFilter}`, `Section: ${secFilter}`]);
-        csvData.push([""]);
+        // Helper to escape HTML
+        function esc(s) { if (s === null || typeof s === 'undefined') return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }
 
-        csvData.push(["PROJECT PROPOSALS SUMMARY"]);
-        csvData.push(["Status", "Count", "Percentage"]);
+        // Color mapping
+        const statusColors = { approved: '#16a34a', pending: '#f97316', draft: '#f59e0b', total: '#2563eb' };
+        const statusColorsCaps = { 'Approved': '#16a34a', 'Pending': '#f97316', 'Draft': '#f59e0b', 'Total': '#2563eb' };
+        const implColors = { Ongoing: '#2b50ff', Completed: '#16a34a', Archived: '#f59e0b' };
+        const compColors = { 'ROTC': '#2b50ff', 'LTS': '#f2d35b', 'CWTS': '#e63946' };
+
+        const now = new Date();
+        const dateStr = now.toLocaleDateString();
+        const timeStr = now.toLocaleTimeString();
+
+        // Build HTML table
+        let html = '<html><head><meta charset="utf-8"></head><body>';
+        html += '<table border="0" cellpadding="4" cellspacing="0">';
+        html += `<tr><td colspan="5" style="font-weight:700;font-size:18px;padding-bottom:8px;">${esc('NSTP Project Management System - Reports Export')}</td></tr>`;
+        html += `<tr><td colspan="5" style="padding-bottom:6px;"><strong>Generated on:</strong> ${esc(dateStr)}, <em>${esc(timeStr)}</em></td></tr>`;
+        html += `<tr><td colspan="5" style="padding-bottom:6px;"><strong>Active Filters:</strong> Component: ${esc(compFilter)} &nbsp;&nbsp; Section: ${esc(secFilter)}</td></tr>`;
+        html += '<tr><td colspan="5"></td></tr>';
+
+        // Project proposals summary
+        html += '<tr><td colspan="5" style="font-weight:700;padding-top:8px;padding-bottom:4px;">PROJECT PROPOSALS SUMMARY</td></tr>';
+        html += '<tr><th style="font-weight:700;border-bottom:1px solid #ddd;">Status</th><th style="font-weight:700;border-bottom:1px solid #ddd;">Count</th><th style="font-weight:700;border-bottom:1px solid #ddd;">Percentage</th><td></td><td></td></tr>';
         const totNum = Number(total) || 0;
         const approvedNum = Number(approved) || 0;
         const pendingNum = Number(pending) || 0;
         const draftNum = Number(draft) || 0;
-        csvData.push(["Approved", approvedNum, totNum ? ((Math.round((approvedNum/totNum)*1000)/10) + "%") : "0%"]);
-        csvData.push(["Pending", pendingNum, totNum ? ((Math.round((pendingNum/totNum)*1000)/10) + "%") : "0%"]);
-        csvData.push(["Draft", draftNum, totNum ? ((Math.round((draftNum/totNum)*1000)/10) + "%") : "0%"]);
-        csvData.push(["Total", totNum, totNum ? "100%" : "0%"]);
-        csvData.push([""]);
+        function pct(n) { return totNum ? ((Math.round((n/totNum)*1000)/10) + '%') : '0%'; }
 
-        csvData.push(["PROJECT IMPLEMENTATION STATUS"]);
-        csvData.push(["Status", "Count"]);
-        csvData.push(["Ongoing", Number(ongoing) || 0]);
-        csvData.push(["Completed", Number(completed) || 0]);
-        csvData.push(["Archived", Number(archived) || 0]);
-        csvData.push([""]);
+        html += `<tr><td style="background:${statusColorsCaps['Approved']};color:#fff;font-weight:700;">Approved</td><td style="font-weight:700;">${esc(approvedNum)}</td><td>${esc(pct(approvedNum))}</td><td></td><td></td></tr>`;
+        html += `<tr><td style="background:${statusColorsCaps['Pending']};color:#fff;font-weight:700;">Pending</td><td style="font-weight:700;">${esc(pendingNum)}</td><td>${esc(pct(pendingNum))}</td><td></td><td></td></tr>`;
+        html += `<tr><td style="background:${statusColorsCaps['Draft']};color:#000;font-weight:700;">Draft</td><td style="font-weight:700;">${esc(draftNum)}</td><td>${esc(pct(draftNum))}</td><td></td><td></td></tr>`;
+        html += `<tr><td style="background:${statusColorsCaps['Total']};color:#fff;font-weight:700;">Total</td><td style="font-weight:700;">${esc(totNum)}</td><td style="font-weight:700;">100%</td><td></td><td></td></tr>`;
+        html += '<tr><td colspan="5"></td></tr>';
 
-        csvData.push(["PROJECTS PER COMPONENT"]);
-        csvData.push(["Component", "Count"]);
-        compRows.forEach(r => csvData.push(r));
-        csvData.push([""]);
+        // Project implementation status
+        html += '<tr><td colspan="5" style="font-weight:700;padding-top:8px;padding-bottom:4px;">PROJECT IMPLEMENTATION STATUS</td></tr>';
+        html += '<tr><th style="font-weight:700;border-bottom:1px solid #ddd;">Status</th><th style="font-weight:700;border-bottom:1px solid #ddd;">Count</th><td></td><td></td><td></td></tr>';
+        html += `<tr><td style="background:${implColors['Ongoing']};color:#fff;font-weight:700;">Ongoing</td><td style="font-weight:700;">${esc(ongoing)}</td><td></td><td></td><td></td></tr>`;
+        html += `<tr><td style="background:${implColors['Completed']};color:#fff;font-weight:700;">Completed</td><td style="font-weight:700;">${esc(completed)}</td><td></td><td></td><td></td></tr>`;
+        html += `<tr><td style="background:${implColors['Archived']};color:#000;font-weight:700;">Archived</td><td style="font-weight:700;">${esc(archived)}</td><td></td><td></td><td></td></tr>`;
+        html += '<tr><td colspan="5"></td></tr>';
 
-        csvData.push(["PROJECT PROGRESS DETAILS"]);
-        csvData.push(["Project Name", "Component", "Section", "Progress Percentage", "Total Budget"]);
-        progressRows.forEach(r => csvData.push(r));
+        // Projects per component
+        html += '<tr><td colspan="5" style="font-weight:700;padding-top:8px;padding-bottom:4px;">PROJECTS PER COMPONENT</td></tr>';
+        html += '<tr><th style="font-weight:700;border-bottom:1px solid #ddd;">Component</th><th style="font-weight:700;border-bottom:1px solid #ddd;">Count</th><td></td><td></td><td></td></tr>';
+        compRows.forEach(r => {
+          const ccol = compColors[r.component] || '#2b50ff';
+          html += `<tr><td style="background:${ccol};color:#fff;font-weight:700;">${esc(r.component)}</td><td style="font-weight:700;">${esc(r.count)}</td><td></td><td></td><td></td></tr>`;
+        });
+        html += '<tr><td colspan="5"></td></tr>';
 
-        // Serialize CSV with proper escaping
-        const csvContent = 'data:text/csv;charset=utf-8,' + csvData.map(row => row.map(cell => {
-          if (cell === null || typeof cell === 'undefined') return '';
-          const s = String(cell);
-          if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g, '""') + '"';
-          return s;
-        }).join(',')).join('\n');
+        // Project progress details
+        html += '<tr><td colspan="5" style="font-weight:700;padding-top:8px;padding-bottom:4px;">PROJECT PROGRESS DETAILS</td></tr>';
+        html += '<tr><th style="font-weight:700;border-bottom:1px solid #ddd;">Project Name</th><th style="font-weight:700;border-bottom:1px solid #ddd;">Component</th><th style="font-weight:700;border-bottom:1px solid #ddd;">Section</th><th style="font-weight:700;border-bottom:1px solid #ddd;">Progress</th><th style="font-weight:700;border-bottom:1px solid #ddd;">Total Budget</th></tr>';
+        progressRows.forEach(r => {
+          const compColor = compColors[r.component] || '#2b50ff';
+          const progClean = String(r.progress).replace('%','').trim();
+          html += '<tr>' +
+                  `<td style="font-weight:700;">${esc(r.name)}</td>` +
+                  `<td style="background:${compColor};color:#fff;font-weight:700;">${esc(r.component)}</td>` +
+                  `<td>${esc(r.section)}</td>` +
+                  `<td style="font-weight:700;">${esc(r.progress)}</td>` +
+                  `<td style="font-weight:700;font-style:italic;">₱${Number(r.budget || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>` +
+                  '</tr>';
+        });
 
+        html += '</table></body></html>';
+
+        // Download as .xls so Excel renders the HTML with formatting
+        const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
         const link = document.createElement('a');
-        link.href = encodeURI(csvContent);
-        link.download = 'nstp_comprehensive_reports_' + new Date().toISOString().split('T')[0] + '.csv';
+        const filename = 'nstp_comprehensive_reports_' + new Date().toISOString().split('T')[0] + '.xls';
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
         link.click();
+        setTimeout(() => { URL.revokeObjectURL(link.href); link.remove(); }, 1000);
       }
 
       function downloadPDF() {

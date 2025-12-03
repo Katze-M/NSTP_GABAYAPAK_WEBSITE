@@ -727,6 +727,41 @@ function enableVisibleMemberInputs(form) {
   } catch (e) { /* ignore */ }
 }
 
+// Ensure visible activity and budget inputs are enabled (override any prior disabling)
+function enableVisibleActivityBudgetInputs(form) {
+  try {
+    // Activities - desktop rows or mobile cards
+    const activitiesDesktop = document.getElementById('activitiesContainer');
+    const activitiesMobile = document.getElementById('activitiesContainerMobile');
+    let visibleActivityRows = [];
+    if (activitiesDesktop && activitiesDesktop.offsetParent !== null) {
+      visibleActivityRows = Array.from(activitiesDesktop.querySelectorAll('.activity-row, .proposal-table-row')).filter(r => r && r.offsetParent !== null);
+    } else if (activitiesMobile && activitiesMobile.offsetParent !== null) {
+      visibleActivityRows = Array.from(activitiesMobile.querySelectorAll('.activity-row')).filter(r => r && r.offsetParent !== null);
+    } else {
+      visibleActivityRows = Array.from(document.querySelectorAll('.activity-row')).filter(r => r && r.offsetParent !== null);
+    }
+    visibleActivityRows.forEach(row => {
+      try { row.querySelectorAll('input[name^="stage"], input[name^="timeframe"], input[name^="implementation_date"], textarea[name^="activities"], textarea[name^="point_person"], select[name^="status"]').forEach(i => i.disabled = false); } catch(e) {}
+    });
+
+    // Budgets - desktop or mobile
+    const budgetDesktop = document.getElementById('budgetContainer');
+    const budgetMobile = document.getElementById('budgetContainerMobile');
+    let visibleBudgetRows = [];
+    if (budgetDesktop && budgetDesktop.offsetParent !== null) {
+      visibleBudgetRows = Array.from(budgetDesktop.querySelectorAll('.proposal-table-row, .budget-row')).filter(r => r && r.offsetParent !== null);
+    } else if (budgetMobile && budgetMobile.offsetParent !== null) {
+      visibleBudgetRows = Array.from(budgetMobile.querySelectorAll('.budget-row')).filter(r => r && r.offsetParent !== null);
+    } else {
+      visibleBudgetRows = Array.from(document.querySelectorAll('.budget-row')).filter(r => r && r.offsetParent !== null);
+    }
+    visibleBudgetRows.forEach(row => {
+      try { row.querySelectorAll('textarea[name^="budget_"], input[name="budget_amount[]"]').forEach(i => i.disabled = false); } catch(e) {}
+    });
+  } catch (e) { /* ignore */ }
+}
+
 // Debug toggle: if true, show a preview modal of FormData member fields before submit
 const ENABLE_FORMDATA_PREVIEW = true;
 // If true, skip showing the FormData preview for Save-as-Draft (user requested)
@@ -1174,10 +1209,21 @@ document.addEventListener('click', function(e) {
           try { form.querySelectorAll('input[name^="member_"], select[name^="member_"], textarea[name^="member_"]').forEach(i => i.disabled = false); } catch(e) { /* ignore */ }
           // Ensure canonical payload inputs are present directly inside the form as hidden clones
           try { ensureCanonicalPayloadClones(form); } catch(e) { /* ignore */ }
+          try { ensureActivityBudgetCanonicalClones(form); } catch(e) { /* ignore */ }
           const fdPreview = new FormData(form);
           console.debug('Draft FormData member_student_id[]=', fdPreview.getAll('member_student_id[]'));
           console.debug('Draft FormData member_email[]=', fdPreview.getAll('member_email[]'));
           console.debug('Draft FormData member_role[]=', fdPreview.getAll('member_role[]'));
+          // Activities debug
+          console.debug('Draft FormData stage[]=', fdPreview.getAll('stage[]'));
+          console.debug('Draft FormData activities[]=', fdPreview.getAll('activities[]'));
+          console.debug('Draft FormData timeframe[]=', fdPreview.getAll('timeframe[]'));
+          console.debug('Draft FormData implementation_date[]=', fdPreview.getAll('implementation_date[]'));
+          console.debug('Draft FormData point_person[]=', fdPreview.getAll('point_person[]'));
+          console.debug('Draft FormData status[]=', fdPreview.getAll('status[]'));
+          // Budget debug
+          console.debug('Draft FormData budget_activity[]=', fdPreview.getAll('budget_activity[]'));
+          console.debug('Draft FormData budget_amount[]=', fdPreview.getAll('budget_amount[]'));
 
           if (ENABLE_FORMDATA_PREVIEW && !SKIP_DRAFT_PREVIEW) {
             const membersHtml = fdPreview.getAll('member_student_id[]').map((sid, idx) => {
@@ -1207,6 +1253,7 @@ document.addEventListener('click', function(e) {
             // Skip preview for draft saves: close any open modals then submit immediately
             try { Swal.close(); } catch(e) {}
             try { ensureCanonicalPayloadClones(form); } catch(e) {}
+            try { ensureActivityBudgetCanonicalClones(form); } catch(e) {}
             setTimeout(() => { try { form.submit(); } catch(e) {} }, 50);
           }
         } catch (e) {
@@ -1233,6 +1280,11 @@ document.addEventListener('click', function(e) {
   // Show confirmation modal with detailed project information
   function showConfirmationModal() {
     const form = document.getElementById('projectForm');
+    // Ensure dynamic/visible inputs are canonicalized and cloned into the form
+    try { enableVisibleMemberInputs(form); } catch(e) { /* ignore */ }
+    try { dedupeEmptyActivityRows(); dedupeEmptyBudgetRows(); removeAllEmptyBudgetRows(); } catch(e) { /* ignore */ }
+    try { ensureCanonicalPayloadClones(form); } catch(e) { /* ignore */ }
+    try { ensureActivityBudgetCanonicalClones(form); } catch(e) { /* ignore */ }
     const formData = new FormData(form);
 
     // Team Information
@@ -1313,27 +1365,46 @@ document.addEventListener('click', function(e) {
     });
     membersHTML += '</div>';
 
-    // Activities - collect non-empty entries
-    const allStages = formData.getAll('stage[]');
-    const allActivities = formData.getAll('activities[]');
-    const allTimeframes = formData.getAll('timeframe[]');
-    const allPointPersons = formData.getAll('point_person[]');
-    const allStatuses = formData.getAll('status[]');
-
+    // Activities - collect non-empty entries directly from visible DOM rows (avoid duplicated hidden clones)
     const stages = [];
     const activities = [];
     const timeframes = [];
     const pointPersons = [];
     const statuses = [];
 
-    allStages.forEach((stage, idx) => {
-      if (stage && stage.trim() !== '') {
-        stages.push(stage);
-        activities.push(allActivities[idx] || '');
-        timeframes.push(allTimeframes[idx] || '');
-        pointPersons.push(allPointPersons[idx] || '');
-        statuses.push(allStatuses[idx] || 'Planned');
-      }
+    // Find visible activity rows (desktop or mobile)
+    const activitiesContainerDesktop2 = document.getElementById('activitiesContainer');
+    const activitiesContainerMobile2 = document.getElementById('activitiesContainerMobile');
+    let visibleActivityRowsForReview = [];
+    if (activitiesContainerDesktop2 && activitiesContainerDesktop2.offsetParent !== null) {
+      visibleActivityRowsForReview = Array.from(activitiesContainerDesktop2.querySelectorAll('.activity-row, .proposal-table-row')).filter(r => r && r.offsetParent !== null);
+    } else if (activitiesContainerMobile2 && activitiesContainerMobile2.offsetParent !== null) {
+      visibleActivityRowsForReview = Array.from(activitiesContainerMobile2.querySelectorAll('.activity-row')).filter(r => r && r.offsetParent !== null);
+    } else {
+      visibleActivityRowsForReview = Array.from(document.querySelectorAll('.activity-row')).filter(r => r && r.offsetParent !== null);
+    }
+
+    const seenActivityKeys = new Set();
+    visibleActivityRowsForReview.forEach(row => {
+      try {
+        const stage = (row.querySelector('input[name="stage[]"]')?.value || '').toString();
+        const activity = (row.querySelector('textarea[name="activities[]"]')?.value || '').toString();
+        const timeframe = (row.querySelector('input[name="timeframe[]"]')?.value || '').toString();
+        const person = (row.querySelector('textarea[name="point_person[]"]')?.value || '').toString();
+        const statusEl = row.querySelector('select[name="status[]"]') || row.querySelector('input[name="status[]"]');
+        const status = (statusEl && statusEl.value) ? statusEl.value.toString() : 'Planned';
+
+        const key = [stage.trim(), activity.trim(), timeframe.trim(), person.trim(), status.trim()].join('||');
+        if (seenActivityKeys.has(key)) return; // skip duplicates
+        if ((stage && stage.trim() !== '') || (activity && activity.trim() !== '') || (timeframe && timeframe.trim() !== '') || (person && person.trim() !== '')) {
+          seenActivityKeys.add(key);
+          stages.push(stage || '');
+          activities.push(activity || '');
+          timeframes.push(timeframe || '');
+          pointPersons.push(person || '');
+          statuses.push(status || 'Planned');
+        }
+      } catch (e) { /* ignore per-row errors */ }
     });
 
     // Build activities HTML
@@ -1369,28 +1440,42 @@ document.addEventListener('click', function(e) {
     activitiesHTML += '</div>';
 
     // Budget processing
-    const allBudgetActivities = formData.getAll('budget_activity[]');
-    const allBudgetResources = formData.getAll('budget_resources[]');
-    const allBudgetPartners = formData.getAll('budget_partners[]');
-    const allBudgetAmounts = formData.getAll('budget_amount[]');
-
+    // Budget processing - collect directly from visible DOM rows (avoid duplicates from hidden clones)
     const budgetActivities = [];
     const budgetResources = [];
     const budgetPartners = [];
     const budgetAmounts = [];
 
-    allBudgetActivities.forEach((activity, idx) => {
-      if ((activity && activity.trim() !== '') ||
-          (allBudgetResources[idx] && allBudgetResources[idx].trim() !== '') ||
-          (allBudgetPartners[idx] && allBudgetPartners[idx].trim() !== '') ||
-          (allBudgetAmounts[idx] && allBudgetAmounts[idx].trim() !== '')) {
-        // If only amount is filled, provide a default activity name
-        const activityName = activity || (allBudgetAmounts[idx] && allBudgetAmounts[idx].trim() !== '' ? 'Budget Item' : '');
-        budgetActivities.push(activityName);
-        budgetResources.push(allBudgetResources[idx] || '');
-        budgetPartners.push(allBudgetPartners[idx] || '');
-        budgetAmounts.push(allBudgetAmounts[idx] || '');
-      }
+    const budgetContainerDesktop2 = document.getElementById('budgetContainer');
+    const budgetContainerMobile2 = document.getElementById('budgetContainerMobile');
+    let visibleBudgetRowsForReview = [];
+    if (budgetContainerDesktop2 && budgetContainerDesktop2.offsetParent !== null) {
+      visibleBudgetRowsForReview = Array.from(budgetContainerDesktop2.querySelectorAll('.proposal-table-row, .budget-row')).filter(r => r && r.offsetParent !== null);
+    } else if (budgetContainerMobile2 && budgetContainerMobile2.offsetParent !== null) {
+      visibleBudgetRowsForReview = Array.from(budgetContainerMobile2.querySelectorAll('.budget-row')).filter(r => r && r.offsetParent !== null);
+    } else {
+      visibleBudgetRowsForReview = Array.from(document.querySelectorAll('.budget-row')).filter(r => r && r.offsetParent !== null);
+    }
+
+    const seenBudgetKeys = new Set();
+    visibleBudgetRowsForReview.forEach(row => {
+      try {
+        const act = (row.querySelector('textarea[name="budget_activity[]"]')?.value || '').toString();
+        const res = (row.querySelector('textarea[name="budget_resources[]"]')?.value || '').toString();
+        const part = (row.querySelector('textarea[name="budget_partners[]"]')?.value || '').toString();
+        const amt = (row.querySelector('input[name="budget_amount[]"]')?.value || '').toString();
+
+        const key = [act.trim(), res.trim(), part.trim(), amt.trim()].join('||');
+        if (seenBudgetKeys.has(key)) return; // skip duplicates
+        if ((act && act.trim() !== '') || (res && res.trim() !== '') || (part && part.trim() !== '') || (amt && amt.trim() !== '')) {
+          seenBudgetKeys.add(key);
+          const activityName = act || (amt && amt.trim() !== '' ? 'Budget Item' : '');
+          budgetActivities.push(activityName);
+          budgetResources.push(res || '');
+          budgetPartners.push(part || '');
+          budgetAmounts.push(amt || '');
+        }
+      } catch (e) { /* ignore per-row errors */ }
     });
 
     // Build budget HTML
@@ -1568,42 +1653,33 @@ document.addEventListener('click', function(e) {
             prepareFormForSubmit(form);
             // Ensure visible member inputs are enabled (fix for submit/draft mismatch)
             try { enableVisibleMemberInputs(form); } catch (e) { /* ignore */ }
+            // Ensure visible activity and budget inputs are enabled as well
+            try { enableVisibleActivityBudgetInputs(form); } catch(e) { /* ignore */ }
             // Final safety: force-enable all member inputs so none are omitted from FormData
             try { form.querySelectorAll('input[name^="member_"], select[name^="member_"], textarea[name^="member_"]').forEach(i => i.disabled = false); } catch(e) { /* ignore */ }
             // Ensure canonical payload inputs are present directly inside the form as hidden clones
             try { ensureCanonicalPayloadClones(form); } catch(e) { /* ignore */ }
+            try { ensureActivityBudgetCanonicalClones(form); } catch(e) { /* ignore */ }
             // Debug: Log budget data being submitted and preview FormData members
             try {
               const fdFinal = new FormData(form);
               console.debug('Final FormData member_student_id[]=', fdFinal.getAll('member_student_id[]'));
               console.debug('Final FormData member_email[]=', fdFinal.getAll('member_email[]'));
               console.debug('Final FormData member_role[]=', fdFinal.getAll('member_role[]'));
+              // Activities debug
+              console.debug('Final FormData stage[]=', fdFinal.getAll('stage[]'));
+              console.debug('Final FormData activities[]=', fdFinal.getAll('activities[]'));
+              console.debug('Final FormData timeframe[]=', fdFinal.getAll('timeframe[]'));
+              console.debug('Final FormData implementation_date[]=', fdFinal.getAll('implementation_date[]'));
+              console.debug('Final FormData point_person[]=', fdFinal.getAll('point_person[]'));
+              console.debug('Final FormData status[]=', fdFinal.getAll('status[]'));
+              // Budget debug
+              console.debug('Final FormData budget_activity[]=', fdFinal.getAll('budget_activity[]'));
+              console.debug('Final FormData budget_amount[]=', fdFinal.getAll('budget_amount[]'));
 
-              if (ENABLE_FORMDATA_PREVIEW) {
-                const membersHtml = fdFinal.getAll('member_student_id[]').map((sid, idx) => {
-                  const email = fdFinal.getAll('member_email[]')[idx] || '';
-                  const role = fdFinal.getAll('member_role[]')[idx] || '';
-                  return `<div class="text-left"><strong>#${idx+1}</strong> SID: ${sid} <br/> Email: ${email} <br/> Role: ${role}</div><hr/>`;
-                }).join('');
-                Swal.fire({
-                  title: 'Final FormData Preview',
-                  html: `<div class="max-h-64 overflow-auto text-sm">${membersHtml || '<em>No member fields detected</em>'}</div>`,
-                  width: 600,
-                  showCancelButton: true,
-                  confirmButtonText: 'Proceed',
-                  cancelButtonText: 'Cancel',
-                  confirmButtonColor: '#3085d6'
-                }).then((res) => {
-                  if (res.isConfirmed) {
-                    try { Swal.close(); } catch(e) {}
-                    setTimeout(() => { try { form.submit(); } catch(e) {} }, 50);
-                  } else {
-                    return;
-                  }
-                });
-              } else {
-                form.submit();
-              }
+              // Skip the optional final FormData preview and submit directly
+              try { Swal.close(); } catch(e) {}
+              setTimeout(() => { try { form.submit(); } catch(e) {} }, 50);
             } catch (e) {
               console.error('Error preparing final FormData preview', e);
               form.submit();
@@ -1700,7 +1776,78 @@ document.addEventListener('click', function(e) {
       } catch (e) { /* ignore */ }
     }
 
-    // Sync memberPayload with currently visible member rows.
+      // Ensure visible activity and budget rows are cloned into hidden inputs
+      function ensureActivityBudgetCanonicalClones(form) {
+        try {
+          if (!form) return;
+          // Remove any previous activity/budget clones we added
+          Array.from(form.querySelectorAll('input[data-cloned-from="activitiesPayload"], textarea[data-cloned-from="activitiesPayload"], input[data-cloned-from="budgetsPayload"], textarea[data-cloned-from="budgetsPayload"]')).forEach(n => n.remove());
+
+          // Collect visible activity rows (desktop or mobile)
+          const activitiesContainerDesktop = document.getElementById('activitiesContainer');
+          const activitiesContainerMobile = document.getElementById('activitiesContainerMobile');
+          let visibleActivityRows = [];
+          if (activitiesContainerDesktop && activitiesContainerDesktop.offsetParent !== null) {
+            visibleActivityRows = Array.from(activitiesContainerDesktop.querySelectorAll('.activity-row, .proposal-table-row')).filter(r => r && r.offsetParent !== null);
+          } else if (activitiesContainerMobile && activitiesContainerMobile.offsetParent !== null) {
+            visibleActivityRows = Array.from(activitiesContainerMobile.querySelectorAll('.activity-row')).filter(r => r && r.offsetParent !== null);
+          } else {
+            visibleActivityRows = Array.from(document.querySelectorAll('.activity-row')).filter(r => r && r.offsetParent !== null);
+          }
+
+          visibleActivityRows.forEach(row => {
+            try {
+              const stage = (row.querySelector('input[name="stage[]"]')?.value || '');
+              const activity = (row.querySelector('textarea[name="activities[]"]')?.value || '');
+              const timeframe = (row.querySelector('input[name="timeframe[]"]')?.value || '');
+              const impl = (row.querySelector('input[name="implementation_date[]"]')?.value || '');
+              const person = (row.querySelector('textarea[name="point_person[]"]')?.value || '');
+              const statusEl = row.querySelector('select[name="status[]"]') || row.querySelector('input[name="status[]"]');
+              const status = (statusEl && statusEl.value) ? statusEl.value : 'Planned';
+
+              // Skip completely empty rows
+              if (!(stage || activity || timeframe || impl || person || status)) return;
+
+              const hStage = document.createElement('input'); hStage.type = 'hidden'; hStage.name = 'stage[]'; hStage.value = stage; hStage.dataset.clonedFrom = 'activitiesPayload'; form.appendChild(hStage);
+              const hActivity = document.createElement('input'); hActivity.type = 'hidden'; hActivity.name = 'activities[]'; hActivity.value = activity; hActivity.dataset.clonedFrom = 'activitiesPayload'; form.appendChild(hActivity);
+              const hTimeframe = document.createElement('input'); hTimeframe.type = 'hidden'; hTimeframe.name = 'timeframe[]'; hTimeframe.value = timeframe; hTimeframe.dataset.clonedFrom = 'activitiesPayload'; form.appendChild(hTimeframe);
+              const hImpl = document.createElement('input'); hImpl.type = 'hidden'; hImpl.name = 'implementation_date[]'; hImpl.value = impl; hImpl.dataset.clonedFrom = 'activitiesPayload'; form.appendChild(hImpl);
+              const hPerson = document.createElement('input'); hPerson.type = 'hidden'; hPerson.name = 'point_person[]'; hPerson.value = person; hPerson.dataset.clonedFrom = 'activitiesPayload'; form.appendChild(hPerson);
+              const hStatus = document.createElement('input'); hStatus.type = 'hidden'; hStatus.name = 'status[]'; hStatus.value = status; hStatus.dataset.clonedFrom = 'activitiesPayload'; form.appendChild(hStatus);
+            } catch (e) { /* ignore per-row errors */ }
+          });
+
+          // Collect visible budget rows
+          const budgetContainerDesktop = document.getElementById('budgetContainer');
+          const budgetContainerMobile = document.getElementById('budgetContainerMobile');
+          let visibleBudgetRows = [];
+          if (budgetContainerDesktop && budgetContainerDesktop.offsetParent !== null) {
+            visibleBudgetRows = Array.from(budgetContainerDesktop.querySelectorAll('.proposal-table-row, .budget-row')).filter(r => r && r.offsetParent !== null);
+          } else if (budgetContainerMobile && budgetContainerMobile.offsetParent !== null) {
+            visibleBudgetRows = Array.from(budgetContainerMobile.querySelectorAll('.budget-row')).filter(r => r && r.offsetParent !== null);
+          } else {
+            visibleBudgetRows = Array.from(document.querySelectorAll('.budget-row')).filter(r => r && r.offsetParent !== null);
+          }
+
+          visibleBudgetRows.forEach(row => {
+            try {
+              const act = (row.querySelector('textarea[name="budget_activity[]"]')?.value || '');
+              const res = (row.querySelector('textarea[name="budget_resources[]"]')?.value || '');
+              const part = (row.querySelector('textarea[name="budget_partners[]"]')?.value || '');
+              const amt = (row.querySelector('input[name="budget_amount[]"]')?.value || '');
+
+              if (!(act || res || part || amt)) return;
+
+              const hAct = document.createElement('input'); hAct.type = 'hidden'; hAct.name = 'budget_activity[]'; hAct.value = act; hAct.dataset.clonedFrom = 'budgetsPayload'; form.appendChild(hAct);
+              const hRes = document.createElement('input'); hRes.type = 'hidden'; hRes.name = 'budget_resources[]'; hRes.value = res; hRes.dataset.clonedFrom = 'budgetsPayload'; form.appendChild(hRes);
+              const hPart = document.createElement('input'); hPart.type = 'hidden'; hPart.name = 'budget_partners[]'; hPart.value = part; hPart.dataset.clonedFrom = 'budgetsPayload'; form.appendChild(hPart);
+              const hAmt = document.createElement('input'); hAmt.type = 'hidden'; hAmt.name = 'budget_amount[]'; hAmt.value = amt; hAmt.dataset.clonedFrom = 'budgetsPayload'; form.appendChild(hAmt);
+            } catch (e) { /* ignore per-row errors */ }
+          });
+        } catch (e) { /* ignore overall errors */ }
+      }
+
+      // Sync memberPayload with currently visible member rows.
     // Ensures canonical payload contains only members visible in the UI (owner always kept).
     function syncCanonicalPayloadWithVisible() {
       try {
@@ -2042,17 +2189,21 @@ document.addEventListener('click', function(e) {
   // initial remove buttons
 
 
-  // Enhanced validation function with comprehensive error checking
+  // Enhanced validation function with comprehensive error checking and inline messages
   function validateFormRequirements() {
     const form = document.getElementById('projectForm');
     if (!form) {
       console.error('Project form not found');
       return false;
     }
-    
+
+    // remove previous inline validation markers
+    document.querySelectorAll('.validation-error').forEach(n => n.remove());
+    document.querySelectorAll('.input-error').forEach(i => i.classList.remove('input-error'));
+
     const formData = new FormData(form);
     const errors = [];
-    
+
     // Validate basic project fields
     const projectName = formData.get('Project_Name')?.trim();
     const teamName = formData.get('Project_Team_Name')?.trim();
@@ -2063,7 +2214,7 @@ document.addEventListener('click', function(e) {
     const targetCommunity = formData.get('Project_Target_Community')?.trim();
     const solution = formData.get('Project_Solution')?.trim();
     const outcomes = formData.get('Project_Expected_Outcomes')?.trim();
-    
+
     if (!projectName) errors.push('The Project Name field is required.');
     if (!teamName) errors.push('The Team Name field is required.');
     if (!component) errors.push('The Component field is required.');
@@ -2073,20 +2224,18 @@ document.addEventListener('click', function(e) {
     if (!targetCommunity) errors.push('The Target Community field is required.');
     if (!solution) errors.push('The Project Solution field is required.');
     if (!outcomes) errors.push('The Expected Outcomes field is required.');
-    
+
     // Validate team logo
     const logoFile = formData.get('Project_Logo');
     const hasExistingLogo = !!document.querySelector('img[alt="Current Logo"]');
     if (!hasExistingLogo && (!logoFile || logoFile.size === 0)) {
       errors.push('A team logo is required for project submission.');
+      // NOTE: Do not append inline DOM error nodes for the logo here; show in Swal modal only.
     }
 
-    // Validate team members
-    // Prefer extracting members from visible DOM rows (desktop table rows or mobile cards)
+    // Validate team members (visible rows only)
     try { enableVisibleMemberInputs(form); } catch (e) { /* ignore */ }
     const visibleMemberRows = Array.from(document.querySelectorAll('#memberTable tbody tr, .member-card')).filter(r => r && r.offsetParent !== null);
-    // Filter out duplicates and empty entries; use student id when available, fallback to email.
-    const uniqueMembers = [];
     const memberMap = new Map();
     visibleMemberRows.forEach((row, i) => {
       try {
@@ -2095,118 +2244,168 @@ document.addEventListener('click', function(e) {
         const email = (row.querySelector('input[name="member_email[]"]')?.value || '').trim();
         const contact = (row.querySelector('input[name="member_contact[]"]')?.value || '').trim();
         const sid = (row.querySelector('input[name="member_student_id[]"]')?.value || '').trim();
-
-        if (!(name || role || email || contact || sid)) return;
-
         const key = sid || (email ? email.toLowerCase() : '__idx_' + i);
         const score = (name ? 1 : 0) + (role ? 4 : 0) + (email ? 1 : 0) + (contact ? 1 : 0);
-
         if (memberMap.has(key)) {
           const existing = memberMap.get(key);
-          if (score > existing._score) {
-            memberMap.set(key, { name, role, email, contact, _score: score });
-          }
+          if (score > existing._score) memberMap.set(key, { name, role, email, contact, _score: score, row });
         } else {
-          memberMap.set(key, { name, role, email, contact, _score: score });
+          memberMap.set(key, { name, role, email, contact, _score: score, row });
         }
       } catch (e) { /* ignore malformed row */ }
     });
 
-    // Re-index uniqueMembers in stable order
-    Array.from(memberMap.values()).forEach((m, idx) => {
-      uniqueMembers.push({ name: m.name, role: m.role, email: m.email, contact: m.contact, index: idx + 1 });
-    });
-
-    let validMembers = 0;
-    uniqueMembers.forEach((member) => {
+    let validMembers = 0; let memberIndex = 0;
+    Array.from(memberMap.values()).forEach(m => {
+      memberIndex++;
       const missingFields = [];
-      if (!member.name) missingFields.push('Name');
-      if (!member.role) missingFields.push('Role');
-      if (!member.email) missingFields.push('Email');
-      if (!member.contact) missingFields.push('Contact');
-
-      if (missingFields.length > 0) {
-        errors.push(`Team member ${member.index}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
-      } else {
-        validMembers++;
-      }
+      if (!m.name) missingFields.push('Name');
+      if (!m.role) missingFields.push('Role');
+      if (!m.email) missingFields.push('Email');
+      if (!m.contact) missingFields.push('Contact');
+        if (missingFields.length > 0) {
+          const msg = `Team member ${memberIndex}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`;
+          errors.push(msg);
+          // Do not append inline nodes for the 'Role' field. For other member fields we can still mark visually,
+          // but to keep layout consistent we will only add the `input-error` class (no appended message node) for Name/Email/Contact.
+          try {
+            const row = m.row;
+            missingFields.forEach(f => {
+              try {
+                let sel = null;
+                if (f === 'Name') sel = 'input[name="member_name[]"]';
+                if (f === 'Role') sel = null; // skip inline message for Role
+                if (f === 'Email') sel = 'input[name="member_email[]"]';
+                if (f === 'Contact') sel = 'input[name="member_contact[]"]';
+                if (sel) {
+                  const el = row.querySelector(sel);
+                  if (el) {
+                    el.classList.add('input-error');
+                  }
+                }
+              } catch (ie) { /* ignore per-field */ }
+            });
+          } catch (e) { /* ignore */ }
+        } else {
+          validMembers++;
+        }
     });
     if (validMembers === 0) errors.push('At least one complete team member info is required.');
 
-    // Validate activities
-    const allStages = formData.getAll('stage[]');
-    const allActivities = formData.getAll('activities[]');
-    const allTimeframes = formData.getAll('timeframe[]');
-    const allImplementationDates = formData.getAll('implementation_date[]');
-    const allPointPersons = formData.getAll('point_person[]');
-    const allStatuses = formData.getAll('status[]');
+    // Validate activities using visible rows so inline errors map to real inputs
+    const activitiesContainerDesktop = document.getElementById('activitiesContainer');
+    const activitiesContainerMobile = document.getElementById('activitiesContainerMobile');
+    let visibleActivityRows = [];
+    if (activitiesContainerDesktop && activitiesContainerDesktop.offsetParent !== null) {
+      visibleActivityRows = Array.from(activitiesContainerDesktop.querySelectorAll('.activity-row, .proposal-table-row'));
+    } else if (activitiesContainerMobile && activitiesContainerMobile.offsetParent !== null) {
+      visibleActivityRows = Array.from(activitiesContainerMobile.querySelectorAll('.activity-row'));
+    } else {
+      // fallback: use any .activity-row in DOM
+      visibleActivityRows = Array.from(document.querySelectorAll('.activity-row'));
+    }
 
     let validActivities = 0;
-    for (let i = 0; i < allStages.length; i++) {
-      const stage = allStages[i]?.trim();
-      const activity = allActivities[i]?.trim();
-      const timeframe = allTimeframes[i]?.trim();
-      const implementationDate = allImplementationDates[i]?.trim();
-      const person = allPointPersons[i]?.trim();
-      const status = allStatuses[i]?.trim() || 'Planned'; // Default to 'Planned' if empty
-      
-      // Check if any activity field has content (indicating this row is being used)
-      if (stage || activity || timeframe || implementationDate || person) {
+    visibleActivityRows.forEach((row, idx) => {
+      try {
+        const stageEl = row.querySelector('input[name="stage[]"]');
+        const activityEl = row.querySelector('textarea[name="activities[]"]');
+        const timeframeEl = row.querySelector('input[name="timeframe[]"]');
+        const implEl = row.querySelector('input[name="implementation_date[]"]');
+        const personEl = row.querySelector('textarea[name="point_person[]"]');
+
+        const stage = (stageEl?.value || '').trim();
+        const activity = (activityEl?.value || '').trim();
+        const timeframe = (timeframeEl?.value || '').trim();
+        const impl = (implEl?.value || '').trim();
+        const person = (personEl?.value || '').trim();
+
+        // If all empty, skip (not used)
+        if (!(stage || activity || timeframe || impl || person)) return;
+
         const missingFields = [];
-        if (!stage) missingFields.push('Stage');
-        if (!activity) missingFields.push('Specific Activities');
-        if (!timeframe) missingFields.push('Time Frame');
-        if (!implementationDate) missingFields.push('Implementation Date');
-        if (!person) missingFields.push('Point Persons');
-        // Note: Status is not included in missing fields since it defaults to 'Planned'
-        
+        if (!stage) missingFields.push({key:'Stage', el: stageEl});
+        if (!activity) missingFields.push({key:'Specific Activities', el: activityEl});
+        if (!timeframe) missingFields.push({key:'Time Frame', el: timeframeEl});
+        if (!impl) missingFields.push({key:'Implementation Date', el: implEl});
+        if (!person) missingFields.push({key:'Point Persons', el: personEl});
+
         if (missingFields.length > 0) {
-          errors.push(`Activity ${i+1}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
+          const pretty = missingFields.map(m => m.key).join(', ');
+          const msg = `Activity ${idx+1}: ${pretty} ${missingFields.length === 1 ? 'is' : 'are'} required.`;
+          errors.push(msg);
+          // Do not append inline DOM error nodes for activity fields; keep the error summary inside the Swal modal only.
         } else {
           validActivities++;
         }
-      }
-    }
+      } catch (e) { /* ignore row errors */ }
+    });
     if (validActivities === 0) errors.push('At least one complete activity is required.');
 
-    // Validate budget rows (optional, but if partially filled must be complete)
-    const allBudgetActivities = formData.getAll('budget_activity[]');
-    const allBudgetResources = formData.getAll('budget_resources[]');
-    const allBudgetPartners = formData.getAll('budget_partners[]');
-    const allBudgetAmounts = formData.getAll('budget_amount[]');
-
-    for (let i = 0; i < allBudgetActivities.length; i++) {
-      const act = allBudgetActivities[i]?.trim();
-      const res = allBudgetResources[i]?.trim();
-      const part = allBudgetPartners[i]?.trim();
-      const amt = allBudgetAmounts[i]?.trim();
-      
-      if (act || res || part || amt) {
-        const missingFields = [];
-        if (!act) missingFields.push('Activity');
-        if (!res) missingFields.push('Resources needed');
-        if (!part) missingFields.push('Partner agencies');
-        if (!amt) missingFields.push('Amount');
-        
-        if (missingFields.length > 0) {
-          errors.push(`Budget row ${i+1}: ${missingFields.join(', ')} ${missingFields.length === 1 ? 'is' : 'are'} required.`);
-        }
-      }
+    // Validate budgets using visible rows
+    const budgetContainerDesktop = document.getElementById('budgetContainer');
+    const budgetContainerMobile = document.getElementById('budgetContainerMobile');
+    let visibleBudgetRows = [];
+    if (budgetContainerDesktop && budgetContainerDesktop.offsetParent !== null) {
+      visibleBudgetRows = Array.from(budgetContainerDesktop.querySelectorAll('.proposal-table-row, .budget-row'));
+    } else if (budgetContainerMobile && budgetContainerMobile.offsetParent !== null) {
+      visibleBudgetRows = Array.from(budgetContainerMobile.querySelectorAll('.budget-row'));
+    } else {
+      visibleBudgetRows = Array.from(document.querySelectorAll('.budget-row'));
     }
 
-    // Show errors if any
+    visibleBudgetRows.forEach((row, idx) => {
+      try {
+        const actEl = row.querySelector('textarea[name="budget_activity[]"]');
+        const resEl = row.querySelector('textarea[name="budget_resources[]"]');
+        const partEl = row.querySelector('textarea[name="budget_partners[]"]');
+        const amtEl = row.querySelector('input[name="budget_amount[]"]');
+
+        const act = (actEl?.value || '').trim();
+        const res = (resEl?.value || '').trim();
+        const part = (partEl?.value || '').trim();
+        const amt = (amtEl?.value || '').trim();
+
+        if (!(act || res || part || amt)) return; // skip completely empty
+
+        const missing = [];
+        if (!act) missing.push({k:'Activity', el: actEl});
+        if (!res) missing.push({k:'Resources needed', el: resEl});
+        if (!part) missing.push({k:'Partner agencies', el: partEl});
+        if (!amt) missing.push({k:'Amount', el: amtEl});
+
+        if (missing.length > 0) {
+          const pretty = missing.map(m => m.k).join(', ');
+          const msg = `Budget row ${idx+1}: ${pretty} ${missing.length === 1 ? 'is' : 'are'} required.`;
+          errors.push(msg);
+          // Do not append inline DOM error nodes for budget fields; show summary in Swal only.
+        }
+      } catch (e) { /* ignore row errors */ }
+    });
+
+    // If errors, show modal summary and scroll to first inline error
     if (errors.length > 0) {
-      const errorList = errors.join('<br>');
+      const errorList = Array.from(new Set(errors)).join('<br>');
+      // Show a centered, compact error modal (no inline bullets)
       Swal.fire({
         icon: 'error',
         title: 'Validation Error!',
-        html: `<div class="text-center">${errorList}</div>`,
+        html: `<div class="text-center max-h-60 overflow-auto px-2">${errorList}</div>`,
         confirmButtonColor: '#3085d6',
         width: '600px'
       });
+      // focus first inline error
+      const firstErr = document.querySelector('.validation-error');
+      if (firstErr) {
+        try {
+          firstErr.scrollIntoView({behavior: 'smooth', block: 'center'});
+          const input = firstErr.previousElementSibling;
+          if (input && input.focus) input.focus();
+        } catch (e) { /* ignore scrolling errors */ }
+      }
       return false;
     }
-    
+
     return true;
   }
 

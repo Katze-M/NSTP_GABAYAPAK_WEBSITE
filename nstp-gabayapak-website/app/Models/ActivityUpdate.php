@@ -27,6 +27,8 @@ class ActivityUpdate extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        // Your `users` table uses `user_id` as the primary key, not the default `id`.
+        // Specify the owner key so Eloquent can resolve the relation correctly.
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 }

@@ -259,10 +259,42 @@
                                 @if(in_array($projStatus, ['approved','current','completed']))
                                     <div class="mt-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
                                         <h4 class="text-sm font-semibold text-gray-700 mb-2">Update Status and Proof</h4>
+                                        @php
+                                            // Prefer the latest ActivityUpdate timestamp as the authoritative "last updated" if present
+                                            $latestActivityUpdate = null;
+                                            try {
+                                                if ($activity->updates && $activity->updates->isNotEmpty()) {
+                                                    $latestActivityUpdate = $activity->updates->sortByDesc('created_at')->first();
+                                                }
+                                            } catch (\Throwable $e) {
+                                                $latestActivityUpdate = null;
+                                            }
+                                            $lastUpdatedAt = $latestActivityUpdate && $latestActivityUpdate->created_at ? $latestActivityUpdate->created_at : $activity->updated_at;
+                                            // Normalize display timezone to Manila (Asia/Manila) as requested
+                                            try {
+                                                if ($lastUpdatedAt) {
+                                                    $displayLastUpdated = $lastUpdatedAt->copy()->setTimezone('Asia/Manila');
+                                                } else {
+                                                    $displayLastUpdated = null;
+                                                }
+                                            } catch (\Throwable $e) {
+                                                $displayLastUpdated = $lastUpdatedAt;
+                                            }
+                                            // Also convert the created_at timestamp to Manila for display
+                                            try {
+                                                if ($activity->created_at) {
+                                                    $displayCreated = $activity->created_at->copy()->setTimezone('Asia/Manila');
+                                                } else {
+                                                    $displayCreated = null;
+                                                }
+                                            } catch (\Throwable $e) {
+                                                $displayCreated = $activity->created_at;
+                                            }
+                                        @endphp
                                         <ul class="text-sm text-gray-600 space-y-1">
-                                            <li><strong>Created:</strong> {{ $activity->created_at ? $activity->created_at->format('F j, Y g:i A') : 'N/A' }}</li>
-                                            <li><strong>Last updated:</strong> {{ $activity->updated_at ? $activity->updated_at->format('F j, Y g:i A') : 'N/A' }}</li>
-                                            <li><strong>Current status:</strong> {{ ucfirst($aStatus) }} @if($activity->updated_at)<span class="text-xs text-gray-500">({{ $activity->updated_at->diffForHumans() }})</span>@endif</li>
+                                            <li><strong>Created:</strong> {{ $displayCreated ? $displayCreated->format('F j, Y g:i A') : 'N/A' }}</li>
+                                            <li><strong>Last updated:</strong> {{ $displayLastUpdated ? $displayLastUpdated->format('F j, Y g:i A') : 'N/A' }}</li>
+                                            <li><strong>Current status:</strong> {{ ucfirst($aStatus) }} @if($displayLastUpdated)<span class="text-xs text-gray-500">({{ $displayLastUpdated->diffForHumans() }})</span>@endif</li>
                                         </ul>
 
                                         @if($activity->updates && $activity->updates->isNotEmpty())
@@ -288,14 +320,7 @@
                                                 @endforeach
                                             </div>
                                         @else
-                                            {{-- Fallback to single proof_picture for legacy records --}}
-                                            @if($activity->proof_picture)
-                                                <div class="mt-3">
-                                                    <a href="{{ asset('storage/' . $activity->proof_picture) }}" target="_blank" class="block w-24 h-auto rounded border overflow-hidden">
-                                                        <img src="{{ asset('storage/' . $activity->proof_picture) }}" alt="Proof" class="w-24 h-24 object-cover rounded">
-                                                    </a>
-                                                </div>
-                                            @endif
+                                            {{-- Proof images are now stored per-update. --}}
                                         @endif
                                     </div>
                                 @endif

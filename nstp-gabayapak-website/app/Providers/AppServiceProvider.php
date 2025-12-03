@@ -22,6 +22,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Ensure PHP's default timezone matches the application timezone so
+        // timestamps created by native PHP functions and by Eloquent use the
+        // same timezone (Asia/Manila as configured in `config/app.php`).
+        try {
+            date_default_timezone_set(config('app.timezone'));
+        } catch (\Throwable $e) {
+            // Ignore if config isn't available in certain CLI contexts
+        }
         // Register project policy mapping (in case AuthServiceProvider is not present)
         try {
             Gate::policy(Project::class, ProjectPolicy::class);

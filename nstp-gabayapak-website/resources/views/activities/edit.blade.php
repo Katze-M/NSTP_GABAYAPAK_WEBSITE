@@ -11,11 +11,7 @@
                     <h1 class="text-2xl font-bold text-gray-800 mb-2">Edit Activity</h1>
                     <p class="text-gray-600">Update the status and upload proof for this activity</p>
                 </div>
-                <div class="mt-2 px-4 flex items-center justify-end space-x-4">
-                    @if($activity->updates && $activity->updates->isNotEmpty())
-                        <label class="inline-flex items-center text-sm text-gray-700"><input type="checkbox" name="append_to_update" value="1" class="mr-2">Append to latest update (keep same history entry)</label>
-                    @endif
-                </div>
+                {{-- The append-to-latest-update checkbox is moved inside the form below so it will be submitted. --}}
 
                 <div class="mb-6 p-4 bg-gray-50 rounded-lg">
                     <h3 class="text-lg font-semibold mb-2">{{ $activity->Stage }}</h3>
@@ -29,6 +25,7 @@
                     @method('PUT')
                     
                     <div class="mb-6">
+                        {{-- Append-to-latest-update removed: every status change creates a new history entry. --}}
                         @php
                             $curStatus = strtolower((string)($activity->status ?? ''));
                             $projectStatus = strtolower((string)($activity->project->Project_Status ?? ''));
@@ -51,9 +48,24 @@
                     
                     <div class="mb-6">
                         @php
-                            $hasExistingProof = $activity->proof_picture;
+                            $hasExistingProof = false;
+                            try {
+                                if ($activity->updates && $activity->updates->isNotEmpty()) {
+                                    foreach ($activity->updates as $u) {
+                                        if ($u->pictures && $u->pictures->isNotEmpty()) {
+                                            $hasExistingProof = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            } catch (\Throwable $e) {
+                                $hasExistingProof = false;
+                            }
                         @endphp
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Proof Picture <span class="text-red-500">*</span></label>
+                        @if(!empty($disablePlanned) && $disablePlanned)
+                            <p class="text-xs text-gray-600 mt-1">Students cannot change an <span class="font-semibold">Ongoing</span> activity back to <span class="font-semibold">Planned</span>.</p>
+                        @endif
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Proof Picture <span class="text-red-500">*</span> <span class="text-xs text-gray-500 ml-2">(Up to 5 images)</span></label>
                         
                         {{-- Upload Box Container: h-64 ensures space, overflow-hidden contains the placeholder/preview --}}
                         <div id="dropZone" class="mt-1 flex justify-center px-6 pt-5 pb-8 border-2 border-gray-300 border-dashed rounded-md relative h-64 overflow-hidden">
@@ -96,12 +108,29 @@
                         @endif
                     </div>
                     
-                    @if($activity->proof_picture)
-                    <div class="mb-6 overflow-hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Current Proof Picture</label>
-                        {{-- Increased size: changed from w-40 to w-48 for a slightly larger display --}}
-                        <img src="{{ asset('storage/' . $activity->proof_picture) }}" alt="Proof" class="block w-48 h-auto rounded-lg">
-                    </div>
+                    @php
+                        $latestUpdate = null;
+                        try {
+                            if ($activity->updates && $activity->updates->isNotEmpty()) {
+                                $latestUpdate = $activity->updates->sortByDesc('created_at')->first();
+                            }
+                        } catch (\Throwable $e) {
+                            $latestUpdate = null;
+                        }
+                    @endphp
+
+                    @if($latestUpdate && $latestUpdate->pictures && $latestUpdate->pictures->isNotEmpty())
+                        <div class="mb-6 overflow-hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Current Proof Picture(s)</label>
+                            <div class="flex items-start space-x-3">
+                                @foreach($latestUpdate->pictures as $pic)
+                                    <a href="{{ asset('storage/' . $pic->path) }}" target="_blank" class="block w-48 rounded-lg overflow-hidden border">
+                                        <img src="{{ asset('storage/' . $pic->path) }}" alt="Proof" class="w-48 h-32 object-cover rounded">
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    {{-- Legacy `activities.proof_picture` removed; current proof pictures are shown above from the latest update. --}}
                     @endif
                     
                     <div class="flex justify-end space-x-3">
@@ -266,16 +295,17 @@ document.addEventListener('DOMContentLoaded', function() {
         dropZone.addEventListener('drop', function(e) {
             const dt = e.dataTransfer;
             const files = Array.from(dt.files || []);
-            console.debug('dropZone.drop', files.length);
+            console.debug('dropZone.drop', files.length, 'ctrlKey=', e.ctrlKey, 'shiftKey=', e.shiftKey);
             if (!files.length) return;
-            // If there are already selected files, treat a drop as REPLACE (not append)
-            // This prevents surprising "exceeds 5 files" alerts when user intends to replace selection.
-            if (selectedFiles.length > 0) {
+
+            // Default behavior: APPEND dropped files to the current selection
+            // If user holds Ctrl or Shift while dropping, treat as REPLACE instead
+            if (e.ctrlKey || e.shiftKey) {
+                // Replace selection
                 if (files.length > 5) {
                     alert('You can upload up to 5 images at once. Please select fewer files.');
                     return;
                 }
-                // Replace current selection with dropped files
                 selectedFiles = files;
             } else {
                 const combined = selectedFiles.concat(files);
@@ -285,6 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 selectedFiles = combined;
             }
+
             updateFileInputFromSelected();
             renderThumbnails();
         });

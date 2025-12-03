@@ -264,7 +264,61 @@ class ProjectController extends Controller
 
         // storeSubmit is for new submissions — do not relax logo requirement here.
 
-        $validated = $request->validate($rules, $messages);
+        // Pre-normalize activity/budget arrays: remove completely-empty rows so
+        // validation sees only rows that contain at least some data. This avoids
+        // failing the 'stage.*.required' style rules when the client submitted
+        // misaligned or blank indexed arrays (e.g. due to hidden inputs).
+        $input = $request->all();
+        try {
+            $stages = is_array($request->input('stage', [])) ? $request->input('stage', []) : [];
+            $activities = is_array($request->input('activities', [])) ? $request->input('activities', []) : [];
+            $timeframes = is_array($request->input('timeframe', [])) ? $request->input('timeframe', []) : [];
+            $implDates = is_array($request->input('implementation_date', [])) ? $request->input('implementation_date', []) : [];
+            $points = is_array($request->input('point_person', [])) ? $request->input('point_person', []) : [];
+            $statuses = is_array($request->input('status', [])) ? $request->input('status', []) : [];
+
+            $normStages = [];
+            $normActivities = [];
+            $normTimeframes = [];
+            $normImpl = [];
+            $normPoints = [];
+            $normStatuses = [];
+
+            $max = max(count($stages), count($activities), count($timeframes), count($implDates), count($points), count($statuses));
+            for ($i = 0; $i < $max; $i++) {
+                $s = trim($stages[$i] ?? '');
+                $a = trim($activities[$i] ?? '');
+                $t = trim($timeframes[$i] ?? '');
+                $im = isset($implDates[$i]) ? $implDates[$i] : null;
+                $p = trim($points[$i] ?? '');
+                $st = isset($statuses[$i]) ? $statuses[$i] : 'Planned';
+
+                // Keep this row only if any field contains content (non-empty)
+                if ($s !== '' || $a !== '' || $t !== '' || $p !== '' || !empty($im)) {
+                    $normStages[] = $s;
+                    $normActivities[] = $a;
+                    $normTimeframes[] = $t;
+                    $normImpl[] = $im;
+                    $normPoints[] = $p;
+                    $normStatuses[] = $st ?: 'Planned';
+                }
+            }
+
+            // Replace the arrays for validation
+            $input['stage'] = $normStages;
+            $input['activities'] = $normActivities;
+            $input['timeframe'] = $normTimeframes;
+            $input['implementation_date'] = $normImpl;
+            $input['point_person'] = $normPoints;
+            $input['status'] = $normStatuses;
+        } catch (\Throwable $e) {
+            // If normalization fails for any reason, fall back to raw request
+            Log::warning('Pre-validation normalization failed: ' . $e->getMessage());
+            $input = $request->all();
+        }
+
+        $validator = Validator::make($input, $rules, $messages);
+        $validated = $validator->validate();
 
         // file upload (required in rules if project has no existing logo)
         if ($request->hasFile('Project_Logo')) {
@@ -365,7 +419,55 @@ class ProjectController extends Controller
 
         $rules = $this->validateDraftRules();
         $messages = $this->validationMessages();
-        $validated = $request->validate($rules, $messages);
+        // Pre-normalize activity/budget arrays before validation (same logic as in storeSubmit)
+        $input = $request->all();
+        try {
+            $stages = is_array($request->input('stage', [])) ? $request->input('stage', []) : [];
+            $activities = is_array($request->input('activities', [])) ? $request->input('activities', []) : [];
+            $timeframes = is_array($request->input('timeframe', [])) ? $request->input('timeframe', []) : [];
+            $implDates = is_array($request->input('implementation_date', [])) ? $request->input('implementation_date', []) : [];
+            $points = is_array($request->input('point_person', [])) ? $request->input('point_person', []) : [];
+            $statuses = is_array($request->input('status', [])) ? $request->input('status', []) : [];
+
+            $normStages = [];
+            $normActivities = [];
+            $normTimeframes = [];
+            $normImpl = [];
+            $normPoints = [];
+            $normStatuses = [];
+
+            $max = max(count($stages), count($activities), count($timeframes), count($implDates), count($points), count($statuses));
+            for ($i = 0; $i < $max; $i++) {
+                $s = trim($stages[$i] ?? '');
+                $a = trim($activities[$i] ?? '');
+                $t = trim($timeframes[$i] ?? '');
+                $im = isset($implDates[$i]) ? $implDates[$i] : null;
+                $p = trim($points[$i] ?? '');
+                $st = isset($statuses[$i]) ? $statuses[$i] : 'Planned';
+
+                if ($s !== '' || $a !== '' || $t !== '' || $p !== '' || !empty($im)) {
+                    $normStages[] = $s;
+                    $normActivities[] = $a;
+                    $normTimeframes[] = $t;
+                    $normImpl[] = $im;
+                    $normPoints[] = $p;
+                    $normStatuses[] = $st ?: 'Planned';
+                }
+            }
+
+            $input['stage'] = $normStages;
+            $input['activities'] = $normActivities;
+            $input['timeframe'] = $normTimeframes;
+            $input['implementation_date'] = $normImpl;
+            $input['point_person'] = $normPoints;
+            $input['status'] = $normStatuses;
+        } catch (\Throwable $e) {
+            Log::warning('Pre-validation normalization failed (updateSubmit): ' . $e->getMessage());
+            $input = $request->all();
+        }
+
+        $validator = Validator::make($input, $rules, $messages);
+        $validated = $validator->validate();
 
         // Optional debug dump to help with diagnosing client payloads
         if (config('app.debug') || $request->input('debug_dump')) {

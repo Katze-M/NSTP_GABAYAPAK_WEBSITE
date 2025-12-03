@@ -60,12 +60,41 @@ class ActivityController extends Controller
             }
         }
         
-        // Check if activity already has a proof picture
-        $hasExistingProof = (bool) $activity->proof_picture;
+        // Check if activity already has any proof pictures stored in updates
+        $hasExistingProof = (bool) $activity->updates()->whereHas('pictures')->exists();
 
         // Determine if the status is being changed by the user
         $newStatus = $request->input('status', '');
         $statusChanged = strtolower((string)$newStatus) !== strtolower((string)$activity->status);
+
+        // Disallow reverting from Ongoing -> Planned for students
+        try {
+            $currentLower = strtolower((string)$activity->status);
+            $requestedLower = strtolower((string)$newStatus);
+            if ($currentLower === 'ongoing' && $requestedLower === 'planned' && Auth::check() && method_exists(Auth::user(), 'isStudent') && Auth::user()->isStudent()) {
+                return redirect()->back()->with('error', 'You cannot change an activity from Ongoing back to Planned.');
+            }
+        } catch (\Throwable $e) {
+            // If anything fails in this check, fall through to normal validation and rely on validation rules.
+        }
+
+        // STRICT RULE (refined): If the latest update was created by this same student and it already
+        // contains proof pictures, disallow submitting further proof for the SAME status again.
+        // However, allow the student to submit a new update when they change the status (e.g., Ongoing -> Completed).
+        try {
+            $latestUpdateCheck = $activity->updates()->orderByDesc('created_at')->first();
+            if (Auth::check() && method_exists(Auth::user(), 'isStudent') && Auth::user()->isStudent() && $latestUpdateCheck && $latestUpdateCheck->user_id == Auth::id() && $latestUpdateCheck->pictures()->exists()) {
+                $latestStatus = strtolower(trim((string)$latestUpdateCheck->status));
+                $requestedLower = strtolower(trim((string)$newStatus));
+                // If the user is attempting to submit for the same status they already submitted proof for, block it.
+                if ($latestStatus === $requestedLower) {
+                    return redirect()->back()->with('error', 'You already submitted proof for this status; change status to submit new proof.');
+                }
+                // Otherwise allow: user is submitting proof for a different/new status.
+            }
+        } catch (\Throwable $e) {
+            // ignore and continue
+        }
 
         // If the student is changing the status, require at least one new proof picture.
         // Otherwise, require a picture only if none exists yet. We accept up to 5 files.
@@ -80,20 +109,13 @@ class ActivityController extends Controller
             'proof_pictures.*' => 'image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
         ]);
 
-        // Start: determine whether we should append to latest update or create a new one
+        // Always create a new ActivityUpdate for this action (no appending to previous updates)
         $statusNormalized = ucfirst(strtolower($validatedData['status']));
-
-        $appendToLatest = $request->input('append_to_update') && $activity->updates()->exists();
-
-        if ($appendToLatest) {
-            $updateRecord = $activity->updates()->orderByDesc('created_at')->first();
-        } else {
-            $updateRecord = \App\Models\ActivityUpdate::create([
-                'activity_id' => $activity->Activity_ID,
-                'user_id' => Auth::id(),
-                'status' => $statusNormalized,
-            ]);
-        }
+        $updateRecord = \App\Models\ActivityUpdate::create([
+            'activity_id' => $activity->Activity_ID,
+            'user_id' => Auth::id(),
+            'status' => $statusNormalized,
+        ]);
 
         // Handle multiple file upload (up to 5) and attach them to the update record
         if ($request->hasFile('proof_pictures')) {
@@ -129,14 +151,8 @@ class ActivityController extends Controller
                 $lastStoredPath = $path;
             }
 
-            // Optionally set activity->proof_picture to the most recent uploaded file for compatibility with existing UI
-            if ($lastStoredPath) {
-                $activity->proof_picture = $lastStoredPath;
-                $budget = Budget::where('project_id', $activity->project_id)->first();
-                if ($budget) {
-                    $budget->update(['proof_picture' => $lastStoredPath]);
-                }
-            }
+                // Note: we intentionally do NOT set a legacy `activities.proof_picture` column.
+                // Proof images are stored in `activity_updates` -> `activity_update_pictures`.
         }
 
         // Prepare update payload. Preserve existing Implementation_Date when not provided.
@@ -145,10 +161,7 @@ class ActivityController extends Controller
             $updatePayload['Implementation_Date'] = $validatedData['Implementation_Date'];
         }
 
-        // If we set $activity->proof_picture above, include it in payload
-        if (!empty($activity->proof_picture)) {
-            $updatePayload['proof_picture'] = $activity->proof_picture;
-        }
+        // Do not include legacy `proof_picture` in payload; activity updates hold proof images.
 
         $activity->update($updatePayload);
         

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class Activity extends Model
 {
@@ -49,6 +50,19 @@ class Activity extends Model
     public function updates()
     {
         return $this->hasMany(ActivityUpdate::class, 'activity_id', 'Activity_ID');
+    }
+
+    protected static function booted()
+    {
+        static::deleting(function (Activity $activity) {
+            try {
+                foreach ($activity->updates()->get() as $u) {
+                    $u->delete();
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Failed deleting activity updates for activity: ' . $e->getMessage(), ['activity' => $activity->Activity_ID ?? null]);
+            }
+        });
     }
 
 

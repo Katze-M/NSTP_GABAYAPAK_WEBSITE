@@ -55,11 +55,22 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-4">
+                    @php
+                        $editableRoles = ['SACSI Director', 'NSTP Coordinator', 'NSTP Program Officer'];
+                        $user = Auth::user();
+                    @endphp
+
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
-                        <div class="p-3 bg-gray-50 rounded-lg border">
-                            <p class="text-gray-800">{{ Auth::user()->user_Name }}</p>
-                        </div>
+                        @if($user->isStaff() && in_array($user->user_role, $editableRoles))
+                            <div class="p-3 bg-gray-50 rounded-lg border">
+                                <p class="text-gray-800 font-medium">{{ $user->user_Name }}</p>
+                            </div>
+                        @else
+                            <div class="p-3 bg-gray-50 rounded-lg border">
+                                <p class="text-gray-800">{{ $user->user_Name }}</p>
+                            </div>
+                        @endif
                     </div>
                     
                     <div>
@@ -178,13 +189,25 @@
                 Account Actions
             </h3>
             
-            <div class="max-w-sm">
-                <button type="button" id="changePasswordBtn" class="flex items-center justify-center gap-3 p-4 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 font-medium w-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    Change Password
-                </button>
+            <div class="max-w-sm flex items-stretch gap-3 account-actions">
+                <div class="flex-1">
+                    <button type="button" id="changePasswordBtn" class="w-full flex items-center justify-center gap-3 p-4 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 font-medium whitespace-nowrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        Change Password
+                    </button>
+                </div>
+                @if(Auth::user()->isStaff() && in_array(Auth::user()->user_role, ['SACSI Director','NSTP Coordinator','NSTP Program Officer']))
+                    <div class="flex-1">
+                        <button type="button" id="openEditInfoBtn" class="w-full flex items-center justify-center gap-3 p-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium whitespace-nowrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5h6M11 9h6M11 13h6M5 5h.01M5 9h.01M5 13h.01M5 17h14" />
+                            </svg>
+                            Edit Information
+                        </button>
+                    </div>
+                @endif
             </div>
         </div>
     </section>
@@ -273,52 +296,145 @@
     </div>
 </div>
 
+<!-- Edit Information Modal -->
+<div id="editInfoModal" class="fixed inset-0 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" aria-hidden="true"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="edit-modal-title">Edit Information</h3>
+
+                        <!-- Display validation errors -->
+                        @if ($errors->any())
+                            <div class="mt-4">
+                                <div class="font-medium text-red-600">Whoops! Something went wrong.</div>
+                                <ul class="mt-3 text-sm text-red-600 list-disc list-inside">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
+                        <div class="mt-4">
+                            <form method="POST" action="{{ route('account.update') }}" id="editInfoForm" enctype="multipart/form-data">
+                                @csrf
+                                @method('PUT')
+
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <input type="text" name="user_Name" value="{{ old('user_Name', Auth::user()->user_Name) }}" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Formal Picture (Official ID photo)</label>
+                                    <input type="file" name="staff_formal_picture" accept="image/*" class="w-full">
+                                    @if(Auth::user()->staff && Auth::user()->staff->staff_formal_picture)
+                                        <div class="mt-2">
+                                            <img src="{{ asset('storage/' . Auth::user()->staff->staff_formal_picture) }}" alt="Formal Picture" class="w-24 h-24 object-cover rounded">
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">Update Information</button>
+                                    <button type="button" id="cancelEditModalBtn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (session('status'))
+    <div id="globalStatus" class="hidden">{{ session('status') }}</div>
+@endif
+
+<style>
+    /* Desktop/large screens keep horizontal layout by default. */
+    /* On small screens (mobile 360x600) stack the buttons vertically. */
+    @media (max-width: 600px) {
+        .account-actions {
+            flex-direction: column !important;
+        }
+    }
+</style>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Get modal elements
-        const modal = document.getElementById('changePasswordModal');
+        // Change Password modal elements
+        const passwordModal = document.getElementById('changePasswordModal');
         const changePasswordBtn = document.getElementById('changePasswordBtn');
-        const cancelModalBtn = document.getElementById('cancelModalBtn');
-        
-        // Show modal when button is clicked
-        if (changePasswordBtn && modal) {
+        const cancelPasswordBtn = document.getElementById('cancelModalBtn');
+
+        // Edit Info modal elements
+        const editModal = document.getElementById('editInfoModal');
+        const openEditInfoBtn = document.getElementById('openEditInfoBtn');
+        const cancelEditModalBtn = document.getElementById('cancelEditModalBtn');
+
+        // Open password modal
+        if (changePasswordBtn && passwordModal) {
             changePasswordBtn.addEventListener('click', function() {
-                modal.classList.remove('hidden');
+                passwordModal.classList.remove('hidden');
             });
         }
-        
-        // Hide modal when cancel button is clicked
-        if (cancelModalBtn && modal) {
-            cancelModalBtn.addEventListener('click', function() {
-                modal.classList.add('hidden');
+
+        // Close password modal
+        if (cancelPasswordBtn && passwordModal) {
+            cancelPasswordBtn.addEventListener('click', function() {
+                passwordModal.classList.add('hidden');
             });
         }
-        
-        // Hide modal when clicking outside of it
-        if (modal) {
-            modal.addEventListener('click', function(event) {
-                if (event.target === modal) {
-                    modal.classList.add('hidden');
-                }
+
+        // Open edit info modal
+        if (openEditInfoBtn && editModal) {
+            openEditInfoBtn.addEventListener('click', function() {
+                editModal.classList.remove('hidden');
             });
         }
-        
-        // Hide modal when pressing Escape key
-        if (modal) {
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
-                    modal.classList.add('hidden');
-                }
+
+        // Close edit info modal
+        if (cancelEditModalBtn && editModal) {
+            cancelEditModalBtn.addEventListener('click', function() {
+                editModal.classList.add('hidden');
             });
         }
-        
-        // Show SweetAlert2 confirmation if password was successfully changed
-        const statusMessage = document.querySelector('.mt-4 .font-medium.text-green-600');
-        if (statusMessage && statusMessage.textContent.trim() !== '') {
+
+        // Hide modals when clicking outside of them
+        [passwordModal, editModal].forEach(function(m) {
+            if (m) {
+                m.addEventListener('click', function(event) {
+                    if (event.target === m) {
+                        m.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
+        // Hide modals when pressing Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                if (passwordModal && !passwordModal.classList.contains('hidden')) passwordModal.classList.add('hidden');
+                if (editModal && !editModal.classList.contains('hidden')) editModal.classList.add('hidden');
+            }
+        });
+
+        // Show SweetAlert2 confirmation if any status message exists
+        const globalStatus = document.getElementById('globalStatus');
+        if (globalStatus && globalStatus.textContent.trim() !== '') {
             Swal.fire({
                 icon: 'success',
-                title: 'Password Updated!',
-                text: statusMessage.textContent.trim(),
+                title: 'Success',
+                text: globalStatus.textContent.trim(),
                 confirmButtonColor: '#3085d6'
             });
         }

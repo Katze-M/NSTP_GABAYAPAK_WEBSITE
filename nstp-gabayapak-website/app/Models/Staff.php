@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Staff extends Model
 {
@@ -39,5 +40,22 @@ class Staff extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * Boot model events to clean up files when staff records are deleted.
+     */
+    protected static function booted()
+    {
+        static::deleting(function (Staff $staff) {
+            if ($staff->staff_formal_picture) {
+                try {
+                    Storage::disk('public')->delete($staff->staff_formal_picture);
+                } catch (\Throwable $e) {
+                    // don't break deletion if filesystem fails; just log when available
+                    logger()->warning('Failed deleting staff_formal_picture: ' . $e->getMessage(), ['path' => $staff->staff_formal_picture]);
+                }
+            }
+        });
     }
 }

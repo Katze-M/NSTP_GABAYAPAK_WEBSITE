@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
 
 class AccountController extends Controller
 {
@@ -75,6 +76,47 @@ class AccountController extends Controller
         $request->validate($rules);
         
         // Update user information
+        // If staff and in privileged roles, allow updating name and formal picture only
+        $privilegedRoles = ['SACSI Director', 'NSTP Coordinator', 'NSTP Program Officer'];
+
+        if ($user->isStaff() && in_array($user->user_role, $privilegedRoles)) {
+            // Validate picture if provided
+            $request->validate([
+                'staff_formal_picture' => 'nullable|image|max:2048',
+            ]);
+
+            $user->update([
+                'user_Name' => $request->user_Name,
+            ]);
+
+            // Handle file upload
+            if ($request->hasFile('staff_formal_picture')) {
+                $file = $request->file('staff_formal_picture');
+                // store new file first
+                $path = $file->store('staff_formal_pictures', 'public');
+
+                // delete old file if present
+                $old = $user->staff->staff_formal_picture ?? null;
+
+                if ($user->staff) {
+                    $user->staff->update(['staff_formal_picture' => $path]);
+                } else {
+                    $user->staff()->create(['staff_formal_picture' => $path]);
+                }
+
+                if (!empty($old) && $old !== $path) {
+                    try {
+                        Storage::disk('public')->delete($old);
+                    } catch (\Throwable $e) {
+                        logger()->warning('Failed deleting old staff formal picture: ' . $e->getMessage(), ['old' => $old]);
+                    }
+                }
+            }
+
+            return back()->with('status', 'Account updated successfully!');
+        }
+
+        // Default behavior: update user and student profile if applicable
         $user->update([
             'user_Name' => $request->user_Name,
         ]);

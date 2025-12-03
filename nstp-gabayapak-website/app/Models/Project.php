@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class Project extends Model
 {
@@ -263,5 +265,47 @@ class Project extends Model
     public function completedBy()
     {
         return $this->belongsTo(User::class, 'mark_as_completed_by', 'user_id');
+    }
+
+    /**
+     * Model events: clean up Project_Logo when changed/deleted and cascade-delete activities.
+     */
+    protected static function booted()
+    {
+        // When Project_Logo changes during update, delete the previous file
+        static::updating(function (Project $project) {
+            if ($project->isDirty('Project_Logo')) {
+                $old = $project->getOriginal('Project_Logo');
+                $new = $project->Project_Logo;
+                if (!empty($old) && $old !== $new) {
+                    try {
+                        Storage::disk('public')->delete($old);
+                        Log::info('Deleted old project logo', ['path' => $old, 'project' => $project->Project_ID ?? null]);
+                    } catch (\Throwable $e) {
+                        Log::warning('Failed deleting old project logo: ' . $e->getMessage(), ['path' => $old]);
+                    }
+                }
+            }
+        });
+
+        // On project deletion, remove logo and cascade delete activities (and their media)
+        static::deleting(function (Project $project) {
+            try {
+                if (!empty($project->Project_Logo)) {
+                    Storage::disk('public')->delete($project->Project_Logo);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Failed deleting project logo: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
+            }
+
+            try {
+                // Delete related activities to ensure their updates/pictures are removed via model events
+                foreach ($project->activities()->get() as $activity) {
+                    $activity->delete();
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Failed deleting project activities on project delete: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
+            }
+        });
     }
 }

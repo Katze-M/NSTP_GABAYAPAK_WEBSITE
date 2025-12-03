@@ -263,18 +263,40 @@
                                             <li><strong>Created:</strong> {{ $activity->created_at ? $activity->created_at->format('F j, Y g:i A') : 'N/A' }}</li>
                                             <li><strong>Last updated:</strong> {{ $activity->updated_at ? $activity->updated_at->format('F j, Y g:i A') : 'N/A' }}</li>
                                             <li><strong>Current status:</strong> {{ ucfirst($aStatus) }} @if($activity->updated_at)<span class="text-xs text-gray-500">({{ $activity->updated_at->diffForHumans() }})</span>@endif</li>
-                                            @if($activity->proof_picture)
-                                                <li class="mt-2">
-                                                    <strong>Proof:</strong>
-                                                    <div class="mt-1 flex items-center space-x-3">
-                                                        <a href="{{ asset('storage/' . $activity->proof_picture) }}" target="_blank" class="block w-24 h-auto rounded border overflow-hidden">
-                                                            <img src="{{ asset('storage/' . $activity->proof_picture) }}" alt="Proof" class="w-24 h-24 object-cover rounded">
-                                                        </a>
-                                                        <div class="text-xs text-gray-500">Uploaded: {{ $activity->updated_at ? $activity->updated_at->format('F j, Y g:i A') : 'Unknown' }}</div>
-                                                    </div>
-                                                </li>
-                                            @endif
                                         </ul>
+
+                                        @if($activity->updates && $activity->updates->isNotEmpty())
+                                            <div class="mt-3 space-y-3">
+                                                @foreach($activity->updates->sortByDesc('created_at') as $upd)
+                                                    <div class="bg-white p-3 rounded border">
+                                                        <div class="flex items-start justify-between">
+                                                            <div class="text-sm text-gray-700">
+                                                                <strong>{{ ucfirst($upd->status) }}</strong>
+                                                                <div class="text-xs text-gray-500">by {{ optional($upd->user)->user_Name ?? 'Unknown' }} • {{ $upd->created_at ? $upd->created_at->format('F j, Y g:i A') : 'Unknown' }}</div>
+                                                            </div>
+                                                        </div>
+                                                        @if($upd->pictures && $upd->pictures->isNotEmpty())
+                                                            <div class="mt-2 flex flex-wrap gap-2">
+                                                                @foreach($upd->pictures as $pic)
+                                                                    <a href="{{ asset('storage/' . $pic->path) }}" target="_blank" class="block w-24 h-auto rounded border overflow-hidden">
+                                                                        <img src="{{ asset('storage/' . $pic->path) }}" alt="Proof" class="w-24 h-24 object-cover rounded">
+                                                                    </a>
+                                                                @endforeach
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            {{-- Fallback to single proof_picture for legacy records --}}
+                                            @if($activity->proof_picture)
+                                                <div class="mt-3">
+                                                    <a href="{{ asset('storage/' . $activity->proof_picture) }}" target="_blank" class="block w-24 h-auto rounded border overflow-hidden">
+                                                        <img src="{{ asset('storage/' . $activity->proof_picture) }}" alt="Proof" class="w-24 h-24 object-cover rounded">
+                                                    </a>
+                                                </div>
+                                            @endif
+                                        @endif
                                     </div>
                                 @endif
                             </div>

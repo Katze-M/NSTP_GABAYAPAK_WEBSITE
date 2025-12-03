@@ -44,5 +44,13 @@ class Activity extends Model
         return $this->belongsTo(Project::class, 'project_id', 'Project_ID');
     }
 
+    /**
+     * Activity update history (status changes and attached proof pictures)
+     */
+    public function updates()
+    {
+        return $this->hasMany(ActivityUpdate::class, 'activity_id', 'Activity_ID');
+    }
+
 
 }

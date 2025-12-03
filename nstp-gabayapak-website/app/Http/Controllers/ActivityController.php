@@ -67,60 +67,89 @@ class ActivityController extends Controller
         $newStatus = $request->input('status', '');
         $statusChanged = strtolower((string)$newStatus) !== strtolower((string)$activity->status);
 
-        // If the student is changing the status, require a new proof picture.
-        // Otherwise, require a picture only if none exists yet.
-        $proofRule = ($statusChanged || ! $hasExistingProof)
-            ? 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
-            : 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048';
+        // If the student is changing the status, require at least one new proof picture.
+        // Otherwise, require a picture only if none exists yet. We accept up to 5 files.
+        $proofArrayRule = ($statusChanged || ! $hasExistingProof)
+            ? 'required|array|max:5'
+            : 'nullable|array|max:5';
 
-        // Validate the request
         $validatedData = $request->validate([
-            // accept common casings, we'll normalize before saving
             'status' => 'required|string|in:Planned,Ongoing,Completed,planned,ongoing,completed',
             'Implementation_Date' => 'nullable|date',
-            'proof_picture' => $proofRule,
+            'proof_pictures' => $proofArrayRule,
+            'proof_pictures.*' => 'image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
         ]);
-        
-        // Handle file upload if a new file is provided
-        if ($request->hasFile('proof_picture')) {
-            $file = $request->file('proof_picture');
-            // Log file details
-            logger()->info('File uploaded:', [
-                'name' => $file->getClientOriginalName(),
-                'size' => $file->getSize(),
-                'mime_type' => $file->getMimeType(),
-            ]);
 
-            // Delete old proof picture if exists (from Activity)
-            if ($activity->proof_picture) {
-                Storage::disk('public')->delete($activity->proof_picture);
-                logger()->info('Old proof picture deleted from Activity:', ['path' => $activity->proof_picture]);
+        // Start: determine whether we should append to latest update or create a new one
+        $statusNormalized = ucfirst(strtolower($validatedData['status']));
+
+        $appendToLatest = $request->input('append_to_update') && $activity->updates()->exists();
+
+        if ($appendToLatest) {
+            $updateRecord = $activity->updates()->orderByDesc('created_at')->first();
+        } else {
+            $updateRecord = \App\Models\ActivityUpdate::create([
+                'activity_id' => $activity->Activity_ID,
+                'user_id' => Auth::id(),
+                'status' => $statusNormalized,
+            ]);
+        }
+
+        // Handle multiple file upload (up to 5) and attach them to the update record
+        if ($request->hasFile('proof_pictures')) {
+            $files = $request->file('proof_pictures');
+
+            // Enforce per-update maximum of 5 pictures (existing + new)
+            $existingCount = $updateRecord->pictures()->count();
+            $incomingCount = is_array($files) ? count($files) : 0;
+            if ($existingCount + $incomingCount > 5) {
+                return redirect()->back()->with('error', 'Cannot attach more than 5 pictures to a single update.')->withInput();
             }
 
-            // Store new proof picture
-            $newProofPath = $file->store('proof_pictures', 'public');
-            logger()->info('New proof picture stored:', ['path' => $newProofPath]);
+            $lastStoredPath = null;
+            foreach ($files as $file) {
+                if (! $file->isValid()) {
+                    continue;
+                }
+                logger()->info('Proof picture uploaded for activity update:', [
+                    'name' => $file->getClientOriginalName(),
+                    'size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                ]);
 
-            // Update the activity with the new proof picture
-            $activity->update(['proof_picture' => $newProofPath]);
+                // Store file (do NOT delete previous activity proof files — we keep history)
+                $path = $file->store('proof_pictures', 'public');
+                logger()->info('Stored proof picture for update:', ['path' => $path]);
 
-            // Optionally, update the budget as well if needed (keep if you want to sync)
-            $budget = Budget::where('project_id', $activity->project_id)->first();
-            if ($budget) {
-                $budget->update(['proof_picture' => $newProofPath]);
-                logger()->info('Budget updated with new proof picture:', ['budget_id' => $budget->id]);
+                \App\Models\ActivityUpdatePicture::create([
+                    'activity_update_id' => $updateRecord->id,
+                    'path' => $path,
+                ]);
+
+                $lastStoredPath = $path;
+            }
+
+            // Optionally set activity->proof_picture to the most recent uploaded file for compatibility with existing UI
+            if ($lastStoredPath) {
+                $activity->proof_picture = $lastStoredPath;
+                $budget = Budget::where('project_id', $activity->project_id)->first();
+                if ($budget) {
+                    $budget->update(['proof_picture' => $lastStoredPath]);
+                }
             }
         }
-        
-        // Normalize status casing (store with initial capital) and update the activity
-        $statusNormalized = ucfirst(strtolower($validatedData['status']));
 
         // Prepare update payload. Preserve existing Implementation_Date when not provided.
         $updatePayload = ['status' => $statusNormalized];
         if (array_key_exists('Implementation_Date', $validatedData) && $validatedData['Implementation_Date'] !== null && $validatedData['Implementation_Date'] !== '') {
             $updatePayload['Implementation_Date'] = $validatedData['Implementation_Date'];
         }
-        // proof_picture was handled above
+
+        // If we set $activity->proof_picture above, include it in payload
+        if (!empty($activity->proof_picture)) {
+            $updatePayload['proof_picture'] = $activity->proof_picture;
+        }
+
         $activity->update($updatePayload);
         
         return redirect()->route('projects.show', $activity->project)->with('success', 'Activity updated successfully!');

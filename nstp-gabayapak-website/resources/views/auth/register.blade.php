@@ -205,12 +205,30 @@
                     <option value="" disabled selected>Select Position</option>
                     @foreach($roles as $role)
                         @if($role != 'Student')
-                            <option value="{{ $role }}" {{ (old('user_role', $prefill['user_role'] ?? '') == $role) ? 'selected' : '' }}>
-                                {{ $role }}
+                            @php
+                                $currentSelection = old('user_role', $prefill['user_role'] ?? '');
+                                $disabled = false;
+                                $title = '';
+                                if(isset($sacsiCount) && $role === 'SACSI Director' && $sacsiCount > 0 && $currentSelection !== $role) {
+                                    $disabled = true;
+                                    $title = 'A SACSI Director account already exists';
+                                }
+                                if(isset($programOfficerCount) && $role === 'NSTP Program Officer' && $programOfficerCount > 0 && $currentSelection !== $role) {
+                                    $disabled = true;
+                                    $title = 'An NSTP Program Officer account already exists';
+                                }
+                                if(isset($coordinatorCount) && $role === 'NSTP Coordinator' && $coordinatorCount >= 3 && $currentSelection !== $role) {
+                                    $disabled = true;
+                                    $title = 'There are already 3 NSTP Coordinator accounts';
+                                }
+                            @endphp
+                            <option value="{{ $role }}" {{ (old('user_role', $prefill['user_role'] ?? '') == $role) ? 'selected' : '' }} @if($disabled) disabled title="{{ $title }}" @endif>
+                                {{ $role }} @if($disabled) (unavailable) @endif
                             </option>
                         @endif
                     @endforeach
                 </select>
+                {{-- Note paragraph removed per request; tooltips/disabled options remain --}}
             </div>
 
             <div>

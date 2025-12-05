@@ -120,13 +120,6 @@
                         <p class="text-gray-800">{{ Auth::user()->student->student_year ?? 'N/A' }}</p>
                     </div>
                 </div>
-                
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">NSTP Section</label>
-                    <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <p class="text-gray-800">{{ Auth::user()->student->student_section ?? 'N/A' }}</p>
-                    </div>
-                </div>
             </div>
         </div>
     </section>
@@ -143,11 +136,17 @@
                 NSTP Information
             </h3>
             
-            <div class="max-w-md">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">NSTP Component</label>
                     <div class="p-3 bg-green-50 rounded-lg border border-green-200">
                         <p class="text-gray-800 font-medium">{{ Auth::user()->student->student_component ?? 'N/A' }}</p>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">NSTP Section</label>
+                    <div class="p-3 bg-green-50 rounded-lg border border-green-200">
+                        <p class="text-gray-800">{{ Auth::user()->student->student_section ?? 'N/A' }}</p>
                     </div>
                 </div>
             </div>

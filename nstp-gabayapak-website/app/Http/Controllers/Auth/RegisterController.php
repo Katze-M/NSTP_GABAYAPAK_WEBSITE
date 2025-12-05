@@ -54,7 +54,12 @@ class RegisterController extends Controller
             }
         }
 
-        return view('auth.register', compact('courses', 'roles', 'prefill'));
+        // count existing approved staff roles to inform the view and enforce limits
+        $sacsiCount = User::where('user_role', 'SACSI Director')->where('approved', true)->count();
+        $programOfficerCount = User::where('user_role', 'NSTP Program Officer')->where('approved', true)->count();
+        $coordinatorCount = User::where('user_role', 'NSTP Coordinator')->where('approved', true)->count();
+
+        return view('auth.register', compact('courses', 'roles', 'prefill', 'sacsiCount', 'programOfficerCount', 'coordinatorCount'));
     }
 
     /**
@@ -109,6 +114,29 @@ class RegisterController extends Controller
 
         // Check if email already exists
         $existing = User::where('user_Email', $request->user_Email)->first();
+
+        // Enforce role limits for staff roles: only 1 SACSI Director, 1 NSTP Program Officer, max 3 NSTP Coordinator
+        if ($request->user_Type === 'staff') {
+            $role = $request->user_role;
+            // count only approved users for role limits (unapproved/pending users don't reserve a slot)
+            $sacsiCount = User::where('user_role', 'SACSI Director')->where('approved', true)->count();
+            $programOfficerCount = User::where('user_role', 'NSTP Program Officer')->where('approved', true)->count();
+            $coordinatorCount = User::where('user_role', 'NSTP Coordinator')->where('approved', true)->count();
+
+            $existingHasRole = $existing && $existing->user_role === $role;
+
+            if ($role === 'SACSI Director' && $sacsiCount >= 1 && !$existingHasRole) {
+                return back()->withErrors(['user_role' => 'A SACSI Director account already exists.'])->withInput();
+            }
+
+            if ($role === 'NSTP Program Officer' && $programOfficerCount >= 1 && !$existingHasRole) {
+                return back()->withErrors(['user_role' => 'An NSTP Program Officer account already exists.'])->withInput();
+            }
+
+            if ($role === 'NSTP Coordinator' && $coordinatorCount >= 3 && !$existingHasRole) {
+                return back()->withErrors(['user_role' => 'There are already 3 NSTP Coordinator accounts.'])->withInput();
+            }
+        }
 
         if ($existing) {
             // If existing user has a rejected approval, allow updating their record and create a new pending approval.

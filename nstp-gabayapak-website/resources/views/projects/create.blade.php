@@ -142,16 +142,23 @@
 
 
   @if(!$existingDraft && ($hasPending || $hasRejected))
-    <div class="mb-4 rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">
-      <p class="font-semibold text-yellow-800">Notice</p>
-      <p class="text-sm text-yellow-700">You already have a {{ $hasPending ? 'pending' : '' }}{{ $hasPending && $hasRejected ? ' and ' : '' }}{{ $hasRejected ? 'rejected' : '' }} project. You cannot create a new draft while that project exists.</p>
-      @if($hasRejected && $existingRejected)
-        <p class="text-sm mt-2">If your project was rejected, you may <a href="{{ route('projects.edit', $existingRejected) }}" class="text-blue-600 underline">edit the rejected project to resubmit</a>.</p>
-      @endif
-      @if($hasPending && $existingPending)
-        <p class="text-sm mt-2">You have a pending project under review. Check <a href="{{ route('projects.my') }}" class="text-blue-600 underline">My Projects</a> for details.</p>
-      @endif
-    </div>
+    @if($hasRejected)
+      <div class="mb-4 rounded-lg border-l-4 border-red-500 bg-red-50 p-4">
+        <p class="font-semibold text-red-800">Notice</p>
+        <p class="text-sm text-red-700">You already have a {{ $hasPending ? 'pending' : '' }}{{ $hasPending && $hasRejected ? ' and ' : '' }}{{ $hasRejected ? 'rejected' : '' }} project. You cannot create a new draft while that project exists.</p>
+        @if($hasRejected && $existingRejected)
+          <p class="text-sm mt-2">If your project was rejected, you may <a href="{{ route('projects.edit', $existingRejected) }}" class="text-red-600 underline">edit the rejected project to resubmit</a>.</p>
+        @endif
+      </div>
+    @else
+      <div class="mb-4 rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">
+        <p class="font-semibold text-yellow-800">Notice</p>
+        <p class="text-sm text-yellow-700">You already have a pending project. You cannot create a new draft while that project exists.</p>
+        @if($hasPending && $existingPending)
+          <p class="text-sm mt-2">You have a pending project under review. Check <a href="{{ route('projects.my') }}" class="text-blue-600 underline">My Projects</a> for details.</p>
+        @endif
+      </div>
+    @endif
   @endif
 
   <form id="projectForm" action="{{ route('projects.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6 md:space-y-8">

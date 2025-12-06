@@ -34,46 +34,51 @@
                 <h3 class="text-xl md:text-2xl font-bold text-gray-800 mb-6">Select NSTP Formators</h3>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    @forelse($allStaff as $staff)
-                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                            <div class="flex items-start gap-3">
-                                <div class="flex items-center h-5">
-                                    <input id="formator_{{ $staff->user_id }}" 
-                                           name="formators[]" 
-                                           type="checkbox" 
-                                           value="{{ $staff->user_id }}"
-                                           class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                           {{ in_array($staff->user_id, $currentFormators) ? 'checked' : '' }}>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <label for="formator_{{ $staff->user_id }}" class="block text-sm font-medium text-gray-700 cursor-pointer">
-                                        <div class="flex items-center gap-3 mb-2">
-                                            <div class="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center bg-white overflow-hidden">
-                                                @if($staff->staff && $staff->staff->staff_formal_picture)
-                                                    <img src="{{ asset('storage/' . $staff->staff->staff_formal_picture) }}" 
-                                                         alt="{{ $staff->user_Name }}" 
-                                                         class="w-full h-full object-cover">
-                                                @else
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="1.5" class="w-6 h-6">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 12c2.485 0 4.5-2.015 4.5-4.5S14.485 3 12 3 7.5 5.015 7.5 7.5 9.515 12 12 12z" />
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 21a7.5 7.5 0 0115 0v.75H4.5V21z" />
-                                                    </svg>
-                                                @endif
+                    @php $shown = false; @endphp
+                    @foreach($allStaff as $staff)
+                        @if(trim(($staff->user_role ?? '') ) === 'NSTP Formator')
+                            @php $shown = true; @endphp
+                            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex items-center h-5">
+                                        <input id="formator_{{ $staff->user_id }}" 
+                                               name="formators[]" 
+                                               type="checkbox" 
+                                               value="{{ $staff->user_id }}"
+                                               class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                                               {{ in_array($staff->user_id, $currentFormators) ? 'checked' : '' }}>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <label for="formator_{{ $staff->user_id }}" class="block text-sm font-medium text-gray-700 cursor-pointer">
+                                            <div class="flex items-center gap-3 mb-2">
+                                                <div class="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center bg-white overflow-hidden">
+                                                    @if($staff->staff && $staff->staff->staff_formal_picture)
+                                                        <img src="{{ asset('storage/' . $staff->staff->staff_formal_picture) }}" 
+                                                             alt="{{ $staff->user_Name }}" 
+                                                             class="w-full h-full object-cover">
+                                                    @else
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="1.5" class="w-6 h-6">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 12c2.485 0 4.5-2.015 4.5-4.5S14.485 3 12 3 7.5 5.015 7.5 7.5 9.515 12 12 12z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 21a7.5 7.5 0 0115 0v.75H4.5V21z" />
+                                                        </svg>
+                                                    @endif
+                                                </div>
+                                                <div>
+                                                    <p class="font-semibold text-gray-900 break-words whitespace-normal">{{ $staff->user_Name }}</p>
+                                                    <p class="text-xs text-gray-500 whitespace-normal">{{ $staff->user_role }}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p class="font-semibold text-gray-900 truncate">{{ $staff->user_Name }}</p>
-                                                <p class="text-xs text-gray-500">{{ $staff->user_role }}</p>
-                                            </div>
-                                        </div>
-                                    </label>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    @empty
+                        @endif
+                    @endforeach
+                    @unless($shown)
                         <div class="col-span-full text-center py-8">
-                            <p class="text-gray-600">No staff members found.</p>
+                            <p class="text-gray-600">No NSTP Formators found.</p>
                         </div>
-                    @endforelse
+                    @endunless
                 </div>
             </div>
             

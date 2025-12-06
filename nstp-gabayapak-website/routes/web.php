@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\AccountController;
@@ -17,18 +18,39 @@ Route::get('/', function () {
         return redirect()->route('login');
     }
     
-    // Fetch only staff members with the "NSTP Formator" role from the database
-    // Only include those who are approved (or have an approved approval record)
-    $nstpFormators = User::where('user_Type', 'staff')
-        ->where('user_role', 'NSTP Formator')
-        ->where(function($q) {
-            $q->where('approved', true)
-              ->orWhereHas('approvals', function($a) {
-                  $a->where('status', 'approved');
-              });
-        })
-        ->with('staff')
-        ->get();
+    // Fetch persisted formators list (stored in storage/app/formators.json).
+    // If no persisted list exists, fall back to users whose `user_role` is 'NSTP Formator'.
+    $persistedPath = storage_path('app/formators.json');
+    $persisted = [];
+    if (file_exists($persistedPath)) {
+        try { $persisted = json_decode(file_get_contents($persistedPath), true) ?: []; } catch (\Throwable $e) { $persisted = []; }
+    }
+
+    if (!empty($persisted) && is_array($persisted)) {
+        // Only include approved formators (preserve previous approval rules)
+        $nstpFormators = User::where('user_Type', 'staff')
+            ->whereIn('user_id', $persisted)
+            ->where(function($q) {
+                $q->where('approved', true)
+                  ->orWhereHas('approvals', function($a) {
+                      $a->where('status', 'approved');
+                  });
+            })
+            ->with('staff')
+            ->get();
+    } else {
+        // fallback: legacy behavior using user_role
+        $nstpFormators = User::where('user_Type', 'staff')
+            ->where('user_role', 'NSTP Formator')
+            ->where(function($q) {
+                $q->where('approved', true)
+                  ->orWhereHas('approvals', function($a) {
+                      $a->where('status', 'approved');
+                  });
+            })
+            ->with('staff')
+            ->get();
+    }
     
     // Format the data for the view
     $formators = [];
@@ -60,17 +82,24 @@ Route::get('/formators/manage', function () {
         ->with('staff')
         ->get();
     
-    // Fetch current NSTP Formators (only among approved staff)
-    $currentFormators = User::where('user_Type', 'staff')
-        ->where('user_role', 'NSTP Formator')
-        ->where(function($q) {
-            $q->where('approved', true)
-              ->orWhereHas('approvals', function($a) {
-                  $a->where('status', 'approved');
-              });
-        })
-        ->pluck('user_id')
-        ->toArray();
+    // Load persisted formators list if present, otherwise fall back to legacy user_role-based list
+    $persistedPath = storage_path('app/formators.json');
+    $currentFormators = [];
+    if (file_exists($persistedPath)) {
+        try { $currentFormators = json_decode(file_get_contents($persistedPath), true) ?: []; } catch (\Throwable $e) { $currentFormators = []; }
+    }
+    if (empty($currentFormators)) {
+        $currentFormators = User::where('user_Type', 'staff')
+            ->where('user_role', 'NSTP Formator')
+            ->where(function($q) {
+                $q->where('approved', true)
+                  ->orWhereHas('approvals', function($a) {
+                      $a->where('status', 'approved');
+                  });
+            })
+            ->pluck('user_id')
+            ->toArray();
+    }
     
     return view('formators.manage', compact('allStaff', 'currentFormators'));
 })->name('formators.manage')->middleware('auth', 'staff');
@@ -87,40 +116,18 @@ Route::post('/formators/update', function (\Illuminate\Http\Request $request) {
         'formators.*' => 'exists:users,user_id'
     ]);
     
-    // Only consider approved staff for role changes
-    $staffUsers = User::where('user_Type', 'staff')
-        ->where(function($q) {
-            $q->where('approved', true)
-              ->orWhereHas('approvals', function($a) {
-                  $a->where('status', 'approved');
-              });
-        })
-        ->get();
-
-    $selected = $request->formators ?? [];
-
-    // Protect privileged staff roles from being changed by this bulk update.
-    // These roles should only be changed through explicit admin actions.
-    $protectedRoles = ['SACSI Director', 'NSTP Program Officer', 'NSTP Coordinator'];
-
-    // Update roles based on selection (only for approved staff)
-    foreach ($staffUsers as $user) {
-        // If the user currently holds a protected role, skip any changes.
-        if (in_array($user->user_role, $protectedRoles)) {
-            continue;
-        }
-
-        if (in_array($user->user_id, $selected)) {
-            // Promote to NSTP Formator when selected
-            $user->update(['user_role' => 'NSTP Formator']);
-        } else {
-            // Only demote users who are currently NSTP Formator
-            if ($user->user_role === 'NSTP Formator') {
-                $user->update(['user_role' => 'Staff']);
-            }
-        }
+    // Persist the list of selected formator user IDs to storage/app/formators.json
+    $selected = array_values($request->formators ?? []);
+    $persistedPath = storage_path('app/formators.json');
+    try {
+        // ensure directory exists
+        if (!is_dir(dirname($persistedPath))) mkdir(dirname($persistedPath), 0755, true);
+        file_put_contents($persistedPath, json_encode($selected));
+    } catch (\Throwable $e) {
+        // In case writing fails, fall back to redirect with error
+        return redirect()->route('about')->with('status', 'Failed to update NSTP Formators.');
     }
-    
+
     return redirect()->route('about')->with('status', 'NSTP Formators updated successfully!');
 })->name('formators.update')->middleware('auth', 'staff');
 

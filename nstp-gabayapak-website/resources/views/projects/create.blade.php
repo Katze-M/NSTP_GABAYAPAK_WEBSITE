@@ -6,7 +6,8 @@
 
 @section('content')
 <!-- Project Proposal -->
-<section id="upload-project" class="space-y-6 md:space-y-8 page-container w-full lg:max-w-5xl mx-auto px-2 md:px-6">
+<section id="upload-project" class="space-y-6 md:space-y-8 page-container max-w-5xl mx-auto">
+  <div class="px-8 pb-8">
   <!-- Main Heading -->
   <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6 flex items-center gap-2">Project Proposal</h1>
  
@@ -370,8 +371,8 @@
 <div class="hidden md:block w-full">
   <div class="overflow-x-auto w-full min-w-0">
     <div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400 w-full min-w-0">
-      <div class="bg-linear-to-r from-green-50 to-emerald-50 border-b-2 border-gray-400 px-6 py-3 w-full min-w-[900px]">
-        <div class="flex items-center gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider w-full min-w-[900px] py-2">
+      <div class="bg-linear-to-r from-green-50 to-emerald-50 border-b-2 border-gray-400 px-6 py-3 w-full min-w-0">
+        <div class="flex items-center gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider w-full min-w-0 py-2">
             <div class="w-16 px-1 flex-none">Stage <span class="text-red-500">*</span></div>
             <div class="flex-1 px-2">Specific Activities <span class="text-red-500">*</span></div>
             <div class="w-32 px-1 flex-none">Time Frame <span class="text-red-500">*</span></div>
@@ -490,7 +491,7 @@
       <div class="hidden md:block w-full">
         <div class="overflow-x-auto w-full min-w-0">
           <div class="bg-white rounded-xl shadow-subtle overflow-hidden border-2 border-gray-400 w-full min-w-0">
-            <div class="bg-yellow-50 border-b-2 border-gray-400 px-6 py-4 grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider w-full min-w-[900px]">
+            <div class="bg-yellow-50 border-b-2 border-gray-400 px-6 py-4 grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 text-sm font-semibold text-gray-700 uppercase tracking-wider w-full min-w-0">
               <div>Activity</div>
               <div>Resources Needed</div>
               <div>Partner Agencies</div>
@@ -565,6 +566,7 @@
     </div>
   </form>
   </div>
+</div>
 </section>
 
 

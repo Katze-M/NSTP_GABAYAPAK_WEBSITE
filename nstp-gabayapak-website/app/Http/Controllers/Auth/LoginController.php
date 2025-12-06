@@ -40,7 +40,7 @@ class LoginController extends Controller
 
         if ($user && Hash::check($request->user_Password, $user->user_Password)) {
             // SACSI Director is auto-approved and should always be able to log in
-            if ($user->isStaff() && $user->user_role === 'SACSI Director') {
+            if ($user->isStaff() && $user->isSACSIDirector()) {
                 Auth::login($user);
                 // SACSI Director is staff — send to dashboard
                 return redirect()->route('dashboard');
@@ -54,7 +54,7 @@ class LoginController extends Controller
 
             if ($isApproved) {
                 Auth::login($user);
-                // Approved staff -> dashboard; approved students -> upload project page
+                // Approved staff will be redirected to dashboard; approved students will be redirected to upload project page
                 if ($user->isStaff()) {
                     return redirect()->route('dashboard');
                 }
@@ -63,18 +63,18 @@ class LoginController extends Controller
                     return redirect()->route('projects.create');
                 }
 
-                // Fallback: about page
+                //about page (as fallback)
                 return redirect()->route('about');
             }
 
-            // If pending
+            //If approval is pending, inform user that their registration is under review
             if ($approval && $approval->status === 'pending') {
                 throw ValidationException::withMessages([
                     'user_Email' => ['Your registration is currently under review.'],
                 ]);
             }
 
-            // If rejected, send back with a helpful link to re-register (prefill email)
+            //If approval is rejected, send back with a link to re-register. Users must register using the same email
             if ($approval && $approval->status === 'rejected') {
                 return redirect()->route('login')
                     ->with('rejected_email', $user->user_Email)
@@ -84,13 +84,13 @@ class LoginController extends Controller
                     ]);
             }
 
-            // No approval record or unknown state -> treat as pending
+            // No approval record or unknown state will be treated as pending
             throw ValidationException::withMessages([
                 'user_Email' => ['Your registration is currently under review.'],
             ]);
         }
 
-        // Authentication failed (wrong credentials)
+        //Authentication failed (wrong credentials)
         throw ValidationException::withMessages([
             'user_Email' => [trans('auth.failed')],
         ]);
@@ -106,7 +106,7 @@ class LoginController extends Controller
     {
         Auth::logout();
         
-        // Redirect to login page after logout
+        //Redirect to login page after logout
         return redirect()->route('login');
     }
 }

@@ -36,11 +36,17 @@
                 <div class="md:flex">
                     <div class="md:flex-1 p-8 sm:p-10">
                         <h1 class="text-2xl sm:text-3xl font-semibold text-gray-900">Registration Received</h1>
-                        <p class="mt-3 text-gray-600 text-base leading-relaxed">Thank you for registering. Your account has been submitted and is currently pending approval by the NSTP Program Officer.</p>
+                        <p class="mt-3 text-gray-600 text-base leading-relaxed">Thank you for registering. Your account has been submitted and is currently for approval.</p>
 
                         <p class="mt-6 text-sm text-gray-500">What happens next:</p>
+                        @php $type = $userType ?? null; @endphp
                         <ul class="mt-2 ml-4 list-disc text-sm text-gray-600 space-y-2">
-                            <li>The NSTP Program Officer will review your submission.</li>
+                            @if(!isset($type) || $type === 'staff')
+                                <li>For SACSI Staff, the SACSI Director or NSTP Program Officer will review your submission.</li>
+                            @endif
+                            @if(!isset($type) || $type === 'student')
+                                <li>For the students, the SACSI Director, NSTP Program Officer, or NSTP Coordinator will review your submission.</li>
+                            @endif
                             <li>To check the status of your registration, please visit the login page and click the registration status link.</li>
                             <li>If rejected, you may re-register after addressing the remark provided by the reviewer.</li>
                         </ul>

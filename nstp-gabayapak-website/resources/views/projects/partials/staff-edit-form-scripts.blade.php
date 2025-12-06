@@ -1478,13 +1478,38 @@ document.addEventListener('DOMContentLoaded', function() {
             // Also dump all keys for inspection
             for (const pair of fd.entries()) console.debug('FormData entry:', pair[0], pair[1]);
           } catch (e) { console.warn('Error dumping FormData before submit', e); }
-          
-          // Replace current history entry so when user clicks back from show page, it skips this edit page
-          if (window.history.length > 1) {
-            window.history.replaceState({skipped: true}, '', window.location.href);
-          }
-          
-          form.submit();
+
+          // Show a final confirmation before actually saving changes
+          Swal.fire({
+            title: 'Confirm Save Changes?',
+            text: 'Are you sure you want to save these changes? This will update the project.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, save changes',
+            cancelButtonText: 'No, go back',
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#6b7280'
+          }).then((confirmResult) => {
+            if (!confirmResult.isConfirmed) {
+              isSubmitting = false;
+              return;
+            }
+
+            // Show short success toast, then submit via AJAX helper so the edit page
+            // is not left in history. This uses a timeout-style modal (no OK button).
+            Swal.fire({
+              icon: 'success',
+              title: 'Changes Saved',
+              text: 'Your changes have been saved successfully.',
+              timer: 1500,
+              showConfirmButton: false,
+              willClose: () => {
+                // nothing needed here; submission happens in the promise handler below
+              }
+            }).then(() => {
+              staffSubmitFormViaFetch(form);
+            });
+          });
         }
       });
   }
@@ -1508,5 +1533,32 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     } catch (e) { console.error('Error attaching save handlers', e); }
   }, 400);
+
+/* AJAX submit helper for staff edit form (same behavior as student edit helper)
+   Uses fetch and replaces the current history entry so Back does not return to edit.
+*/
+async function staffSubmitFormViaFetch(form) {
+  if (!form) return;
+  try {
+    try { staff_syncHiddenIds(form); } catch(e){}
+    try { dedupeEmptyActivityRows(); } catch(e){}
+    try { dedupeEmptyBudgetRows(); } catch(e){}
+    try { removeAllEmptyBudgetRows(); } catch(e){}
+    try { prepareFormForSubmit(form); } catch(e){}
+
+    const fd = new FormData(form);
+    const res = await fetch(form.action, { method: (form.method||'POST').toUpperCase(), body: fd, credentials: 'same-origin', headers: {'X-Requested-With':'XMLHttpRequest'}, redirect: 'follow' });
+    const ct = res.headers.get('content-type') || '';
+    let targetUrl = '';
+    if (ct.includes('application/json')) {
+      try { const j = await res.json(); if (j && j.redirect) targetUrl = j.redirect; } catch(e){}
+    }
+    if (!targetUrl) targetUrl = res.url || window.location.href;
+    window.location.replace(targetUrl);
+  } catch (err) {
+    console.error('Staff AJAX submit failed, falling back to normal submit', err);
+    try { form.submit(); } catch(e){}
+  }
+}
 });
 </script>

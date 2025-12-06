@@ -183,7 +183,7 @@
             <h3 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider text-center">Quick Actions</h3>
             <div class="flex gap-3 dashboard-actions">
               @php $u = Auth::user(); @endphp
-              @if($u && $u->isStaff() && ($u->user_role === 'SACSI Director' || $u->user_role === 'NSTP Program Officer'))
+              @if($u && $u->isStaff() && ($u->isSACSIDirector() || $u->isProgramOfficer()))
                 {{-- Director and Program Officer: Stacked layout --}}
                 <div class="flex flex-col gap-2">
                   <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700 whitespace-nowrap text-center">Current Projects</a>

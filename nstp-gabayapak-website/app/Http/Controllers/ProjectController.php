@@ -2087,10 +2087,7 @@ class ProjectController extends Controller
                 $allCompleted = $acts->isNotEmpty() && $acts->filter(function($a){ return strtolower(trim((string)($a->status ?? ''))) !== 'completed'; })->count() === 0;
             }
         } catch (\Exception $e) { $allCompleted = false; }
-                // SACSI Director should not be able to archive projects via this flow
-                if (isset(Auth::user()->user_role) && Auth::user()->user_role === 'SACSI Director') {
-                    abort(403, 'Unauthorized action.');
-                }
+                // Allow SACSI Director to archive projects (handled at view-level permissions).
 
         if (! $allCompleted) {
             return redirect()->back()->with('error', 'Project is still in progress and cannot be archived until all activities are completed.');
@@ -2103,10 +2100,7 @@ class ProjectController extends Controller
     public function unarchive(Request $request, Project $project)
     {
         if (!Auth::user()->isStaff()) abort(403);
-        // SACSI Director should not be able to unarchive projects via this flow
-        if (isset(Auth::user()->user_role) && Auth::user()->user_role === 'SACSI Director') {
-            abort(403, 'Unauthorized action.');
-        }
+        // Allow SACSI Director to unarchive projects (view controls prevent approval actions).
         // When unarchiving, mark project as completed (staff action).
         // Completed projects are the only ones that can be archived, so when
         // we unarchive we preserve that completed state.
@@ -2133,12 +2127,8 @@ class ProjectController extends Controller
             });
         }
 
-        if (Auth::user()->isStaff()) {
-            // SACSI Director may only edit; disallow delete
-            if (isset(Auth::user()->user_role) && Auth::user()->user_role === 'SACSI Director') {
-                abort(403, 'Unauthorized action.');
-            }
-        }
+        // Staff may access ROTC listing. Do not block SACSI Director here —
+        // UI-level controls determine which actions are available to SACSI Director.
 
         $projects = $q->whereIn('Project_Status', ['current', 'approved', 'completed'])
             ->with(['activities', 'budgets'])

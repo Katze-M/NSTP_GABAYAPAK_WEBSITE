@@ -1,6 +1,6 @@
 <style>
 @media (max-width: 400px) {
-  /* Make back button smaller and tighter */
+  /* Back button styling */
   .back-btn {
     font-size: 0.9rem !important;
     padding: 0.4rem 0.8rem !important;
@@ -18,7 +18,7 @@
     margin-bottom: 0.7rem !important;
     line-height: 1.2 !important;
   }
-  /* Section grid: tighter spacing, smaller buttons */
+  /* Section grid*/
   .section-grid {
     grid-gap: 0.4rem !important;
     gap: 0.4rem !important;
@@ -99,10 +99,8 @@
         @if(isset($projects) && $projects->isNotEmpty())
             @php $u = Auth::user(); @endphp
 
-            {{-- Special view for NSTP Program Officer on Pending Projects: show two lists (to endorse / to approve) with toggles --}}
+            {{-- Special view for NSTP Program Officer and SACSI Director on Pending Projects: show two lists (to endorse/to approve) with show/hide toggles --}}
             @php
-                // Detect SACSI Director explicitly so we can give a Program Officer-like
-                // listing while restricting actions for the SACSI Director.
                 $isSACSI = false;
                 try {
                     if ($u && (method_exists($u, 'isSACSIDirector') && $u->isSACSIDirector())) {
@@ -116,23 +114,19 @@
             @if((($section ?? '') === 'Pending Projects') && $u && ((method_exists($u, 'isProgramOfficer') && $u->isProgramOfficer()) || (isset($u->user_role) && trim($u->user_role) === 'SACSI Director') || (method_exists($u, 'isSACSIDirector') && $u->isSACSIDirector())))
                 <div class="col-span-full">
                 @php
-                    // Normalize statuses and try to pick up projects that need formator endorsement
+                    //Pick up projects that need formator endorsement
                     $toEndorse = $projects->filter(function($p){
                         $s = strtolower(trim((string)($p->Project_Status ?? '')));
                         return in_array($s, ['submitted','pending']);
                     });
 
-                    // Projects that have been endorsed and are waiting coordinator approval
+                    //Projects that have been endorsed and are waiting coordinator approval
                     $toApprove = $projects->filter(function($p){
                         $s = strtolower(trim((string)($p->Project_Status ?? '')));
                         return $s === 'endorsed';
                     });
 
-                    // Fallback: if the collection passed to this component doesn't include
-                    // the expected pending/endorsed projects (for example when the
-                    // controller provided a filtered set), query the Project model
-                    // to populate the lists. This keeps the Program Officer view useful
-                    // even when `$projects` is empty or filtered by a different scope.
+                    // Query the Project model to populate the lists. This keeps the Program Officer view useful even when `$projects` is empty or filtered by a different scope.
                     try {
                         if (($toEndorse->isEmpty() || $projects->isEmpty()) && class_exists(\App\Models\Project::class)) {
                             $fallback = \App\Models\Project::whereIn('Project_Status', ['pending', 'submitted'])->get();
@@ -214,7 +208,7 @@
                                 @foreach($toApprove as $project)
                                     <div class="bg-white p-4 pt-10 rounded-lg shadow-md text-center relative">
                                         <div class="w-full flex justify-end mb-2">
-                                            {{-- These projects are in the "to approve" list and are 'endorsed' in DB -- show endorsed badge --}}
+                                            {{-- These projects are in the "to approve" list and are 'endorsed' --}}
                                             @include('components.status-badge', ['status' => 'endorsed'])
                                         </div>
                                         <h2 class="text-lg font-semibold text-center break-words" title="{{ $project->Project_Name }}">{{ $project->Project_Name }}</h2>
@@ -250,7 +244,7 @@
 
                 </div>
             @else
-                <!-- Debug: Projects count: {{ $projects->count() }} -->
+                
                 @foreach($projects as $project)
                 <div class="bg-white p-4 pt-10 rounded-lg shadow-md text-center relative">
                     {{-- Status badge row above the title (right-aligned) to avoid overlap --}}
@@ -384,7 +378,7 @@
                                 $showReject = false;
                                 $roleLabel = '';
                                 $roleTooltip = '';
-                                // Fix: Ensure $user is set and role detection works for Coordinator
+                                //Ensure $user is set and role detection works for Coordinator
                                 if ($user) {
                                     if (method_exists($user, 'isFormator') && $user->isFormator()) {
                                         $roleLabel = 'Endorse';
@@ -433,7 +427,7 @@
                             @endif
                         @endif
                         
-                        @if($isStaff && in_array($project->Project_Status, ['current','approved','completed']))
+                        @if((($isStaff ?? false) || ($isSACSI ?? false)) && in_array($project->Project_Status, ['current','approved','completed']))
                                                         @php
                                                             $showMarkCompleted = false;
                                                             // Use the already-computed activity completion indicator
@@ -469,21 +463,7 @@
                                                             <span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">Mark as Completed</span>
                                                         </div>
                                                         @endif
-                            @php
-                                // If the current user is SACSI Director, only show Edit action here.
-                                $showOnlyEditForSACSI = isset($isSACSI) && $isSACSI;
-                            @endphp
-                            @if($showOnlyEditForSACSI)
-                                <!-- SACSI Director: only Edit -->
-                                <div class="relative group">
-                                    <a href="{{ route('projects.edit', $project) }}" class="view-btn bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center" style="background-color:#4f46e5;color:#ffffff;">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-2.97-2.97L5 17v3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                                        </svg>
-                                    </a>
-                                    <span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">Edit</span>
-                                </div>
-                            @else
+                            
                                 <!-- Edit Button with Pencil Icon and Tooltip -->
                                 <div class="relative group">
                                     <a href="{{ route('projects.edit', $project) }}" class="view-btn bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center" style="background-color:#4f46e5;color:#ffffff;">
@@ -526,7 +506,6 @@
                                     </form>
                                     <span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">Delete</span>
                                 </div>
-                            @endif
                         @endif
                         @if($project->Project_Status === 'completed')
                             <p class="text-xs text-gray-600 mt-2">Note: Project marked <strong>Completed</strong>. Activities and proofs are preserved.</p>

@@ -92,11 +92,11 @@
         <!-- Role Selection -->
         <div class="flex justify-center space-x-6 mb-6">
             <label class="flex items-center space-x-2 text-base">
-                <input type="radio" name="role" value="student" class="accent-yellow-400" checked>
+                <input type="radio" name="role" value="student" class="accent-yellow-400" {{ (old('user_Type','student') == 'student') ? 'checked' : '' }}>
                 <span>Student</span>
             </label>
             <label class="flex items-center space-x-2 text-base">
-                <input type="radio" name="role" value="staff" class="accent-yellow-400">
+                <input type="radio" name="role" value="staff" class="accent-yellow-400" {{ (old('user_Type','student') == 'staff') ? 'checked' : '' }}>
                 <span>Staff</span>
             </label>
         </div>
@@ -228,7 +228,6 @@
                         @endif
                     @endforeach
                 </select>
-                {{-- Note paragraph removed per request; tooltips/disabled options remain --}}
             </div>
 
             <div>
@@ -269,6 +268,22 @@
 
         // Role switching
         const roleRadios = document.querySelectorAll('input[name="role"]');
+
+        // Initialize form visibility based on previously selected role (keeps staff form visible after validation errors)
+        (function initRoleView(){
+            const checked = document.querySelector('input[name="role"]:checked');
+            const value = checked ? checked.value : 'student';
+            if(value === 'staff'){
+                staffForm.classList.remove('hidden');
+                studentForm.classList.add('hidden');
+                staffRoleInput.value = 'staff';
+            } else {
+                studentForm.classList.remove('hidden');
+                staffForm.classList.add('hidden');
+                studentRoleInput.value = 'student';
+            }
+        })();
+
         roleRadios.forEach(radio => {
             radio.addEventListener('change', function(){
                 if(this.value==='student'){

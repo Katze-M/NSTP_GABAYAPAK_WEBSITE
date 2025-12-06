@@ -154,35 +154,8 @@
                                         @endif
 
                                         @php
-                                            // Try several possible locations for a contact number
-                                            // Accept common keys including student-specific field names
-                                            $phone = $member['contact'] ?? $member['contact_number'] ?? $member['contact_no'] ?? $member['phone'] ?? $member['mobile'] ?? $member['student_contact_number'] ?? null;
-                                            if (empty($phone)) {
-                                                // If member is an Eloquent model, try related user or student records
-                                                try {
-                                                    if (!empty($member->contact)) {
-                                                        $phone = $member->contact;
-                                                    } elseif (!empty($member->contact_number)) {
-                                                        $phone = $member->contact_number;
-                                                    } elseif (!empty($member->student_contact_number)) {
-                                                        $phone = $member->student_contact_number;
-                                                    } elseif (!empty($member->contact_no)) {
-                                                        $phone = $member->contact_no;
-                                                    } elseif (!empty($member->phone)) {
-                                                        $phone = $member->phone;
-                                                    } elseif (!empty($member->mobile)) {
-                                                        $phone = $member->mobile;
-                                                    } elseif (!empty($member->user) && !empty($member->user->contact_number)) {
-                                                        $phone = $member->user->contact_number;
-                                                    } elseif (!empty($member->user) && !empty($member->user->phone)) {
-                                                        $phone = $member->user->phone;
-                                                    } elseif (!empty($member->student) && !empty($member->student->student_contact_number)) {
-                                                        $phone = $member->student->student_contact_number;
-                                                    }
-                                                } catch (\Exception $e) {
-                                                    // ignore access errors and keep $phone null
-                                                }
-                                            }
+                                            //get contact info using data_get for arrays and objects
+                                            $phone = data_get($member, 'contact') ?? null;
                                         @endphp
                                         @if(!empty($phone))
                                             <div class="text-sm text-gray-600 mt-2"><span class="text-gray-800">{{ $phone }}</span></div>
@@ -280,7 +253,7 @@
                                             } catch (\Throwable $e) {
                                                 $displayLastUpdated = $lastUpdatedAt;
                                             }
-                                            // Also convert the created_at timestamp to Manila for display
+                                            // Also convert the created_at timestamp to Manila instead of Europe for display
                                             try {
                                                 if ($activity->created_at) {
                                                     $displayCreated = $activity->created_at->copy()->setTimezone('Asia/Manila');

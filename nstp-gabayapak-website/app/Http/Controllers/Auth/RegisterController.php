@@ -20,18 +20,20 @@ class RegisterController extends Controller
      */
     public function showRegistrationForm()
     {
-        // Sample data for form options
+        //Data from ADZU Website
         $courses = [
-            // SMA
-            'BSN', 'BSAC', 'BSMA', 'BSAIS', 'BSBA', 'BSBA-ENTRE', 'BSBA-FM', 'BSBA-MM', 'BSOA', 'BSLM', 'BSIA',
-            // SLA
+            //CON
+            'BSN', 
+            //SMA
+            'BSAC', 'BSMA', 'BSAIS', 'BSBA', 'BSBA-ENTRE', 'BSBA-FM', 'BSBA-MM', 'BSOA', 'BSLM', 'BSIA',
+            //SLA
             'BA ELS', 'BA COMM', 'BA INDIS', 'BA INTS', 'BA PHILO', 'BS PSYC',
-            // CSITE
+            //CSITE
             'AEET', 'BSBIO', 'BSBME', 'BSCE', 'BSCpE', 'BSCS', 'BSECE', 'BSIT', 'BS MATH', 'BSNMCA', 'BS STAT',
-            // SED
+            //SED
             'BSEd', 'BECEd', 'BEED', 'BPEd'
         ];
-        sort($courses);
+        sort($courses); // sort courses alphabeticall
         $roles = ['NSTP Formator', 'NSTP Program Officer', 'SACSI Director', 'NSTP Coordinator'];
         
         // Prefill support: if ?email=... present, load existing user/profile data for editing when rejected
@@ -213,7 +215,7 @@ class RegisterController extends Controller
 
         // Create approval record if necessary
         // SACSI Director is treated as super admin and does not require approval
-        if ($user->isStaff() && $user->user_role === 'SACSI Director') {
+        if ($user->isStaff() && $user->isSACSIDirector()) {
             $user->approved = true;
             $user->save();
         } else {
@@ -233,7 +235,7 @@ class RegisterController extends Controller
 
         // If the user is not approved, show the pending page (no login),
         // but allow SACSI Director through (they are auto-approved earlier).
-        if (!$user->approved && !($user->isStaff() && $user->user_role === 'SACSI Director')) {
+        if (!$user->approved && !($user->isStaff() && $user->isSACSIDirector())) {
             return view('auth.registration_pending');
         }
 

@@ -211,6 +211,55 @@ function dedupeEmptyBudgetRows() {
   }
 }
 
+/* ============================
+   AJAX submit helper
+   Submits the form via fetch and replaces the current history entry
+   with the final URL so Back does not return to the edit page.
+   Falls back to normal submit on error.
+   ============================ */
+async function submitFormViaFetch(form) {
+  if (!form) return;
+  try {
+    // Run any cleanup helpers that are expected before final submit
+    try { dedupeEmptyActivityRows(); } catch(e){}
+    try { dedupeEmptyBudgetRows(); } catch(e){}
+    try { removeAllEmptyBudgetRows(); } catch(e){}
+    try { prepareFormForSubmit(form); } catch(e){}
+
+    const fd = new FormData(form);
+
+    const res = await fetch(form.action, {
+      method: (form.method || 'POST').toUpperCase(),
+      body: fd,
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      redirect: 'follow'
+    });
+
+    // Try to extract a redirect URL from JSON first
+    const ct = res.headers.get('content-type') || '';
+    let targetUrl = '';
+    if (ct.includes('application/json')) {
+      try {
+        const j = await res.json();
+        if (j && j.redirect) targetUrl = j.redirect;
+      } catch (e) {
+        // ignore JSON parse errors
+      }
+    }
+
+    // If we still don't have a redirect, use the response URL (final after redirects)
+    if (!targetUrl) targetUrl = res.url || window.location.href;
+
+    // Replace current history entry with the final URL
+    window.location.replace(targetUrl);
+  } catch (err) {
+    console.error('AJAX submit failed, falling back to normal submit', err);
+    try { form.submit(); } catch (e) { /* ignore */ }
+  }
+}
+
+
 /* removeAllEmptyBudgetRows: for final submit cleanup */
 function removeAllEmptyBudgetRows() {
   const desktopContainer = document.getElementById('budgetContainer');
@@ -983,7 +1032,8 @@ if (saveProjectBtn) {
     dedupeEmptyBudgetRows();
 
     prepareFormForSubmit(form);
-    form.submit();
+    // Use AJAX submit to replace history entry so Back does not return to edit
+    submitFormViaFetch(form);
   });
 }
 
@@ -1032,14 +1082,21 @@ if (saveProjectBtn) {
       if (saveDraftInput) saveDraftInput.value = '1';
       if (submitProjectInput) submitProjectInput.value = '0';
 
-      // Replace current history entry so when user clicks back from show page, it skips this edit page
-      if (window.history.length > 1) {
-        // Get the previous page URL from history
-        window.history.replaceState({skipped: true}, '', window.location.href);
-      }
+      // Show a short success toast, then submit via AJAX helper so the edit page
+      // is not left in history. This uses a timeout-style modal (no OK button).
+      Swal.fire({
+        icon: 'success',
+        title: 'Draft Saved',
+        text: 'Your project has been saved as a draft.',
+        timer: 1500,
+        showConfirmButton: false,
+        willClose: () => {
+          // nothing needed here; submission happens in the promise handler below
+        }
+      }).then(() => {
+        submitFormViaFetch(form);
+      });
 
-      // final submit
-      form.submit();
       // reset flag after short delay to prevent double-click issues (form navigation will usually occur)
       setTimeout(() => { isSavingDraft = false; }, 2000);
     });
@@ -1459,7 +1516,7 @@ function showConfirmationModal() {
         reverseButtons: true
       }).then((confirmResult) => {
         if (confirmResult.isConfirmed) {
-          // Final: set flags, clean up and submit
+          // Final: set flags and prepare for submission
           const saveDraftInput = document.getElementById('saveDraftInput');
           const submitProjectInput = document.getElementById('submitProjectInput');
           if (saveDraftInput) saveDraftInput.value = '0';
@@ -1473,8 +1530,17 @@ function showConfirmationModal() {
           // disable hidden inputs so only visible values are submitted
           prepareFormForSubmit(form);
 
-          // submit
-          form.submit();
+          // Show a short success toast/modal, then submit via AJAX helper so the
+          // edit page is replaced in history (mirrors the Draft Saved flow)
+          Swal.fire({
+            icon: 'success',
+            title: 'Project submitted successfully',
+            text: 'Your project has been submitted for review.',
+            timer: 1500,
+            showConfirmButton: false
+          }).then(() => {
+            submitFormViaFetch(form);
+          });
         }
       });
     }

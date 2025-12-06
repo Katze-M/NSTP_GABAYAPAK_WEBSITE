@@ -174,6 +174,14 @@ class User extends Authenticatable
         return $this->user_role === 'NSTP Program Officer';
     }
 
+    /**
+     * Check if user is SACSI Director
+     */
+    public function isSACSIDirector()
+    {
+        return $this->user_role === 'SACSI Director';
+    }
+
     public function approvals()
     {
         return $this->hasMany(Approval::class, 'user_id', 'user_id');

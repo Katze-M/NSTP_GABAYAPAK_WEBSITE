@@ -27,16 +27,15 @@ class DashboardController extends Controller
         // Treat 'approved' and 'completed' as part of the Current/approved group
         $project_status_counts = [
             'pending' => (int) ($projectStatusCounts['pending'] ?? 0),
-            // Treat both 'approved' and 'completed' as current/approved projects so
-            // completed projects are counted among current projects and in totals.
+            // Treat both 'approved' and 'completed' as current/approved projects so completed projects are counted among current projects and in totals.
             'approved' => (int) (($projectStatusCounts['approved'] ?? 0) + ($projectStatusCounts['completed'] ?? 0)),
             'rejected' => (int) ($projectStatusCounts['rejected'] ?? 0),
             'archived' => (int) ($projectStatusCounts['archived'] ?? 0),
         ];
 
-        // Total submitted projects should exclude drafts. Count only pending, current/approved, and rejected.
+        // Total submitted projects should exclude drafts. Count only pending, current/approved, rejected, and archived.
         $total_projects = $project_status_counts['pending'] + $project_status_counts['approved'] + $project_status_counts['rejected'] + $project_status_counts['archived'];
-        // Only count students whose user is approved
+        // Only count students whose registration is approved
         $total_students = Student::whereHas('user', function($q) {
             $q->where('approved', true);
         })->count();
@@ -44,10 +43,9 @@ class DashboardController extends Controller
         // Filters from request
         $search = $request->input('q');
         $filterDate = $request->input('date'); // expected YYYY-MM-DD
-        $filterSection = $request->input('section');
-        $filterComponent = $request->input('component');
-        // New: allow filtering activities by status (e.g., pending, ongoing, completed)
-        $filterStatus = $request->input('activity_status');
+        $filterSection = $request->input('section'); //NSTP section filter
+        $filterComponent = $request->input('component'); //NSTP component filter
+        $filterStatus = $request->input('activity_status'); //allow filtering activities by status (e.g., pending, ongoing, completed)
 
         // If component is ROTC and no section specified, default to 'Section A' (DB stores sections with prefix)
         if (empty($filterSection) && !empty($filterComponent) && strtoupper($filterComponent) === 'ROTC') {
@@ -55,8 +53,8 @@ class DashboardController extends Controller
         }
 
         // Build an upcoming activities list for projects whose `Project_Status` is active.
-        // By default exclude activities with status 'completed'. If a status filter is provided,
-        // show only activities that match that status (case-insensitive).
+        /* By default exclude activities with status 'completed'. If a status filter is provided, 
+           show only activities that match that status (case-insensitive). */
         $upcomingQuery = Activity::whereHas('project', function ($q) {
                 // Only show activities for projects with status 'approved'
                 $q->where('Project_Status', 'approved');
@@ -92,8 +90,7 @@ class DashboardController extends Controller
                     ];
             });
 
-        // Build filtered activities by applying the form filters to the same
-        // set of "upcoming" activities (projects with status current/approved).
+        // Build filtered activities by applying the form filters to the same set of "upcoming" activities (projects with status current/approved).
         // This ensures filters operate on the list users see below.
         $filtered_activities = collect();
         $hasAnyFilter = !empty($search) || !empty($filterDate) || !empty($filterSection) || !empty($filterComponent) || !empty($filterStatus);

@@ -114,13 +114,13 @@
             @if((($section ?? '') === 'Pending Projects') && $u && ((method_exists($u, 'isProgramOfficer') && $u->isProgramOfficer()) || (isset($u->user_role) && trim($u->user_role) === 'SACSI Director') || (method_exists($u, 'isSACSIDirector') && $u->isSACSIDirector())))
                 <div class="col-span-full">
                 @php
-                    //Pick up projects that need formator endorsement
+                    //Pick up projects that need NSTP formator's endorsement
                     $toEndorse = $projects->filter(function($p){
                         $s = strtolower(trim((string)($p->Project_Status ?? '')));
                         return in_array($s, ['submitted','pending']);
                     });
 
-                    //Projects that have been endorsed and are waiting coordinator approval
+                    //Projects that have been endorsed and are waiting for NSTP coordinator's approval
                     $toApprove = $projects->filter(function($p){
                         $s = strtolower(trim((string)($p->Project_Status ?? '')));
                         return $s === 'endorsed';
@@ -294,8 +294,6 @@
                     @endphp
                     <div class="flex flex-col items-center mb-2 min-w-0">
                         <h2 class="text-lg font-semibold text-center break-words" title="{{ $project->Project_Name }}">{{ $project->Project_Name }}</h2>
-
-                        {{-- Resubmission count removed from card list (kept in show view) --}}
                     </div>
                     <div class="w-16 h-16 mx-auto my-4">
                         @if($project->Project_Logo)
@@ -534,7 +532,7 @@
                         @endif
                         
                         @if($isStaff && ($section ?? '') === 'Archived Projects')
-                            {{-- Unarchive (icon), Delete (icon) for archived projects. Edit removed. --}}
+                            {{-- Unarchive (icon), Delete (icon) for archived projects. Edit removed (Archived projects cannot be edited). --}}
                             <form action="{{ route('projects.unarchive', $project) }}" method="POST" class="inline-block unarchive-form relative group">
                                 @csrf
                                 <button type="button" class="unarchive-btn view-btn bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center" style="background-color:#f97316;color:#ffffff;">

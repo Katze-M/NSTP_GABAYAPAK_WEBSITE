@@ -203,7 +203,7 @@
                   <a href="{{ route('approvals.students') }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-green-700 whitespace-nowrap text-center w-full">Student Registration Approval</a>
                 </div>
               @else
-                {{-- NSTP Formators and other staff: Buttons in a row --}}
+                {{-- NSTP Formators: Buttons in a row --}}
                 <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700 whitespace-nowrap text-center">Current Projects</a>
                 <a href="{{ route('projects.pending') }}" class="px-3 py-2 bg-yellow-400 text-black rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-yellow-300 whitespace-nowrap text-center">Pending Projects</a>
               @endif

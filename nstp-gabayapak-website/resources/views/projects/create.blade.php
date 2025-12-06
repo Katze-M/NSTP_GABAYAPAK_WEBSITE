@@ -7,7 +7,7 @@
 @section('content')
 <!-- Project Proposal -->
 <section id="upload-project" class="space-y-6 md:space-y-8 page-container max-w-5xl mx-auto">
-  <div class="px-8 pb-8">
+  <div class="px-8 pb-6">
   <!-- Main Heading -->
   <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6 flex items-center gap-2">Project Proposal</h1>
  

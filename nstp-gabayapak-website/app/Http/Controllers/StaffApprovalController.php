@@ -32,7 +32,8 @@ class StaffApprovalController extends Controller
         // Get approvals (as a collection)
         $approvals = $query->orderBy('created_at', 'desc')->get();
 
-        // Find legacy staff users: staff users not approved and without any approval records
+        /* Find legacy staff users: legacy users are users whose accounts were created prior 
+        to the addition of registration approvals feature and without any approval records */
         $legacyUsersQuery = User::where('user_Type', 'staff')
             ->where(function($q2) {
                 $q2->whereNull('approved')->orWhere('approved', false);

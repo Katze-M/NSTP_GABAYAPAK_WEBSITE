@@ -60,7 +60,7 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Only authenticated students can create projects.');
         }
 
-        // Temporary debug: dump raw incoming request to storage/debug for troubleshooting
+        // Temporary debug: dump raw incoming request to storage/debug for troubleshooting (will not be removed for future purposes)
         try {
             if (config('app.debug') || $request->input('debug_dump')) {
                 $dump = [
@@ -98,9 +98,9 @@ class ProjectController extends Controller
         $rules = $this->validateDraftRules();
         $messages = $this->validationMessages();
 
-        // If the request did not include the full form payload (e.g. submit-from-show button
-        // posts only Project_Status), build a validation payload from the existing project
-        // data so we validate the current stored values rather than the empty request.
+        /* If the request did not include the full form payload (e.g. submit-from-show button
+         posts only Project_Status), build a validation payload from the existing project
+         data so we validate the current stored values rather than the empty request. */
         if (!$request->has('Project_Name')) {
             $data = $request->all();
             // Basic project fields
@@ -394,7 +394,7 @@ class ProjectController extends Controller
      | ----------------------------------------------------------------- */
 
     /**
-     * Update (save changes) for student/staff but treated as a draft update.
+     * Update (save changes) for student but treated as a draft update.
      * Students: save as draft (Project_Status becomes 'draft').
      * Staff: staff are not allowed to "save draft" for student projects — staff edits are "save changes" and keep status.
      */
@@ -490,11 +490,11 @@ class ProjectController extends Controller
         }
 
         // Determine resulting status:
-        // - Staff using the staff-edit flow (with hidden `staff_save`) should preserve the existing status,
-        //   but if the existing status is 'approved' we convert it to 'current' so staff edits don't keep 'approved'.
-        // - Students saving should normally set to 'draft', EXCEPT when the project is already 'rejected':
-        //   students editing a rejected project should be able to save draft edits without changing its
-        //   status from 'rejected'. This preserves rejection state while allowing updates.
+        /* - Staff using the staff-edit flow (with hidden `staff_save`) should preserve the existing status,
+           but if the existing status is 'approved' we convert it to 'current' so staff edits don't keep 'approved'.
+            - Students saving should normally set to 'draft', EXCEPT when the project is already 'rejected':
+          students editing a rejected project should be able to save draft edits without changing its
+          status from 'rejected'. This preserves rejection state while allowing updates. */
         if ($user->isStaff() && $request->input('staff_save')) {
             // Preserve existing status when staff saves; do not convert 'approved' -> 'current'.
             $projectStatus = $project->Project_Status;
@@ -603,14 +603,14 @@ class ProjectController extends Controller
                 return redirect()->route('projects.show', $project)->with('error', 'Pending projects cannot be edited.');
             }
         } else {
-            // staff editing; staff should be allowed but staff edits should not create drafts.
+            // staff editing: staff should be allowed but staff edits should not create drafts.
         }
 
         $rules = $this->validateSubmitRules();
         $messages = $this->validationMessages();
 
-        // If updating (resubmission) and the project already has a saved logo,
-        // allow omitting the file input so the existing logo is retained.
+        /* If updating (resubmission) and the project already has a saved logo,
+         allow omitting the file input so the existing logo is retained. */
         if (!$request->hasFile('Project_Logo') && !empty($project->Project_Logo)) {
             $rules['Project_Logo'] = 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048';
         }

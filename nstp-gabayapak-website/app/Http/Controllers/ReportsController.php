@@ -31,7 +31,7 @@ class ReportsController extends Controller
         // Project implementation status
         $project_status = [
             'ongoing' => Project::where('Project_Status', 'ongoing')->count(),
-            // Include archived projects in completed counts as requested
+            // Include archived projects in completed counts since technically archived projects are also completed projects
             'completed' => Project::whereIn('Project_Status', ['completed', 'archived'])->count(),
             'archived' => Project::where('Project_Status', 'archived')->count(),
         ];
@@ -69,12 +69,12 @@ class ReportsController extends Controller
 
         $project_progress = $projects->map(function ($p) {
             // Consider planned and ongoing activities as part of the work scope.
-            // New weighting per activity:
-            // - Each activity accounts for 1 / total_activities of the project's progress.
-            // - Planned activity contributes 1/3 of its share.
-            // - Ongoing activity contributes 2/3 of its share.
-            // - Completed activity contributes the full share.
-            // So effectiveCompleted = completed*1 + ongoing*(2/3) + planned*(1/3)
+            /* Computation per activity:
+                Each activity accounts for 1 / total_activities of the project's progress.
+                Planned activity contributes 1/3 of its share.
+                Ongoing activity contributes 2/3 of its share.
+                Completed activity contributes the full share.
+             So effectiveCompleted = completed*1 + ongoing*(2/3) + planned*(1/3)*/
             $planned = $p->activities_planned_count ?: 0;
             $ongoing = $p->activities_ongoing_count ?: 0;
             $completed = $p->activities_completed_count ?: 0;

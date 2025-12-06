@@ -52,7 +52,7 @@ class ActivityController extends Controller
             return redirect()->route('projects.show', $activity->project)->with('warning', 'Activity status and proof can only be updated for approved projects.');
         }
 
-        // Prevent changing status once activity is already completed
+        // Prevent changing status once activity is already completed for transparency
         if (strtolower((string)$activity->status) === 'completed') {
             $requestedStatus = strtolower((string)$request->input('status', ''));
             if ($requestedStatus !== '' && $requestedStatus !== 'completed') {
@@ -78,9 +78,10 @@ class ActivityController extends Controller
             // If anything fails in this check, fall through to normal validation and rely on validation rules.
         }
 
-        // STRICT RULE (refined): If the latest update was created by this same student and it already
-        // contains proof pictures, disallow submitting further proof for the SAME status again.
-        // However, allow the student to submit a new update when they change the status (e.g., Ongoing -> Completed).
+        /* STRICT RULE: If the latest update was created by this same student and it already 
+        contains proof pictures, disallow submitting further proof for the SAME status again.
+        This is for transparency ensureing students will submit legitimate progress updates.
+        However, allow the student to submit a new update when they change the status (e.g., Ongoing to Completed). */
         try {
             $latestUpdateCheck = $activity->updates()->orderByDesc('created_at')->first();
             if (Auth::check() && method_exists(Auth::user(), 'isStudent') && Auth::user()->isStudent() && $latestUpdateCheck && $latestUpdateCheck->user_id == Auth::id() && $latestUpdateCheck->pictures()->exists()) {
@@ -90,14 +91,14 @@ class ActivityController extends Controller
                 if ($latestStatus === $requestedLower) {
                     return redirect()->back()->with('error', 'You already submitted proof for this status; change status to submit new proof.');
                 }
-                // Otherwise allow: user is submitting proof for a different/new status.
+                // Otherwise allow when user is submitting proof for a different/new status.
             }
         } catch (\Throwable $e) {
             // ignore and continue
         }
 
-        // If the student is changing the status, require at least one new proof picture.
-        // Otherwise, require a picture only if none exists yet. We accept up to 5 files.
+        /* If the student is changing the status, require at least one new proof picture.
+         Otherwise, require a picture only if none exists yet. Maximum of 5 pictures. */
         $proofArrayRule = ($statusChanged || ! $hasExistingProof)
             ? 'required|array|max:5'
             : 'nullable|array|max:5';
@@ -139,7 +140,7 @@ class ActivityController extends Controller
                     'mime_type' => $file->getMimeType(),
                 ]);
 
-                // Store file (do NOT delete previous activity proof files — we keep history)
+                // Store file (do NOT delete previous activity proof files, history is kept)
                 $path = $file->store('proof_pictures', 'public');
                 logger()->info('Stored proof picture for update:', ['path' => $path]);
 
@@ -151,7 +152,7 @@ class ActivityController extends Controller
                 $lastStoredPath = $path;
             }
 
-                // Note: we intentionally do NOT set a legacy `activities.proof_picture` column.
+                // Note: intentionally do NOT set a legacy `activities.proof_picture` column.
                 // Proof images are stored in `activity_updates` -> `activity_update_pictures`.
         }
 

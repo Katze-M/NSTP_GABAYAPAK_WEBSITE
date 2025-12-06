@@ -118,7 +118,7 @@
                     <label for="remember" class="ml-2 block text-sm">Remember me</label>
                 </div>
                 
-                <!-- <a href="#" class="text-sm font-medium hover:underline">Forgot password?</a> -->
+                <!-- <a href="#" class="text-sm font-medium hover:underline">Forgot password?</a> This feature will not be included-->
             </div>
             
             <button type="submit" class="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 rounded-lg transition-colors">Sign In</button>
@@ -132,8 +132,6 @@
             <a href="{{ route('registration.status') }}" class="text-gray-200 underline">Click here to see your registration status</a>
         </p>
         {{-- registration status link added below the form (not inside validation errors) --}}
-
-        {{-- Removed duplicate rejection message block --}}
     </div>
 
     <!-- Scroll to Top Button -->

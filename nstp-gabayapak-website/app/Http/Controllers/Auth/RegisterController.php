@@ -36,7 +36,7 @@ class RegisterController extends Controller
         sort($courses); // sort courses alphabeticall
         $roles = ['NSTP Formator', 'NSTP Program Officer', 'SACSI Director', 'NSTP Coordinator'];
         
-        // Prefill support: if ?email=... present, load existing user/profile data for editing when rejected
+        //Prefill support: if ?email=... is present, load existing user/profile data for editing when rejected
         $prefill = [];
         $email = request()->query('email');
         if ($email) {
@@ -56,7 +56,8 @@ class RegisterController extends Controller
             }
         }
 
-        // count existing approved staff roles to inform the view and enforce limits
+        /* count existing approved staff roles to inform the view and enforce limits. Max Limit: SACSI Director = 1, NSTP Program Officer = 1, NSTP Coordinator = 3
+            accounts will be passed down if new staff assumes those roles*/
         $sacsiCount = User::where('user_role', 'SACSI Director')->where('approved', true)->count();
         $programOfficerCount = User::where('user_role', 'NSTP Program Officer')->where('approved', true)->count();
         $coordinatorCount = User::where('user_role', 'NSTP Coordinator')->where('approved', true)->count();
@@ -80,8 +81,7 @@ class RegisterController extends Controller
             'user_role' => 'required_if:user_Type,staff|string|max:255',
         ];
 
-        // Email validation based on user type (we validate format here;
-        // uniqueness will be handled manually so rejected users can re-register)
+        // Email validation based on user type (validate format: uniqueness will be handled manually so rejected users can re-register)
         if ($request->user_Type === 'student') {
             // Students must use ADZU email
             $rules['user_Email'] = [
@@ -120,7 +120,9 @@ class RegisterController extends Controller
         // Enforce role limits for staff roles: only 1 SACSI Director, 1 NSTP Program Officer, max 3 NSTP Coordinator
         if ($request->user_Type === 'staff') {
             $role = $request->user_role;
-            // count only approved users for role limits (unapproved/pending users don't reserve a slot)
+            /* count only approved users for role limits (unapproved/pending users don't reserve a slot) 
+            this is just for demo purposes we still kept the roles in Staff Position selection and disabled selection if max limit is reached 
+            each staff position will be given their own accounts in reality EXCEPT nstp formators*/
             $sacsiCount = User::where('user_role', 'SACSI Director')->where('approved', true)->count();
             $programOfficerCount = User::where('user_role', 'NSTP Program Officer')->where('approved', true)->count();
             $coordinatorCount = User::where('user_role', 'NSTP Coordinator')->where('approved', true)->count();
@@ -229,17 +231,17 @@ class RegisterController extends Controller
             $user->save();
         }
 
-        // Redirect / login behavior:
-        // - Students: after registering they are NOT logged in; show a pending page informing them their account is under review.
-        // - Staff: keep old behavior (log in approved staff or SACSI Director as before)
+        /* Redirection after registration:
+            Students: after registering they are NOT logged in automatically and a pending page (registration success) will be shown informing them their account is under review.
+            Staff: Only the SACSI Director is automatically logged in after registration*/
 
-        // If the user is not approved, show the pending page (no login),
-        // but allow SACSI Director through (they are auto-approved earlier).
+        //If the user is not approved, show the pending page/registration success page (no login), but allow SACSI Director through (registration auto-approved).
         if (!$user->approved && !($user->isStaff() && $user->isSACSIDirector())) {
-            return view('auth.registration_pending');
+            // Pass the user type so the pending view can show role-specific messages
+            return view('auth.registration_pending', ['userType' => $user->user_Type ?? null]);
         }
 
-        // For approved users (or SACSI Director), continue logging in
+        // For approved users (including SACSI Director), continue logging in
         Auth::login($user);
 
         if (!$user->approved) {

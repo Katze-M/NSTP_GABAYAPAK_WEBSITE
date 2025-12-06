@@ -87,7 +87,7 @@
     <a href="{{ route('dashboard') }}" class="inline-flex items-center mb-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors approval-back-btn">&larr; Back to Dashboard</a>
     <h1 class="text-3xl font-bold mb-6 text-gray-800 approval-heading">Student Registration Approvals</h1>
 
-    {{-- session status removed; approvals use SweetAlert2 confirmations --}}
+    {{-- approvals use SweetAlert2 confirmations --}}
 
     <form method="GET" class="mb-6 approval-search-form">
         <div class="flex gap-2">

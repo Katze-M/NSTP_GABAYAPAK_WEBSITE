@@ -109,9 +109,22 @@
                         $isSACSI = true;
                     }
                 } catch (\Exception $e) { $isSACSI = false; }
+                
+                // DEBUG: Check if conditions are met
+                $isValidSection = (($section ?? '') === 'Pending Projects');
+                $isValidRole = $u && ((method_exists($u, 'isProgramOfficer') && $u->isProgramOfficer()) || (isset($u->user_role) && trim($u->user_role) === 'SACSI Director') || (method_exists($u, 'isSACSIDirector') && $u->isSACSIDirector()));
             @endphp
+            
+            @if(false)
+            <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 2px solid red;">
+                <p><strong>DEBUG:</strong></p>
+                <p>Section: "{{ $section ?? 'N/A' }}" (valid: {{ $isValidSection ? 'yes' : 'no' }})</p>
+                <p>User Role: "{{ $u->user_role ?? 'N/A' }}" (valid: {{ $isValidRole ? 'yes' : 'no' }})</p>
+                <p>Projects count: {{ $projects->count() }}</p>
+            </div>
+            @endif
 
-            @if((($section ?? '') === 'Pending Projects') && $u && ((method_exists($u, 'isProgramOfficer') && $u->isProgramOfficer()) || (isset($u->user_role) && trim($u->user_role) === 'SACSI Director') || (method_exists($u, 'isSACSIDirector') && $u->isSACSIDirector())))
+            @if($isValidSection && $isValidRole)
                 <div class="col-span-full">
                 @php
                     //Pick up projects that need NSTP formator's endorsement

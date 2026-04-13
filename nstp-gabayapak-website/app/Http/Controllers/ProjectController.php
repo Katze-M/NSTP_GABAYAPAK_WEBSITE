@@ -1931,11 +1931,10 @@ class ProjectController extends Controller
                 ->orderByDesc('created_at')
                 ->get();
         }
-        // NSTP Program Officer: see projects with status 'approved' and not yet completed
-        // Also allow SACSI Director to view the same list (but SACSI Director will have limited actions)
+        // NSTP Program Officer & SACSI Director: see projects pending endorsement and approval
+        // Show projects with status 'pending'/'submitted' (to endorse) and 'endorsed' (to approve)
         elseif ($user->isProgramOfficer() || (isset($user->user_role) && $user->user_role === 'SACSI Director')) {
-            $projects = Project::where('Project_Status', 'approved')
-                ->whereNull('mark_as_completed_by')
+            $projects = Project::whereIn('Project_Status', ['pending', 'submitted', 'endorsed'])
                 ->orderByDesc('created_at')
                 ->get();
         }

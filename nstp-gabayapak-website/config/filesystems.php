@@ -55,7 +55,7 @@ return [
     'bucket'                  => env('AWS_BUCKET'),
     'endpoint'                => env('AWS_ENDPOINT'),
     'use_path_style_endpoint' => true,
-    'url'                     => env('AWS_ENDPOINT') . '/' . env('AWS_BUCKET'),
+    'url' => str_replace('/storage/v1/s3', '/storage/v1/object/public', env('AWS_ENDPOINT')) . '/' . env('AWS_BUCKET'),
 ],
 
     ],

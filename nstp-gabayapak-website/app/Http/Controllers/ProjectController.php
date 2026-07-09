@@ -159,7 +159,7 @@ class ProjectController extends Controller
 
         // file upload if provided (optional for draft)
         if ($request->hasFile('Project_Logo')) {
-            $validated['Project_Logo'] = $request->file('Project_Logo')->store('project_logos', 'public');
+            $validated['Project_Logo'] = $request->file('Project_Logo')->store('project_logos', config('filesystems.default', 's3'));
         }
 
         $validated['student_id'] = $user->student->id;
@@ -322,7 +322,7 @@ class ProjectController extends Controller
 
         // file upload (required in rules if project has no existing logo)
         if ($request->hasFile('Project_Logo')) {
-            $validated['Project_Logo'] = $request->file('Project_Logo')->store('project_logos', 'public');
+            $validated['Project_Logo'] = $request->file('Project_Logo')->store('project_logos', config('filesystems.default', 's3'));
         }
 
         $validated['student_id'] = $user->student->id;
@@ -486,7 +486,7 @@ class ProjectController extends Controller
         }
 
         if ($request->hasFile('Project_Logo')) {
-            $validated['Project_Logo'] = $request->file('Project_Logo')->store('project_logos', 'public');
+            $validated['Project_Logo'] = $request->file('Project_Logo')->store('project_logos', config('filesystems.default', 's3'));
         }
 
         // Determine resulting status:
@@ -634,7 +634,7 @@ class ProjectController extends Controller
         }
 
         if ($request->hasFile('Project_Logo')) {
-            $validated['Project_Logo'] = $request->file('Project_Logo')->store('project_logos', 'public');
+            $validated['Project_Logo'] = $request->file('Project_Logo')->store('project_logos', config('filesystems.default', 's3'));
         }
 
         // Compute new status
@@ -869,7 +869,7 @@ class ProjectController extends Controller
         }
 
         if ($request->hasFile('Project_Logo')) {
-            $validated['Project_Logo'] = $request->file('Project_Logo')->store('project_logos', 'public');
+            $validated['Project_Logo'] = $request->file('Project_Logo')->store('project_logos', config('filesystems.default', 's3'));
         }
 
         // Preserve existing status unless staff explicitly sets a new status

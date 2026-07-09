@@ -29,7 +29,7 @@
 
                 <div class="flex flex-col items-center text-center mb-6">
                     @if($project->Project_Logo)
-                        <img src="{{ asset('storage/' . $project->Project_Logo) }}" alt="{{ $project->Project_Name }} Logo" class="w-32 h-32 object-contain rounded-lg border border-gray-200 p-2 mx-auto">
+                        <img src="{{ Storage::disk('s3')->url($project->Project_Logo) }}" alt="{{ $project->Project_Name }} Logo" class="w-32 h-32 object-contain rounded-lg border border-gray-200 p-2 mx-auto">
                     @else
                         <div class="w-32 h-32 flex items-center justify-center bg-gray-100 rounded-lg border border-gray-200 mx-auto">
                             <span class="text-gray-500 text-base">No Logo</span>
@@ -283,8 +283,8 @@
                                                         @if($upd->pictures && $upd->pictures->isNotEmpty())
                                                             <div class="mt-2 flex flex-wrap gap-2">
                                                                 @foreach($upd->pictures as $pic)
-                                                                    <a href="{{ asset('storage/' . $pic->path) }}" target="_blank" class="block w-24 h-auto rounded border overflow-hidden">
-                                                                        <img src="{{ asset('storage/' . $pic->path) }}" alt="Proof" class="w-24 h-24 object-cover rounded">
+                                                                    <a href="{{ Storage::disk('s3')->url($pic->path) }}" target="_blank" class="block w-24 h-auto rounded border overflow-hidden">
+                                                                        <img src="{{ Storage::disk('s3')->url($pic->path) }}" alt="Proof" class="w-24 h-24 object-cover rounded">
                                                                     </a>
                                                                 @endforeach
                                                             </div>

@@ -199,7 +199,7 @@ class RegisterController extends Controller
             $existingStaff = Staff::where('user_id', $user->user_id)->first();
             $picturePath = null;
             if ($request->hasFile('staff_formal_picture')) {
-                $picturePath = $request->file('staff_formal_picture')->store('staff_pictures', 'public');
+                $picturePath = $request->file('staff_formal_picture')->store('staff_pictures', config('filesystems.default', 's3'));
             } elseif ($existingStaff && $existingStaff->staff_formal_picture) {
                 $picturePath = $existingStaff->staff_formal_picture;
             }

@@ -178,7 +178,7 @@
                                         <h2 class="text-lg font-semibold text-center break-words" title="{{ $project->Project_Name }}">{{ $project->Project_Name }}</h2>
                                         <div class="w-16 h-16 mx-auto my-4">
                                             @if($project->Project_Logo)
-                                                <img src="{{ asset('storage/' . $project->Project_Logo) }}" alt="{{ $project->Project_Name }} Logo" class="w-full h-full object-contain">
+                                                <img src="{{ Storage::disk('s3')->url($project->Project_Logo) }}" alt="{{ $project->Project_Name }} Logo" class="w-full h-full object-contain">
                                             @else
                                                 <div class="w-full h-full border-2 border-black rounded-full flex items-center justify-center">
                                                     <span class="text-xs text-gray-500">No Logo</span>
@@ -227,7 +227,7 @@
                                         <h2 class="text-lg font-semibold text-center break-words" title="{{ $project->Project_Name }}">{{ $project->Project_Name }}</h2>
                                         <div class="w-16 h-16 mx-auto my-4">
                                             @if($project->Project_Logo)
-                                                <img src="{{ asset('storage/' . $project->Project_Logo) }}" alt="{{ $project->Project_Name }} Logo" class="w-full h-full object-contain">
+                                                <img src="{{ Storage::disk('s3')->url($project->Project_Logo) }}" alt="{{ $project->Project_Name }} Logo" class="w-full h-full object-contain">
                                             @else
                                                 <div class="w-full h-full border-2 border-black rounded-full flex items-center justify-center">
                                                     <span class="text-xs text-gray-500">No Logo</span>
@@ -310,7 +310,7 @@
                     </div>
                     <div class="w-16 h-16 mx-auto my-4">
                         @if($project->Project_Logo)
-                            <img src="{{ asset('storage/' . $project->Project_Logo) }}" alt="{{ $project->Project_Name }} Logo" class="w-full h-full object-contain">
+                            <img src="{{ Storage::disk('s3')->url($project->Project_Logo) }}" alt="{{ $project->Project_Name }} Logo" class="w-full h-full object-contain">
                         @else
                             <div class="w-full h-full border-2 border-black rounded-full flex items-center justify-center">
                                 <span class="text-xs text-gray-500">No Logo</span>

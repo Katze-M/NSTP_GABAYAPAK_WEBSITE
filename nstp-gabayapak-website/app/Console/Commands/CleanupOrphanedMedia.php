@@ -47,7 +47,7 @@ class CleanupOrphanedMedia extends Command
         $deleted = 0;
         foreach ($dirs as $dir) {
             $this->info("Scanning: $dir");
-            $files = Storage::disk('public')->allFiles($dir);
+            $files = Storage::disk(config('filesystems.default', 's3'))->allFiles($dir);
             foreach ($files as $f) {
                 // Normalize path
                 $rel = ltrim($f, '/');
@@ -55,7 +55,7 @@ class CleanupOrphanedMedia extends Command
                     if ($dry) {
                         $this->line("[DRY] Orphan: $rel");
                     } else {
-                        if (Storage::disk('public')->delete($rel)) {
+                        if (Storage::disk(config('filesystems.default', 's3'))->delete($rel)) {
                             $this->line("Deleted: $rel");
                             $deleted++;
                         } else {

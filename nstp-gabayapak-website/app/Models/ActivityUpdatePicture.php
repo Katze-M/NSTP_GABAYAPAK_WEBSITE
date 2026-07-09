@@ -26,7 +26,7 @@ class ActivityUpdatePicture extends Model
         static::deleting(function (ActivityUpdatePicture $pic) {
             if (!empty($pic->path)) {
                 try {
-                    Storage::disk('public')->delete($pic->path);
+                    Storage::disk(config('filesystems.default', 's3'))->delete($pic->path);
                     logger()->info('Deleted proof picture from storage', ['path' => $pic->path]);
                 } catch (\Throwable $e) {
                     logger()->warning('Failed deleting proof picture: ' . $e->getMessage(), ['path' => $pic->path]);

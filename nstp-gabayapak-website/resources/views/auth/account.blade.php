@@ -16,7 +16,7 @@
             <div class="flex flex-col md:flex-row items-center gap-4 md:gap-6">
                 <div class="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white bg-white flex items-center justify-center overflow-hidden">
                     @if(Auth::user()->staff && Auth::user()->staff->staff_formal_picture)
-                        <img src="{{ asset('storage/' . Auth::user()->staff->staff_formal_picture) }}" alt="{{ Auth::user()->user_Name }}" class="w-full h-full object-cover">
+                        <img src="{{ Storage::disk('s3')->url(Auth::user()->staff->staff_formal_picture) }}" alt="{{ Auth::user()->user_Name }}" class="w-full h-full object-cover">
                     @else
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5" class="w-12 h-12 md:w-14 md:h-14">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 12c2.485 0 4.5-2.015 4.5-4.5S14.485 3 12 3 7.5 5.015 7.5 7.5 9.515 12 12 12z" />
@@ -336,7 +336,7 @@
                                     <input type="file" name="staff_formal_picture" accept="image/*" class="w-full">
                                     @if(Auth::user()->staff && Auth::user()->staff->staff_formal_picture)
                                         <div class="mt-2">
-                                            <img src="{{ asset('storage/' . Auth::user()->staff->staff_formal_picture) }}" alt="Formal Picture" class="w-24 h-24 object-cover rounded">
+                                            <img src="{{ Storage::disk('s3')->url(Auth::user()->staff->staff_formal_picture) }}" alt="Formal Picture" class="w-24 h-24 object-cover rounded">
                                         </div>
                                     @endif
                                 </div>

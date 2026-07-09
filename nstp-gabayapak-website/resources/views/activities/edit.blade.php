@@ -124,8 +124,8 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Current Proof Picture(s)</label>
                             <div class="flex items-start space-x-3">
                                 @foreach($latestUpdate->pictures as $pic)
-                                    <a href="{{ asset('storage/' . $pic->path) }}" target="_blank" class="block w-48 rounded-lg overflow-hidden border">
-                                        <img src="{{ asset('storage/' . $pic->path) }}" alt="Proof" class="w-48 h-32 object-cover rounded">
+                                    <a href="{{ Storage::disk('s3')->url($pic->path) }}" target="_blank" class="block w-48 rounded-lg overflow-hidden border">
+                                        <img src="{{ Storage::disk('s3')->url($pic->path) }}" alt="Proof" class="w-48 h-32 object-cover rounded">
                                     </a>
                                 @endforeach
                             </div>

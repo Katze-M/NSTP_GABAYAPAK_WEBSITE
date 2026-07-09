@@ -50,7 +50,7 @@ class Staff extends Model
         static::deleting(function (Staff $staff) {
             if ($staff->staff_formal_picture) {
                 try {
-                    Storage::disk('public')->delete($staff->staff_formal_picture);
+                    Storage::disk(config('filesystems.default', 's3'))->delete($staff->staff_formal_picture);
                 } catch (\Throwable $e) {
                     // don't break deletion if filesystem fails; just log when available
                     logger()->warning('Failed deleting staff_formal_picture: ' . $e->getMessage(), ['path' => $staff->staff_formal_picture]);

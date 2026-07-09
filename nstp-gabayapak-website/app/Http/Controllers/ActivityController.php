@@ -141,7 +141,7 @@ class ActivityController extends Controller
                 ]);
 
                 // Store file (do NOT delete previous activity proof files, history is kept)
-                $path = $file->store('proof_pictures', 'public');
+                $path = $file->store('proof_pictures', config('filesystems.default', 's3'));
                 logger()->info('Stored proof picture for update:', ['path' => $path]);
 
                 \App\Models\ActivityUpdatePicture::create([

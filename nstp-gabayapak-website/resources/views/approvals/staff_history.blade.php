@@ -105,7 +105,7 @@
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-4 py-3">
                                     @if($staff && $staff->staff_formal_picture)
-                                        <img src="{{ asset('storage/' . $staff->staff_formal_picture) }}" 
+                                        <img src="{{ Storage::disk('s3')->url($staff->staff_formal_picture) }}" 
                                              alt="{{ $u->user_Name }}" 
                                              class="w-12 h-12 object-cover rounded-lg shadow-sm staff-picture">
                                     @else

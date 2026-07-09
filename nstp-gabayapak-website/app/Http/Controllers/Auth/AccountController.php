@@ -93,7 +93,7 @@ class AccountController extends Controller
             if ($request->hasFile('staff_formal_picture')) {
                 $file = $request->file('staff_formal_picture');
                 // store new file first
-                $path = $file->store('staff_formal_pictures', 'public');
+                $path = $file->store('staff_formal_pictures', config('filesystems.default', 's3'));
 
                 // delete old file if present
                 $old = $user->staff->staff_formal_picture ?? null;
@@ -106,7 +106,7 @@ class AccountController extends Controller
 
                 if (!empty($old) && $old !== $path) {
                     try {
-                        Storage::disk('public')->delete($old);
+                        Storage::disk(config('filesystems.default', 's3'))->delete($old);
                     } catch (\Throwable $e) {
                         logger()->warning('Failed deleting old staff formal picture: ' . $e->getMessage(), ['old' => $old]);
                     }

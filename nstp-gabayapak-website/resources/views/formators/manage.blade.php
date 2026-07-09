@@ -53,7 +53,7 @@
                                             <div class="flex items-center gap-3 mb-2">
                                                 <div class="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center bg-white overflow-hidden">
                                                     @if($staff->staff && $staff->staff->staff_formal_picture)
-                                                        <img src="{{ asset('storage/' . $staff->staff->staff_formal_picture) }}" 
+                                                        <img src="{{ Storage::disk('s3')->url($staff->staff->staff_formal_picture) }}" 
                                                              alt="{{ $staff->user_Name }}" 
                                                              class="w-full h-full object-cover">
                                                     @else

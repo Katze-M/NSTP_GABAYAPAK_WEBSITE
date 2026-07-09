@@ -130,10 +130,10 @@
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-6 py-4">
                                     @if($staff && $staff->staff_formal_picture)
-                                        <img src="{{ asset('storage/' . $staff->staff_formal_picture) }}" 
+                                        <img src="{{ Storage::disk('s3')->url($staff->staff_formal_picture) }}" 
                                              alt="{{ $u->user_Name }}" 
                                              class="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-sm staff-picture"
-                                             onclick="openImageModal('{{ asset('storage/' . $staff->staff_formal_picture) }}', '{{ $u->user_Name }}')">
+                                             onclick="openImageModal('{{ Storage::disk('s3')->url($staff->staff_formal_picture) }}', '{{ $u->user_Name }}')">
                                     @else
                                         <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center staff-picture">
                                             <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">

@@ -8,6 +8,7 @@ use App\Models\Activity;
 use App\Models\Student;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class DashboardController extends Controller
 {
@@ -86,7 +87,7 @@ class DashboardController extends Controller
                         'timeframe' => $a->Time_Frame ?? '',
                         'team' => $a->project?->Project_Team_Name ?? '',
                         'status' => $a->status ?? null,
-                        'project_logo' => $a->project?->Project_Logo ? asset('storage/' . $a->project->Project_Logo) : null,
+                        'project_logo' => $a->project?->Project_Logo ? Storage::disk('s3')->url($a->project->Project_Logo) : null,
                     ];
             });
 
@@ -172,7 +173,7 @@ class DashboardController extends Controller
                         'team' => $a->project?->Project_Team_Name ?? '',
                         'timeframe' => $a->Time_Frame ?? '',
                         'status' => $a->status ?? null,
-                        'project_logo' => $a->project?->Project_Logo ? asset('storage/' . $a->project->Project_Logo) : null,
+                        'project_logo' => $a->project?->Project_Logo ? Storage::disk('s3')->url($a->project->Project_Logo) : null,
                     ];
             });
         }

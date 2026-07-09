@@ -279,7 +279,7 @@ class Project extends Model
                 $new = $project->Project_Logo;
                 if (!empty($old) && $old !== $new) {
                     try {
-                        Storage::disk('public')->delete($old);
+                        Storage::disk(config('filesystems.default', 's3'))->delete($old);
                         Log::info('Deleted old project logo', ['path' => $old, 'project' => $project->Project_ID ?? null]);
                     } catch (\Throwable $e) {
                         Log::warning('Failed deleting old project logo: ' . $e->getMessage(), ['path' => $old]);
@@ -292,7 +292,7 @@ class Project extends Model
         static::deleting(function (Project $project) {
             try {
                 if (!empty($project->Project_Logo)) {
-                    Storage::disk('public')->delete($project->Project_Logo);
+                    Storage::disk(config('filesystems.default', 's3'))->delete($project->Project_Logo);
                 }
             } catch (\Throwable $e) {
                 Log::warning('Failed deleting project logo: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);

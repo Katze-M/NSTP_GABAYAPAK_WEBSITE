@@ -23,7 +23,7 @@
       @if($project->Project_Logo)
         <div class="mb-2">
           <p class="text-sm text-gray-600">Current Logo:</p>
-          <img src="{{ asset('storage/' . $project->Project_Logo) }}" alt="Current Logo" class="w-32 h-32 object-contain rounded-lg border border-gray-200 p-2">
+          <img src="{{ Storage::disk('s3')->url($project->Project_Logo) }}" alt="Current Logo" class="w-32 h-32 object-contain rounded-lg border border-gray-200 p-2">
         </div>
         <p class="text-sm text-gray-600 mb-2">Upload a new logo to replace the current one (optional if logo exists)</p>
       @endif

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Project;
@@ -20,21 +21,11 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
-    {
-        // Ensure PHP's default timezone matches the application timezone so
-        // timestamps created by native PHP functions and by Eloquent use the
-        // same timezone (Asia/Manila as configured in `config/app.php`).
-        try {
-            date_default_timezone_set(config('app.timezone'));
-        } catch (\Throwable $e) {
-            // Ignore if config isn't available in certain CLI contexts
-        }
-        // Register project policy mapping (in case AuthServiceProvider is not present)
-        try {
-            Gate::policy(Project::class, ProjectPolicy::class);
-        } catch (\Throwable $e) {
-            // Fail silently if Gate or classes are not available during certain CLI tasks
-        }
+public function boot(): void
+{
+    // Force HTTPS routing when running on your live production server
+    if (config('app.env') === 'production') {
+        URL::forceScheme('https');
     }
+}
 }

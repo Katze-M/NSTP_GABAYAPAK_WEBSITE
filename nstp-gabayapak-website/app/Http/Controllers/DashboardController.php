@@ -62,10 +62,10 @@ class DashboardController extends Controller
             });
 
         if (!empty($filterStatus)) {
-            $upcomingQuery->whereRaw('LOWER(`status`) = ?', [strtolower($filterStatus)]);
+            $upcomingQuery->where('status', 'ilike', strtolower($filterStatus)); 
         } else {
-            // exclude completed by default
-            $upcomingQuery->whereRaw('LOWER(`status`) <> ?', ['completed']);
+            // Exclude completed by default
+            $upcomingQuery->where('status', '!=', 'completed');
         }
 
         $upcoming_activities = $upcomingQuery->with('project')
@@ -105,9 +105,9 @@ class DashboardController extends Controller
 
             // Apply status filter same as upcoming list: default exclude 'completed', or match provided status
             if (!empty($filterStatus)) {
-                $filteredQuery->whereRaw('LOWER(`status`) = ?', [strtolower($filterStatus)]);
+                $filteredQuery->where('status', 'ilike', strtolower($filterStatus));
             } else {
-                $filteredQuery->whereRaw('LOWER(`status`) <> ?', ['completed']);
+                $filteredQuery->where('status', '!=', 'completed');
             }
 
             // Debugging: log counts for component-only, section-only, and both

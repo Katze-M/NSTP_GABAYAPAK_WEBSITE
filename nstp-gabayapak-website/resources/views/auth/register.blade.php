@@ -91,17 +91,19 @@
 
         <!-- Role Selection -->
         <div class="flex justify-center space-x-6 mb-6">
-            <label class="flex items-center space-x-2 text-base">
+            <!-- STUDENT REGISTRATION MOVED TO BULK IMPORT - FORM HIDDEN -->
+            <!-- <label class="flex items-center space-x-2 text-base">
                 <input type="radio" name="role" value="student" class="accent-yellow-400" {{ (old('user_Type','student') == 'student') ? 'checked' : '' }}>
                 <span>Student</span>
-            </label>
+            </label> -->
             <label class="flex items-center space-x-2 text-base">
-                <input type="radio" name="role" value="staff" class="accent-yellow-400" {{ (old('user_Type','student') == 'staff') ? 'checked' : '' }}>
+                <input type="radio" name="role" value="staff" class="accent-yellow-400" checked>
                 <span>Staff</span>
             </label>
         </div>
 
-        <!-- Student Form -->
+        <!-- STUDENT FORM COMMENTED OUT - STUDENT REGISTRATION MOVED TO BULK IMPORT -->
+        <!--
         <form id="studentForm" class="space-y-6" method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="user_Type" value="student" id="studentRole">
@@ -182,9 +184,10 @@
 
             <button type="submit" class="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 rounded-lg transition-colors">Register as Student</button>
         </form>
+        -->
 
         <!-- Staff Form -->
-        <form id="staffForm" class="space-y-6 hidden" method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
+        <form id="staffForm" class="space-y-6" method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="user_Type" value="staff" id="staffRole">
 
@@ -259,6 +262,10 @@
     <button id="scrollToTop" title="Go to top">↑</button>
 
     <script>
+        // ROLE SWITCHING DISABLED - STUDENT FORM HIDDEN
+        // Only staff registration form is now available
+        // Uncomment below to restore student/staff toggle functionality
+        /*
         const studentForm = document.getElementById("studentForm");
         const staffForm = document.getElementById("staffForm");
         const studentRoleInput = document.getElementById("studentRole");
@@ -299,6 +306,7 @@
                 }
             });
         });
+        */
 
         // Scroll to top button functionality
         window.addEventListener('scroll', function() {

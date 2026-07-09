@@ -4,7 +4,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Auth\AuthenticationException;
-use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\CheckRoles;
 use App\Http\Middleware\StudentAccess;
 use App\Http\Middleware\StaffAccess;
@@ -17,7 +16,6 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'role' => CheckRole::class,
             'roles' => CheckRoles::class,
             'student' => StudentAccess::class,
             'staff' => StaffAccess::class,

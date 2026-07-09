@@ -2023,10 +2023,55 @@ class ProjectController extends Controller
         return redirect()->back()->with('error', 'Unauthorized action.');
     }
 
+    /**
+     * Get predefined rejection reason options.
+     * @return array
+     */
+    public static function getRejectionReasons()
+    {
+        return [
+            'Project Not Suitable for the course',
+            'No outlined budget',
+            'Budget not clear',
+            'Incomplete project details',
+            'Insufficient community need justification',
+            'Unclear project objectives',
+            'Inadequate implementation timeline',
+        ];
+    }
+
     public function reject(Request $request, Project $project)
     {
         if (!Auth::user()->isStaff()) abort(403);
-        $data = $request->validate(['reason' => 'nullable|string|max:2000']);
+        
+        // Validate: rejection reasons must be selected (can be multiple)
+        $data = $request->validate([
+            'reasons' => 'required|array|min:1',
+            'reasons.*' => 'required|string',
+            'custom_reason' => 'nullable|string|max:500',
+        ]);
+
+        // Build the final rejection reasons string
+        $selectedReasons = $data['reasons'] ?? [];
+        $rejectionReasons = [];
+
+        foreach ($selectedReasons as $reason) {
+            if ($reason === 'Other') {
+                if (!empty($data['custom_reason'])) {
+                    $rejectionReasons[] = 'Other: ' . $data['custom_reason'];
+                }
+            } else {
+                $rejectionReasons[] = $reason;
+            }
+        }
+
+        if (empty($rejectionReasons)) {
+            return redirect()->back()->with('error', 'Please select at least one reason or specify a custom reason.');
+        }
+
+        // Join reasons with semicolon separator
+        $rejectionReasonText = implode('; ', $rejectionReasons);
+
         // Preserve previous rejection reasons history
         $previous = [];
         if (!empty($project->previous_rejection_reasons)) {
@@ -2068,7 +2113,7 @@ class ProjectController extends Controller
 
         $project->update([
             'Project_Status' => 'rejected',
-            'Project_Rejection_Reason' => $data['reason'] ?? null,
+            'Project_Rejection_Reason' => $rejectionReasonText,
             'Project_Rejected_By' => Auth::user()->user_id ?? null,
             'previous_rejection_reasons' => !empty($previous) ? json_encode($previous) : null,
         ]);

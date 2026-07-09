@@ -6,19 +6,12 @@
 <div class="min-h-[70vh] flex items-center justify-center px-4 py-8">
     @php
         $stateClass = '';
-        $displayMessage = $message ?? '';
         if(isset($message)) {
             $lower = strtolower($message);
             if(str_contains($lower,'approved')) {
                 $stateClass = 'bg-green-50 border-green-300 text-green-800';
             } elseif(str_contains($lower,'reject')) {
                 $stateClass = 'bg-red-50 border-red-300 text-red-800';
-                // Replace "Please register again" with a clickable link
-                $displayMessage = preg_replace(
-                    '/Please register again\.?/i',
-                    '<a href="' . route('register') . '" class="text-red-700 underline hover:text-red-900 font-semibold">Please register again</a>.',
-                    $message
-                );
             } elseif(str_contains($lower,'review')) {
                 $stateClass = 'bg-yellow-50 border-yellow-300 text-yellow-800';
             } else {
@@ -32,7 +25,11 @@
 
 
             @if(isset($message))
-                <div class="mb-6 px-4 py-3 rounded-lg border {{ $stateClass }} text-sm font-medium shadow-inner" role="status" aria-live="polite">{!! $displayMessage !!}
+                <div class="mb-6 px-4 py-3 rounded-lg border {{ $stateClass }} text-sm font-medium shadow-inner" role="status" aria-live="polite">
+                    {{ $message }}
+                    @if($status === 'rejected')
+                        <a href="{{ route('register') }}" class="text-red-700 underline hover:text-red-900 font-semibold ml-1">Register with a new account</a>
+                    @endif
                     @if(isset($remarks) && $status === 'rejected' && $remarks)
                         <div class="mt-3 text-red-700 text-base font-normal bg-red-50 border border-red-200 rounded p-3">
                             <strong>Rejection Remarks:</strong><br>

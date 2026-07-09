@@ -433,7 +433,19 @@
 
                         @if($project->Project_Rejection_Reason)
                             <div class="bg-red-100 border border-red-300 rounded p-3 mb-3">
-                                <p class="text-red-700"><strong>Most recent rejection:</strong> {{ $project->Project_Rejection_Reason }}</p>
+                                <p class="text-red-700"><strong>Most recent rejection reason(s):</strong></p>
+                                @php
+                                    $reasons = array_filter(array_map('trim', explode(';', $project->Project_Rejection_Reason)));
+                                @endphp
+                                @if(count($reasons) > 1)
+                                    <ul class="list-disc list-inside text-red-700 mt-1">
+                                        @foreach($reasons as $reason)
+                                            <li class="text-sm">{{ $reason }}</li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <p class="text-red-700 text-sm mt-1">{{ $project->Project_Rejection_Reason }}</p>
+                                @endif
                                 @if($project->Project_Rejected_By)
                                     @php
                                         $rej = $project->rejectedBy;

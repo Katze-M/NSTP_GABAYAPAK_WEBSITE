@@ -234,6 +234,25 @@
       @endforeach
     </div>
 
+    <!-- List of Projects -->
+    <h3 class="text-xl md:text-2xl font-bold mt-6 md:mt-8 mb-3 md:mb-4">List of Projects</h3>
+    <div class="overflow-x-auto mb-6 md:mb-8">
+      <table class="w-full border-collapse border border-gray-200 rounded-lg">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="border border-gray-200 px-4 py-2 text-left text-sm font-semibold text-gray-700">Project Name</th>
+            <th class="border border-gray-200 px-4 py-2 text-left text-sm font-semibold text-gray-700">Team Name</th>
+            <th class="border border-gray-200 px-4 py-2 text-left text-sm font-semibold text-gray-700">Component</th>
+            <th class="border border-gray-200 px-4 py-2 text-left text-sm font-semibold text-gray-700">Section</th>
+          </tr>
+        </thead>
+        <tbody id="projectsTableBody">
+          <!-- Projects will be populated by JavaScript -->
+        </tbody>
+      </table>
+      <div id="projectsEmptyMessage" class="text-center text-gray-600 py-6" style="display:none;">No projects to display</div>
+    </div>
+
   </section>
 @endsection
 
@@ -366,6 +385,42 @@
         }
       }
 
+      // Render projects list table from an array of projects
+      function renderProjectsList(arr) {
+        const tableBody = document.getElementById('projectsTableBody');
+        const emptyMsg = document.getElementById('projectsEmptyMessage');
+        
+        tableBody.innerHTML = '';
+        if (!arr.length) {
+          tableBody.style.display = 'none';
+          emptyMsg.style.display = 'block';
+          return;
+        }
+
+        emptyMsg.style.display = 'none';
+        tableBody.style.display = '';
+
+        arr.forEach(proj => {
+          const row = document.createElement('tr');
+          row.className = 'hover:bg-gray-50';
+          row.innerHTML = `
+            <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">${proj.name || '—'}</td>
+            <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">${proj.team_name || '—'}</td>
+            <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
+              <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold
+                ${proj.component === 'ROTC' ? 'bg-blue-100 text-blue-800' : ''}
+                ${proj.component === 'LTS' ? 'bg-yellow-100 text-yellow-800' : ''}
+                ${proj.component === 'CWTS' ? 'bg-red-100 text-red-800' : ''}
+              ">
+                ${proj.component || '—'}
+              </span>
+            </td>
+            <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">${proj.section || '—'}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+      }
+
       // Update summary cards if proposal/status fields exist in data
       // This function expects `baseArr` to be the filtered raw dataset (respecting component/section filters)
       // It will also handle empty arrays and set counts to zero accordingly.
@@ -442,6 +497,9 @@
         // Update project progress list
         renderProjectProgress(filteredEligible);
 
+        // Update projects list table
+        renderProjectsList(filteredEligible);
+
         // Update summary cards using the filtered raw dataset so counts reflect selected scope
         updateSummaryCards(baseFilteredRaw);
       }
@@ -474,6 +532,7 @@
 
       // Initial render using the eligible projects and then apply current filters
       renderProjectProgress(currentFilteredProjects);
+      renderProjectsList(currentFilteredProjects);
       applyFilters();
 
       function downloadCSV() {
@@ -599,6 +658,34 @@
                   `<td style="font-weight:700;">${esc(r.progress)}</td>` +
                   `<td style="font-weight:700;font-style:italic;">₱${Number(r.budget || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>` +
                   '</tr>';
+        });
+        html += '<tr><td colspan="5"></td></tr>';
+
+        // List of projects
+        html += '<tr><td colspan="5" style="font-weight:700;padding-top:8px;padding-bottom:4px;">LIST OF PROJECTS</td></tr>';
+        html += '<tr><th style="font-weight:700;border-bottom:1px solid #ddd;">Project Name</th><th style="font-weight:700;border-bottom:1px solid #ddd;">Team Name</th><th style="font-weight:700;border-bottom:1px solid #ddd;">Component</th><th style="font-weight:700;border-bottom:1px solid #ddd;">Section</th><td></td></tr>';
+        
+        // Extract projects from the table
+        const tableRows = document.querySelectorAll('#projectsTableBody tr');
+        tableRows.forEach(row => {
+          try {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 4) {
+              const projName = cells[0].textContent.trim() || '—';
+              const teamName = cells[1].textContent.trim() || '—';
+              const component = cells[2].textContent.trim() || '—';
+              const section = cells[3].textContent.trim() || '—';
+              
+              const compColor = compColors[component] || '#2b50ff';
+              html += '<tr>' +
+                      `<td>${esc(projName)}</td>` +
+                      `<td>${esc(teamName)}</td>` +
+                      `<td style="background:${compColor};color:#fff;font-weight:700;">${esc(component)}</td>` +
+                      `<td>${esc(section)}</td>` +
+                      '<td></td>' +
+                      '</tr>';
+            }
+          } catch (e) { /* ignore parse errors */ }
         });
 
         html += '</table></body></html>';

@@ -217,6 +217,13 @@ Route::middleware(['auth', 'roles:SACSI Director|NSTP Program Officer|NSTP Coord
     Route::post('/approvals/students/{id}/reject', [\App\Http\Controllers\StudentApprovalController::class, 'reject'])->name('approvals.students.reject');
 });
 
+// Bulk student import - NSTP Formators and NSTP Coordinators only
+Route::middleware(['auth', 'roles:NSTP Formator|NSTP Coordinator'])->group(function () {
+    Route::get('/bulk-import', [\App\Http\Controllers\BulkStudentImportController::class, 'showImportForm'])->name('bulk-import.form');
+    Route::post('/bulk-import', [\App\Http\Controllers\BulkStudentImportController::class, 'import'])->name('bulk-import.process');
+    Route::get('/bulk-import/template', [\App\Http\Controllers\BulkStudentImportController::class, 'downloadTemplate'])->name('bulk-import.template');
+});
+
 // Registration status check (public form shown on login page)
 Route::get('/registration-status', function () { return view('registration.status'); })->name('registration.status');
 Route::post('/registration-status', function (\Illuminate\Http\Request $request) {

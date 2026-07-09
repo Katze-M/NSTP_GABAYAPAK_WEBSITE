@@ -88,6 +88,7 @@ class ReportsController extends Controller
 
             return [
                 'name' => $p->Project_Name ?? '—',
+                'team_name' => $p->Project_Team_Name ?? '—',
                 'component' => $p->Project_Component ?? '—',
                 'progress' => $progress,
                 'budget' => $p->total_budget ?? 0,

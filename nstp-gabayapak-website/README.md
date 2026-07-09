@@ -4,7 +4,7 @@ This is a Laravel-based website for the NSTP GabaYapak project management and mo
 
 ## Features Implemented
 
-1. Account creation - SACSI staff and NSTP students needs to create their accounts to access the website. Registration approvals will be implemented, SACSi Director is auto-approved but only 1 SACSI Director account is allowed (thus, the account will be passed down if new staff assumes the position).
+1. Account creation - SACSI staff needs to create their accounts to access the website. Registration approvals will be implemented, SACSi Director is auto-approved but only 1 SACSI Director account is allowed (thus, the account will be passed down if new staff assumes the position). The student accounts will be created through the bulk registration feature.
 2. Dashboard - Display an overview about the projects, quick actions were added for increased accessibility, and the upcoming activities were listed in chronological order so that Staff will be guided with the next activities to be implemented per project (STAFF SIDE ONLY)
 3. Current Projects Page - Display all approved projects (including projects with status "completed"). Organized per component and section. Contains All Approved Projects list
 4. Pending Projects Page - Display pending projects that were submitted by the students. Only NSTP Formators are allowed to "endorse" projects and only the NSTP Coordinators are allowed to "approve" projects, but the SACSI Director and NSTP Program Officer can still view pending projects, organized by which stage they are in (to be endorsed/to be approved). Also included here is the list of rejected projects. Rejected projects by NSTP Formators will appear again in their Pending Projects Page when project leader resubmits. Projects rejected by NSTP Coordinators will appear on their end as well. Meaning, resubmitted projects will be displayed on the staff (NSTP Formator/NSTP Coordinator) until they endorse/approve those 9that is the time they can move on to the next stage of project approval. (STAFF SIDE ONLY)
@@ -22,7 +22,7 @@ This is a Laravel-based website for the NSTP GabaYapak project management and mo
 2. Run `composer install`
 3. Copy `.env.example` to `.env` and configure your database settings
 4. Run `php artisan key:generate`
-5. Run `php artisan migrate:fresh` to create tables. (Seeding is optional.)
+5. Run `php artisan migrate:fresh` to create tables. (Seeding is optional. It is recommended to not use the seeder as this has not been setup fully.)
 
 If you want to seed sample data, run:
 

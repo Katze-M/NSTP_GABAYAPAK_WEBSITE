@@ -21,8 +21,19 @@
   <!-- Show rejection reason if this is a rejected project -->
   @if($project->Project_Status === 'rejected' && $project->Project_Rejection_Reason)
     <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-      <h3 class="font-semibold text-red-800 mb-2">Rejection Reason:</h3>
-      <p class="text-red-700">{{ $project->Project_Rejection_Reason }}</p>
+      <h3 class="font-semibold text-red-800 mb-2">Rejection Reason(s):</h3>
+      @php
+        $reasons = array_filter(array_map('trim', explode(';', $project->Project_Rejection_Reason)));
+      @endphp
+      @if(count($reasons) > 1)
+        <ul class="list-disc list-inside text-red-700">
+          @foreach($reasons as $reason)
+            <li>{{ $reason }}</li>
+          @endforeach
+        </ul>
+      @else
+        <p class="text-red-700">{{ $project->Project_Rejection_Reason }}</p>
+      @endif
       
       @if($project->previous_rejection_reasons)
         @php

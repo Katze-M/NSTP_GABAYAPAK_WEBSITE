@@ -319,7 +319,21 @@
                     </div>
                     <p class="text-gray-600">{{ $project->Project_Team_Name }}</p>
                     @if($project->Project_Status === 'rejected')
-                        <p class="text-sm text-red-600 mt-1">Reason: {{ \Illuminate\Support\Str::limit($project->Project_Rejection_Reason ?? 'No reason provided', 80) }}</p>
+                        @php
+                            $reasons = array_filter(array_map('trim', explode(';', $project->Project_Rejection_Reason ?? '')));
+                        @endphp
+                        @if(count($reasons) > 1)
+                            <div class="text-sm text-red-600 mt-1">
+                                <p class="font-semibold">Reasons:</p>
+                                <ul class="list-disc list-inside text-xs">
+                                    @foreach($reasons as $reason)
+                                        <li>{{ \Illuminate\Support\Str::limit($reason, 60) }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @else
+                            <p class="text-sm text-red-600 mt-1">Reason: {{ \Illuminate\Support\Str::limit($project->Project_Rejection_Reason ?? 'No reason provided', 80) }}</p>
+                        @endif
                         @if(isset($project->Project_Rejected_By) && $project->rejectedBy)
                             <p class="text-xs text-gray-600">Rejected by: {{ $project->rejectedBy->user_Name ?? 'Staff' }}</p>
                         @endif
@@ -426,7 +440,7 @@
                             <div class="relative group">
                                 <form action="{{ route('projects.reject', $project) }}" method="POST" class="reject-form">
                                     @csrf
-                                    <input type="hidden" name="reason" class="reject-reason-input" value="">
+                                    <input type="hidden" name="custom_reason" class="custom-reason-input" value="">
                                     <button type="button" class="reject-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors duration-200 flex items-center justify-center" style="background-color:#dc2626;color:#ffffff;">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -501,6 +515,8 @@
                                     <span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">Archive</span>
                                 </div>
                                 <!-- Delete Button with Trash Icon and Tooltip -->
+                                {{-- DELETED: This delete button has been commented out to prevent deletion of reviewed/submitted projects. Students can only delete their own DRAFT projects. --}}
+                                {{--
                                 <div class="relative group">
                                     <form action="{{ route('projects.destroy', $project) }}" method="POST" class="delete-form-staff inline-block">
                                         @csrf
@@ -517,6 +533,7 @@
                                     </form>
                                     <span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">Delete</span>
                                 </div>
+                                --}}
                         @endif
                         @if($project->Project_Status === 'completed')
                             <p class="text-xs text-gray-600 mt-2">Note: Project marked <strong>Completed</strong>. Activities and proofs are preserved.</p>
@@ -560,6 +577,8 @@
                                 <span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">Unarchive</span>
                             </form>
 
+                            {{-- DELETED: This delete button for archived projects has been commented out. Archive is kept but delete is disabled. --}}
+                            {{--
                             <form action="{{ route('projects.destroy', $project) }}" method="POST" class="delete-form-staff inline-block relative group">
                                 @csrf
                                 @method('DELETE')
@@ -574,6 +593,7 @@
                                 </button>
                                 <span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 rounded bg-gray-800 text-white text-xs opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-10">Delete</span>
                             </form>
+                            --}}
                         @endif
                     </div>
                 </div>
@@ -685,33 +705,106 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // Reject with reason
+        // Reject with predefined reasons (checkboxes) or custom reason
         document.querySelectorAll('.reject-btn').forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 const form = this.closest('.reject-form');
-                const reasonInput = form.querySelector('.reject-reason-input');
+                const customReasonInput = form.querySelector('.custom-reason-input');
+
+                // Get rejection reasons from the controller
+                const rejectionReasons = @json(\App\Http\Controllers\ProjectController::getRejectionReasons());
+
+                // Build checkbox HTML
+                const checkboxesHtml = rejectionReasons.map((reason, index) => `
+                    <div style="margin-bottom: 12px; text-align: left;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" class="reason-checkbox" value="${reason}" style="margin-right: 10px; cursor: pointer;">
+                            <span>${reason}</span>
+                        </label>
+                    </div>
+                `).join('');
 
                 Swal.fire({
                     title: 'Reject Project',
-                    input: 'textarea',
-                    inputLabel: 'Reason for rejection',
-                    inputPlaceholder: 'Type the reason for rejection here...',
-                    inputAttributes: {
-                        'aria-label': 'Type the reason for rejection here'
-                    },
+                    html: `
+                        <div style="text-align: left;">
+                            <p style="margin-bottom: 15px; font-weight: 500;">Please select one or more reasons:</p>
+                            <div style="border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-bottom: 15px; max-height: 250px; overflow-y: auto;">
+                                ${checkboxesHtml}
+                                <div style="margin-top: 12px; border-top: 1px solid #ddd; padding-top: 12px;">
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" class="reason-checkbox" value="Other" id="other-checkbox" style="margin-right: 10px; cursor: pointer;">
+                                        <span>Other: Please Specify</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="custom-reason-container" style="display: none; margin-top: 15px;">
+                                <label for="custom-reason-input" style="font-weight: bold; display: block; margin-bottom: 8px;">Please specify the reason:</label>
+                                <textarea id="custom-reason-input" placeholder="Enter your custom reason here..." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; min-height: 80px; resize: vertical;"></textarea>
+                            </div>
+                        </div>
+                    `,
                     showCancelButton: true,
                     confirmButtonText: 'Reject',
                     cancelButtonText: 'Cancel',
-                    preConfirm: (value) => {
-                        if (!value || !value.trim()) {
-                            Swal.showValidationMessage('A rejection reason is required');
+                    didOpen: () => {
+                        const otherCheckbox = document.getElementById('other-checkbox');
+                        const customReasonContainer = document.getElementById('custom-reason-container');
+                        const customReasonInputField = document.getElementById('custom-reason-input');
+
+                        otherCheckbox.addEventListener('change', function() {
+                            if (this.checked) {
+                                customReasonContainer.style.display = 'block';
+                                customReasonInputField.focus();
+                            } else {
+                                customReasonContainer.style.display = 'none';
+                                customReasonInputField.value = '';
+                            }
+                        });
+                    },
+                    preConfirm: () => {
+                        const checkboxes = document.querySelectorAll('.reason-checkbox');
+                        const customReasonInputField = document.getElementById('custom-reason-input');
+                        const selectedReasons = Array.from(checkboxes)
+                            .filter(cb => cb.checked)
+                            .map(cb => cb.value);
+
+                        if (selectedReasons.length === 0) {
+                            Swal.showValidationMessage('Please select at least one reason');
+                            return false;
                         }
-                        return value;
+
+                        if (selectedReasons.includes('Other') && (!customReasonInputField.value || !customReasonInputField.value.trim())) {
+                            Swal.showValidationMessage('Please specify a reason in the text field for "Other"');
+                            return false;
+                        }
+
+                        return {
+                            reasons: selectedReasons,
+                            customReason: customReasonInputField.value
+                        };
                     }
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        reasonInput.value = result.value;
+                        // Create multiple hidden inputs for array submission
+                        // First, remove any existing reason inputs
+                        form.querySelectorAll('input[name="reasons[]"]').forEach(el => el.remove());
+                        
+                        // Add a hidden input for each selected reason
+                        result.value.reasons.forEach(reason => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'reasons[]';
+                            input.value = reason;
+                            form.appendChild(input);
+                        });
+                        
+                        // Set custom reason
+                        if (customReasonInput) {
+                            customReasonInput.value = result.value.customReason;
+                        }
+                        
                         form.submit();
                     }
                 });
@@ -764,6 +857,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
+        {{-- DELETED: delete-btn-staff JavaScript handler has been commented out since all staff delete buttons are now disabled. --}}
+        {{--
         document.querySelectorAll('.delete-btn-staff').forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -785,6 +880,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
         });
+        --}}
     });
 
     // Program Officer toggles: show/hide collapsible sections

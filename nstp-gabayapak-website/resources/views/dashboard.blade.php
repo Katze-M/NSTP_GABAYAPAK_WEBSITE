@@ -190,22 +190,24 @@
                   <a href="{{ route('projects.pending') }}" class="px-3 py-2 bg-yellow-400 text-black rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-yellow-300 whitespace-nowrap text-center">Pending Projects</a>
                 </div>
                 <div class="flex flex-col gap-2">
-                  <a href="{{ route('approvals.students') }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-green-700 whitespace-nowrap text-center">Student Registration Approval</a>
                   <a href="{{ route('approvals.staff') }}" class="px-3 py-2 bg-red-900 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-red-950 whitespace-nowrap text-center">Staff Registration Approval</a>
                 </div>
               @elseif($u && $u->isStaff() && $u->user_role === 'NSTP Coordinator')
-                {{-- NSTP Coordinator: All buttons in a row --}}
+                {{-- NSTP Coordinator: All buttons with register students option --}}
                 <div class="w-full flex flex-col items-center gap-3">
                   <div class="flex flex-row gap-3 w-full justify-center">
                     <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700 whitespace-nowrap text-center flex-1">Current Projects</a>
                     <a href="{{ route('projects.pending') }}" class="px-3 py-2 bg-yellow-400 text-black rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-yellow-300 whitespace-nowrap text-center flex-1">Pending Projects</a>
                   </div>
-                  <a href="{{ route('approvals.students') }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-green-700 whitespace-nowrap text-center w-full">Student Registration Approval</a>
+                  <div class="flex flex-row gap-3 w-full justify-center">
+                    <a href="{{ route('bulk-import.form') }}" class="px-3 py-2 bg-purple-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-purple-700 whitespace-nowrap text-center flex-1">Register Students</a>
+                  </div>
                 </div>
               @else
-                {{-- NSTP Formators: Buttons in a row --}}
+                {{-- NSTP Formators: Buttons in a row with register students --}}
                 <a href="{{ route('projects.current') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-blue-700 whitespace-nowrap text-center">Current Projects</a>
                 <a href="{{ route('projects.pending') }}" class="px-3 py-2 bg-yellow-400 text-black rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-yellow-300 whitespace-nowrap text-center">Pending Projects</a>
+                <a href="{{ route('bulk-import.form') }}" class="px-3 py-2 bg-purple-600 text-white rounded-lg font-sans font-medium tracking-wide text-base md:text-base hover:bg-purple-700 whitespace-nowrap text-center">Register Students</a>
               @endif
             </div>
           </div>

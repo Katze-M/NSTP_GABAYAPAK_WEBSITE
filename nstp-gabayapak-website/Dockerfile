@@ -31,3 +31,7 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # 9. Grant the Apache server web user read/write access to your cache folders
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Increase upload file size limits inside the PHP configuration
+RUN echo "upload_max_filesize = 20M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size = 20M" >> /usr/local/etc/php/conf.d/uploads.ini

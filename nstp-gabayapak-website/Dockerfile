@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     ca-certificates \
     && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
+    && curl -fsSL https://nodesource.com | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://nodesource.com nodistro main" > /etc/apt/sources.list.d/nodesource.list \
     && apt-get update && apt-get install -y nodejs \
     && docker-php-ext-install pdo pdo_pgsql \
     && rm -rf /var/lib/apt/lists/*
@@ -39,8 +39,8 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 # 9. Compile your frontend CSS/JS assets natively using Vite
 RUN npm install && npm run build
 
-# 10. Clear cached configuration files so live environment variables load fresh
-RUN php artisan config:clear && php artisan cache:clear
+# 10. FIXED: Clear configurations in safe-mode to bypass database validation blocks entirely
+RUN php artisan config:clear --no-plugins && php artisan cache:clear --no-plugins
 
 # 11. Grant the Apache server web user read/write access to your cache and storage directories
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache

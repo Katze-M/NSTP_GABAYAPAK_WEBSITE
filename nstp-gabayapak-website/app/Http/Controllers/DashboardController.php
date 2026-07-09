@@ -17,25 +17,27 @@ class DashboardController extends Controller
      */
     public function index(Request $request)
     {
-        // Count projects by status (use actual DB values)
-        $projectStatusCounts = Project::select('Project_Status', DB::raw('count(*) as count'))
-            ->groupBy('Project_Status')
-            ->pluck('count', 'Project_Status')
-            ->toArray();
+        
+        
 
-        // Ensure expected keys exist (defaults to 0).
-        // Note: some records may use 'approved' or 'current' interchangeably; treat both as "current/approved".
-        // Treat 'approved' and 'completed' as part of the Current/approved group
+  
+        // FIXED: Pull statuses into memory to bypass strict PostgreSQL GroupBy constraints entirely
+        $allProjectStatuses = Project::pluck('Project_Status')->map(function ($status) {
+            return strtolower(trim((string)$status));
+        });
+
+        // Count directly via Laravel Collection helpers
         $project_status_counts = [
-            'pending' => (int) ($projectStatusCounts['pending'] ?? 0),
-            // Treat both 'approved' and 'completed' as current/approved projects so completed projects are counted among current projects and in totals.
-            'approved' => (int) (($projectStatusCounts['approved'] ?? 0) + ($projectStatusCounts['completed'] ?? 0)),
-            'rejected' => (int) ($projectStatusCounts['rejected'] ?? 0),
-            'archived' => (int) ($projectStatusCounts['archived'] ?? 0),
+            'pending'  => $allProjectStatuses->where('pending')->count(),
+            // Combine both approved and completed statuses safely into one metric
+            'approved' => $allProjectStatuses->where('approved')->count() + $allProjectStatuses->where('completed')->count(),
+            'rejected' => $allProjectStatuses->where('rejected')->count(),
+            'archived' => $allProjectStatuses->where('archived')->count(),
         ];
 
-        // Total submitted projects should exclude drafts. Count only pending, current/approved, rejected, and archived.
-        $total_projects = $project_status_counts['pending'] + $project_status_counts['approved'] + $project_status_counts['rejected'] + $project_status_counts['archived'];
+        // Total submitted projects excluding drafts
+        $total_projects = array_sum($project_status_counts);
+        
         // Only count students whose registration is approved
         $total_students = Student::whereHas('user', function($q) {
             $q->where('approved', true);

@@ -37,7 +37,7 @@ WORKDIR /var/www/html
 # Copy the core framework files directly to the server
 COPY . /var/www/html
 
-# 🔥 INJECTION: Copy your cleanly compiled Vite assets directly from STAGE 1
+# INJECTION: Copy your cleanly compiled Vite assets directly from STAGE 1
 COPY --from=frontend-builder /build/public/build /var/www/html/public/build
 
 # Stable Binary Injection: Copy Composer natively from its official core repository
@@ -46,8 +46,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Run backend framework optimization routines automatically
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Force refresh the system configs in safe mode to map production environment variables
-RUN php artisan config:clear --no-plugins && php artisan cache:clear --no-plugins
+# FIXED: Removed the problematic artisan cache clear lines entirely. 
+# This lets your environment variables map naturally at boot time without crashing.
 
 # Grant the Apache server web user read/write access to your cache and storage directories
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache

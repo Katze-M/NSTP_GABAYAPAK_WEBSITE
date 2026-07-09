@@ -1,14 +1,18 @@
 # 1. Use the standard, verified PHP 8.3 production image with Apache built-in
 FROM php:8.3-apache
 
-# 2. Install essential Linux utilities, database drivers for PostgreSQL, and Node.js for Vite compilation
+# 2. Install core utilities, create the keyrings path directory, and add Node.js 20 GPG keys manually
 RUN apt-get update && apt-get install -y \
     unzip \
     libpq-dev \
     git \
     curl \
-    && curl -sL https://nodesource.com | bash - \
-    && apt-get install -y nodejs \
+    gnupg \
+    ca-certificates \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update && apt-get install -y nodejs \
     && docker-php-ext-install pdo pdo_pgsql \
     && rm -rf /var/lib/apt/lists/*
 

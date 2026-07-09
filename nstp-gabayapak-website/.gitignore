@@ -22,3 +22,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Hide documentation and audit secrets
+DEPLOYMENT_READINESS.md
+SECURITY_AUDIT.md
+test_projects.php

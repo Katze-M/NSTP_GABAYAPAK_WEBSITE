@@ -1,46 +1,53 @@
-# 1. Use the standard, verified PHP 8.3 production image with Apache built-in
+# ==========================================
+# STAGE 1: Frontend Asset Compilation Layout
+# ==========================================
+FROM node:20-alpine AS frontend-builder
+WORKDIR /build
+
+# Copy all source assets into the temporary node layer
+COPY . /build
+
+# Install front-end dependencies and build the Vite manifest files securely
+RUN npm install && npm run build
+
+# ==========================================
+# STAGE 2: Core Production Web Server Setup
+# ==========================================
 FROM php:8.3-apache
 
-# 2. Install core utilities, create the keyrings path directory, and add Node.js 20 GPG keys manually
+# Install essential core utilities and database drivers for PostgreSQL
 RUN apt-get update && apt-get install -y \
     unzip \
     libpq-dev \
     git \
-    curl \
-    gnupg \
-    ca-certificates \
-    && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://nodesource.com | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://nodesource.com nodistro main" > /etc/apt/sources.list.d/nodesource.list \
-    && apt-get update && apt-get install -y nodejs \
     && docker-php-ext-install pdo pdo_pgsql \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Enable Apache's mod_rewrite module
+# Enable Apache's mod_rewrite routing configurations
 RUN a2enmod rewrite
 
-# 4. Point Apache's document root to Laravel's secure /public directory
+# Point Apache's document root directly to Laravel's public entry point
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# 5. Set the active workspace directory inside the container
+# Establish the active working directory directory layout
 WORKDIR /var/www/html
 
-# 6. Copy your Laravel source code files securely into the server 
+# Copy the core framework files directly to the server
 COPY . /var/www/html
 
-# 7. Stable Binary Injection: Copy Composer directly from the official image
+# 🔥 INJECTION: Copy your cleanly compiled Vite assets directly from STAGE 1
+COPY --from=frontend-builder /build/public/build /var/www/html/public/build
+
+# Stable Binary Injection: Copy Composer natively from its official core repository
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 8. Run your framework composer dependencies automatically
+# Run backend framework optimization routines automatically
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# 9. Compile your frontend CSS/JS assets natively using Vite
-RUN npm install && npm run build
-
-# 10. FIXED: Clear configurations in safe-mode to bypass database validation blocks entirely
+# Force refresh the system configs in safe mode to map production environment variables
 RUN php artisan config:clear --no-plugins && php artisan cache:clear --no-plugins
 
-# 11. Grant the Apache server web user read/write access to your cache and storage directories
+# Grant the Apache server web user read/write access to your cache and storage directories
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache

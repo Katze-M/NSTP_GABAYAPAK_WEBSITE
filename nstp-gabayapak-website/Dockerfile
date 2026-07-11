@@ -51,3 +51,11 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Grant the Apache server web user read/write access to your cache and storage directories
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Apply database migrations each time a new Render container starts, then run
+# Apache. Keeping this in the image avoids relying on Render's shell-command UI.
+COPY docker/entrypoint.sh /usr/local/bin/app-entrypoint
+RUN chmod +x /usr/local/bin/app-entrypoint
+
+ENTRYPOINT ["/usr/local/bin/app-entrypoint"]
+CMD ["apache2-foreground"]

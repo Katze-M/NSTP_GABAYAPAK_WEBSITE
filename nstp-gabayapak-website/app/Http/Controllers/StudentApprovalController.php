@@ -72,7 +72,7 @@ class StudentApprovalController extends Controller
 
         $approval = Approval::findOrFail($id);
         $approval->status = 'approved';
-        $approval->approver_id = $user->user_id;
+        $approval->approver_id = $user->id;
         $approval->approver_role = $user->user_role;
         $approval->remarks = $request->remarks;
         $approval->save();
@@ -91,7 +91,7 @@ class StudentApprovalController extends Controller
 
         $approval = Approval::findOrFail($id);
         $approval->status = 'rejected';
-        $approval->approver_id = $user->user_id;
+        $approval->approver_id = $user->id;
         $approval->approver_role = $user->user_role;
         $approval->remarks = $request->remarks;
         $approval->save();

@@ -696,7 +696,7 @@ function loadExistingData() {
         activity.Point_Persons || '',
         activity.status || 'Planned',
         false,
-        activity.Activity_ID || activity.id || ''
+        activity.id || activity.id || ''
       );
     });
   } else {
@@ -714,7 +714,7 @@ function loadExistingData() {
         budget.Partner_Agencies || '',
         budget.Amount || '',
         false,
-        budget.Budget_ID || budget.id || ''
+        budget.id || budget.id || ''
       );
     });
   } else {

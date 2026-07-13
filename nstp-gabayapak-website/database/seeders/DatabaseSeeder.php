@@ -49,7 +49,7 @@ class DatabaseSeeder extends Seeder
         // Create student profile if it doesn't exist
         if (!$studentUser->student) {
             Student::create([
-                'user_id' => $studentUser->user_id,
+                'user_id' => $studentUser->id,
                 'student_contact_number' => '09123456789',
                 'student_course' => 'BSIT',
                 'student_year' => 2,
@@ -61,14 +61,14 @@ class DatabaseSeeder extends Seeder
         // Create staff profiles if they don't exist
         if (!$adminUser->staff) {
             Staff::create([
-                'user_id' => $adminUser->user_id,
+                'user_id' => $adminUser->id,
                 'staff_formal_picture' => '',
             ]);
         }
 
         if (!$formatorUser->staff) {
             Staff::create([
-                'user_id' => $formatorUser->user_id,
+                'user_id' => $formatorUser->id,
                 'staff_formal_picture' => '',
             ]);
         }

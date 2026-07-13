@@ -41,15 +41,15 @@
                             <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                                 <div class="flex items-start gap-3">
                                     <div class="flex items-center h-5">
-                                        <input id="formator_{{ $staff->user_id }}" 
+                                        <input id="formator_{{ $staff->id }}" 
                                                name="formators[]" 
                                                type="checkbox" 
-                                               value="{{ $staff->user_id }}"
+                                               value="{{ $staff->id }}"
                                                class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                               {{ in_array($staff->user_id, $currentFormators) ? 'checked' : '' }}>
+                                               {{ in_array($staff->id, $currentFormators) ? 'checked' : '' }}>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <label for="formator_{{ $staff->user_id }}" class="block text-sm font-medium text-gray-700 cursor-pointer">
+                                        <label for="formator_{{ $staff->id }}" class="block text-sm font-medium text-gray-700 cursor-pointer">
                                             <div class="flex items-center gap-3 mb-2">
                                                 <div class="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center bg-white overflow-hidden">
                                                     @if($staff->staff && $staff->staff->staff_formal_picture)

@@ -47,7 +47,7 @@ class LoginController extends Controller
             }
 
             // Check approval status for other users
-            $approval = Approval::where('user_id', $user->user_id)->latest()->first();
+            $approval = Approval::where('user_id', $user->id)->latest()->first();
 
             // Consider user approved if `approved` flag is true or latest approval is approved
             $isApproved = $user->approved || ($approval && $approval->status === 'approved');

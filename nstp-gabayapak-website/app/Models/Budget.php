@@ -9,8 +9,6 @@ class Budget extends Model
 {
     use HasFactory;
 
-    protected $primaryKey = 'Budget_ID';
-
     /**
      * The attributes that should be cast.
      *
@@ -38,7 +36,7 @@ class Budget extends Model
      */
     public function project()
     {
-        return $this->belongsTo(Project::class, 'project_id', 'Project_ID');
+        return $this->belongsTo(Project::class, 'project_id');
     }
 
 

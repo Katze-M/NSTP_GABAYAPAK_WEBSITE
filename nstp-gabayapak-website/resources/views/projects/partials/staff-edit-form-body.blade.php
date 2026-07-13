@@ -260,13 +260,13 @@
 {{-- Server-side hidden inputs to ensure existing activity/budget IDs post even if JS fails --}}
 @if(isset($project) && $project->activities && $project->activities->count() > 0)
   @foreach($project->activities as $act)
-    <input type="hidden" name="activity_id[]" value="{{ $act->Activity_ID ?? $act->id }}">
+    <input type="hidden" name="activity_id[]" value="{{ $act->id ?? $act->id }}">
   @endforeach
 @endif
 
 @if(isset($project) && $project->budgets && $project->budgets->count() > 0)
   @foreach($project->budgets as $bud)
-    <input type="hidden" name="budget_id[]" value="{{ $bud->Budget_ID ?? $bud->id }}">
+    <input type="hidden" name="budget_id[]" value="{{ $bud->id ?? $bud->id }}">
   @endforeach
 @endif
 @include('projects.partials.staff-edit-form-scripts', ['project' => $project])

@@ -203,7 +203,7 @@
       <div id="activitiesContainer" class="divide-y divide-gray-400 w-full min-w-0">
         @foreach($project->activities as $i => $activity)
         <div class="proposal-table-row activity-row flex items-center gap-4 w-full">
-          <input type="hidden" name="activity_id[]" value="{{ $activity->Activity_ID }}">
+          <input type="hidden" name="activity_id[]" value="{{ $activity->id }}">
           <div class="w-20 flex-none">
             <input name="stage[]" class="proposal-input w-full" placeholder="e.g., 1" @if(!$isDraftMode) required @endif value="{{ old('stage.' . $i, $activity->Stage)}}">
           </div>
@@ -275,7 +275,7 @@
     @foreach($project->activities as $i => $activity)
     <div class="activity-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm">
 
-      <input type="hidden" name="activity_id[]" value="{{ $activity->Activity_ID }}">
+      <input type="hidden" name="activity_id[]" value="{{ $activity->id }}">
 
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600">Stage <span class="text-red-500">*</span></label>
@@ -411,7 +411,7 @@
                 @if($project->budgets && $project->budgets->isNotEmpty())
                     @foreach($project->budgets as $i => $b)
                         <div class="proposal-table-row grid grid-cols-[2fr_2fr_2fr_1fr_auto] gap-4 items-start w-full">
-                            <input type="hidden" name="budget_id[]" value="{{ $b->Budget_ID }}">
+                            <input type="hidden" name="budget_id[]" value="{{ $b->id }}">
                             <textarea name="budget_activity[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Describe the activity...">{{ old('budget_activity.' . $i, $b->Specific_Activity) }}</textarea>
                             <textarea name="budget_resources[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="List resources needed...">{{ old('budget_resources.' . $i, $b->Resources_Needed) }}</textarea>
                             <textarea name="budget_partners[]" class="proposal-textarea w-full resize-none" rows="2" placeholder="Partner organizations...">{{ old('budget_partners.' . $i, $b->Partner_Agencies) }}</textarea>
@@ -441,7 +441,7 @@
           @if($project->budgets && $project->budgets->isNotEmpty())
               @foreach($project->budgets as $i => $b)
                   <div class="budget-row space-y-3 p-3 border-2 border-gray-400 rounded bg-white shadow-sm">
-                      <input type="hidden" name="budget_id[]" value="{{ $b->Budget_ID }}">
+                      <input type="hidden" name="budget_id[]" value="{{ $b->id }}">
                       <div class="space-y-1">
                         <label class="block text-xs font-medium text-gray-600">Activity</label>
                         <textarea name="budget_activity[]" class="w-full rounded-md border-2 border-gray-400 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-colors" rows="2" placeholder="Activity">{{ old('budget_activity.' . $i, $b->Specific_Activity) }}</textarea>

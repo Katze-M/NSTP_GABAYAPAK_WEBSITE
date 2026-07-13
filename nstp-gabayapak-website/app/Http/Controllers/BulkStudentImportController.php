@@ -281,7 +281,7 @@ class BulkStudentImportController extends Controller
                 
                 // Create Student Profile
                 Student::create([
-                    'user_id' => $user->user_id,
+                    'user_id' => $user->id,
                     'student_contact_number' => trim($row['Contact Number']),
                     'student_course' => trim($row['Course']),
                     'student_year' => (int)trim($row['Year']),
@@ -291,7 +291,7 @@ class BulkStudentImportController extends Controller
                 
                 // Create auto-approved Approval record
                 Approval::create([
-                    'user_id' => $user->user_id,
+                    'user_id' => $user->id,
                     'type' => 'student',
                     'status' => 'approved',
                 ]);

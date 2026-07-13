@@ -213,12 +213,12 @@ class ProjectController extends Controller
                     'member_roles' => $validated['member_roles'],
                 ]);
                 Log::debug('storeDraft persisted project members', [
-                    'project' => $project->Project_ID ?? null,
+                    'project' => $project->id ?? null,
                     'student_ids_saved' => $project->student_ids,
                     'member_roles_saved' => $project->member_roles,
                 ]);
             } catch (\Throwable $e) {
-                Log::error('storeDraft failed persisting project members: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
+                Log::error('storeDraft failed persisting project members: ' . $e->getMessage(), ['project' => $project->id ?? null]);
             }
 
             // sync activities/budgets for a draft: allow incomplete but skip fully blank rows
@@ -367,12 +367,12 @@ class ProjectController extends Controller
                     'member_roles' => $validated['member_roles'],
                 ]);
                 Log::debug('storeSubmit persisted project members', [
-                    'project' => $project->Project_ID ?? null,
+                    'project' => $project->id ?? null,
                     'student_ids_saved' => $project->student_ids,
                     'member_roles_saved' => $project->member_roles,
                 ]);
             } catch (\Throwable $e) {
-                Log::error('storeSubmit failed persisting project members: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
+                Log::error('storeSubmit failed persisting project members: ' . $e->getMessage(), ['project' => $project->id ?? null]);
             }
 
             // sync activities and budgets - strict because this is a submission
@@ -475,11 +475,11 @@ class ProjectController extends Controller
                 $dump = [
                     'time' => now()->toDateTimeString(),
                     'route' => 'updateDraft',
-                    'project' => $project->Project_ID ?? null,
+                    'project' => $project->id ?? null,
                     'request' => $request->all(),
                     'validated' => $validated,
                 ];
-                Storage::put('debug/update-draft-' . ($project->Project_ID ?? 'new') . '-' . time() . '.json', json_encode($dump, JSON_PRETTY_PRINT));
+                Storage::put('debug/update-draft-' . ($project->id ?? 'new') . '-' . time() . '.json', json_encode($dump, JSON_PRETTY_PRINT));
             } catch (\Exception $e) {
                 Log::warning('Failed writing debug dump: ' . $e->getMessage());
             }
@@ -515,7 +515,7 @@ class ProjectController extends Controller
         // Debug: log member inputs and computed student ids to diagnose owner replacement
         try {
             Log::debug('updateDraft member inputs', [
-                'project' => $project->Project_ID ?? null,
+                'project' => $project->id ?? null,
                 'owner_id' => $project->student_id ?? null,
                 'request_member_student_id' => $request->input('member_student_id'),
                 'request_member_email' => $request->input('member_email'),
@@ -528,7 +528,7 @@ class ProjectController extends Controller
 
         // Debug incoming activity/budget ids to help track why existing rows may not be updated
         Log::debug('updateDraft payload ids', [
-            'project' => $project->Project_ID ?? null,
+            'project' => $project->id ?? null,
             'activity_id' => $request->input('activity_id'),
             'budget_id' => $request->input('budget_id'),
             'computed_project_status' => $projectStatus,
@@ -553,7 +553,7 @@ class ProjectController extends Controller
 
             try {
                 Log::debug('updateDraft persisted project members', [
-                    'project' => $project->Project_ID ?? null,
+                    'project' => $project->id ?? null,
                     'student_ids_saved' => $project->student_ids,
                     'member_roles_saved' => $project->member_roles,
                 ]);
@@ -623,11 +623,11 @@ class ProjectController extends Controller
                 $dump = [
                     'time' => now()->toDateTimeString(),
                     'route' => 'updateSubmit',
-                    'project' => $project->Project_ID ?? null,
+                    'project' => $project->id ?? null,
                     'request' => $request->all(),
                     'validated' => $validated,
                 ];
-                Storage::put('debug/update-submit-' . ($project->Project_ID ?? 'new') . '-' . time() . '.json', json_encode($dump, JSON_PRETTY_PRINT));
+                Storage::put('debug/update-submit-' . ($project->id ?? 'new') . '-' . time() . '.json', json_encode($dump, JSON_PRETTY_PRINT));
             } catch (\Exception $e) {
                 Log::warning('Failed writing debug dump: ' . $e->getMessage());
             }
@@ -720,7 +720,7 @@ class ProjectController extends Controller
                 }
 
                 $projectStatus = $wasCoordinator ? 'endorsed' : 'pending';
-                \Log::debug('Resubmission routing', ['project' => $project->Project_ID ?? null, 'rejectedById' => $rejectedById, 'hadEndorsedBy' => $hadEndorsedBy, 'hadProjectApprovedBy' => $hadProjectApprovedBy, 'wasCoordinator' => $wasCoordinator, 'computedStatus' => $projectStatus]);
+                \Log::debug('Resubmission routing', ['project' => $project->id ?? null, 'rejectedById' => $rejectedById, 'hadEndorsedBy' => $hadEndorsedBy, 'hadProjectApprovedBy' => $hadProjectApprovedBy, 'wasCoordinator' => $wasCoordinator, 'computedStatus' => $projectStatus]);
             } catch (\Throwable $e) {
                 // If anything goes wrong, fall back to 'pending'
                 $projectStatus = 'pending';
@@ -730,7 +730,7 @@ class ProjectController extends Controller
         DB::transaction(function() use ($project, $validated, $request, $studentIds, $memberRoles, $projectStatus, $isResubmission) {
             // Debug incoming activity/budget ids for submit flow
             Log::debug('updateSubmit payload ids', [
-                'project' => $project->Project_ID ?? null,
+                'project' => $project->id ?? null,
                 'activity_id' => $request->input('activity_id'),
                 'budget_id' => $request->input('budget_id'),
             ]);
@@ -815,7 +815,7 @@ class ProjectController extends Controller
 
             try {
                 Log::debug('updateSubmit persisted project members', [
-                    'project' => $project->Project_ID ?? null,
+                    'project' => $project->id ?? null,
                     'student_ids_saved' => $project->student_ids,
                     'member_roles_saved' => $project->member_roles,
                 ]);
@@ -858,11 +858,11 @@ class ProjectController extends Controller
                 $dump = [
                     'time' => now()->toDateTimeString(),
                     'route' => 'updateStaff',
-                    'project' => $project->Project_ID ?? null,
+                    'project' => $project->id ?? null,
                     'request' => $request->all(),
                     'validated' => $validated,
                 ];
-                Storage::put('debug/update-staff-' . ($project->Project_ID ?? 'new') . '-' . time() . '.json', json_encode($dump, JSON_PRETTY_PRINT));
+                Storage::put('debug/update-staff-' . ($project->id ?? 'new') . '-' . time() . '.json', json_encode($dump, JSON_PRETTY_PRINT));
             } catch (\Exception $e) {
                 Log::warning('Failed writing debug dump (updateStaff): ' . $e->getMessage());
             }
@@ -882,7 +882,7 @@ class ProjectController extends Controller
 
         // Log incoming arrays to help debug any remaining alignment issues
         Log::debug('updateStaff payload ids', [
-            'project' => $project->Project_ID ?? null,
+            'project' => $project->id ?? null,
             'activity_id' => $request->input('activity_id'),
             'budget_id' => $request->input('budget_id'),
         ]);
@@ -906,7 +906,7 @@ class ProjectController extends Controller
 
             try {
                 Log::debug('updateStaff persisted project members', [
-                    'project' => $project->Project_ID ?? null,
+                    'project' => $project->id ?? null,
                     'student_ids_saved' => $project->student_ids,
                     'member_roles_saved' => $project->member_roles,
                 ]);
@@ -1053,7 +1053,7 @@ class ProjectController extends Controller
 
         // Log incoming activity arrays for debugging
         Log::debug('syncActivities input', [
-            'project' => $project->Project_ID ?? null,
+            'project' => $project->id ?? null,
             'stages_count' => count($stages),
             'activities_count' => count($activities),
             'timeframes_count' => count($timeframes),
@@ -1064,12 +1064,12 @@ class ProjectController extends Controller
 
         // Defensive: if everything is empty, nothing to do
         if (empty($stages) && empty($activities) && empty($timeframes) && empty($points) && empty($implDates)) {
-            Log::debug('syncActivities: nothing to sync (all arrays empty)', ['project' => $project->Project_ID ?? null]);
+            Log::debug('syncActivities: nothing to sync (all arrays empty)', ['project' => $project->id ?? null]);
             return;
         }
 
         // existing IDs to track deletions
-        $existingIds = $project->activities()->pluck('Activity_ID')->toArray();
+        $existingIds = $project->activities()->pluck('id')->toArray();
         $processed = [];
         $processedIds = [];
         $processedRowKeys = [];
@@ -1094,7 +1094,7 @@ class ProjectController extends Controller
 
             // Skip duplicate rowKeys (desktop+mobile duplication)
             if (!empty($rowKey) && in_array($rowKey, $processedRowKeys)) {
-                Log::debug('syncActivities: skipping duplicate rowKey', ['project' => $project->Project_ID ?? null, 'row_key' => $rowKey]);
+                Log::debug('syncActivities: skipping duplicate rowKey', ['project' => $project->id ?? null, 'row_key' => $rowKey]);
                 continue;
             }
 
@@ -1128,11 +1128,11 @@ class ProjectController extends Controller
                 'Implementation_Date' => $impl,
                 'Point_Persons' => $pp,
                 'status' => $st,
-                'project_id' => $project->Project_ID,
+                'project_id' => $project->id,
             ];
 
             if (!empty($id) && is_numeric($id)) {
-                $existing = Activity::where('Activity_ID', $id)->where('project_id', $project->Project_ID)->first();
+                $existing = Activity::where('id', $id)->where('project_id', $project->id)->first();
                 if ($existing) {
                     // If this row is completely empty and we're in draft mode, skip updating existing
                     if (!$hasAny && $allowPartialRows) {
@@ -1154,8 +1154,8 @@ class ProjectController extends Controller
                     }
 
                     $existing->update($updateData);
-                    $processed[] = $existing->Activity_ID;
-                    $processedIds[] = $existing->Activity_ID;
+                    $processed[] = $existing->id;
+                    $processedIds[] = $existing->id;
                     if (!empty($rowKey)) $processedRowKeys[] = $rowKey;
                     continue;
                 }
@@ -1165,14 +1165,14 @@ class ProjectController extends Controller
             if ($hasAny) {
                 // First, attempt a content-based lookup to update an existing row when ids/row-keys are missing
                 try {
-                    $lookup = Activity::where('project_id', $project->Project_ID)
+                    $lookup = Activity::where('project_id', $project->id)
                         ->whereRaw('LOWER(TRIM(COALESCE(Specific_Activity, ?))) = LOWER(TRIM(?))', ['', $act])
                         ->whereRaw('LOWER(TRIM(COALESCE(Point_Persons, ?))) = LOWER(TRIM(?))', ['', $pp])
                         ->whereRaw('LOWER(TRIM(COALESCE(Time_Frame, ?))) = LOWER(TRIM(?))', ['', $tf])
                         ->first();
                     if ($lookup) {
-                        if (in_array($lookup->Activity_ID, $processedIds)) {
-                            Log::debug('syncActivities: content-lookup matched id already processed; skipping', ['project' => $project->Project_ID ?? null, 'activity_id' => $lookup->Activity_ID]);
+                        if (in_array($lookup->id, $processedIds)) {
+                            Log::debug('syncActivities: content-lookup matched id already processed; skipping', ['project' => $project->id ?? null, 'activity_id' => $lookup->id]);
                         } else {
                             // Update the found record instead of creating a duplicate
                             $updateData = $data;
@@ -1180,27 +1180,27 @@ class ProjectController extends Controller
                                 unset($updateData['Implementation_Date']);
                             }
                             $lookup->update($updateData);
-                            $processed[] = $lookup->Activity_ID;
-                            $processedIds[] = $lookup->Activity_ID;
+                            $processed[] = $lookup->id;
+                            $processedIds[] = $lookup->id;
                             if (!empty($rowKey)) $processedRowKeys[] = $rowKey;
-                            Log::debug('syncActivities: applied content-lookup update', ['project' => $project->Project_ID ?? null, 'activity_id' => $lookup->Activity_ID]);
+                            Log::debug('syncActivities: applied content-lookup update', ['project' => $project->id ?? null, 'activity_id' => $lookup->id]);
                             continue;
                         }
                     }
                 } catch (\Exception $e) {
-                    Log::warning('syncActivities: content lookup failed', ['project' => $project->Project_ID ?? null, 'error' => $e->getMessage()]);
+                    Log::warning('syncActivities: content lookup failed', ['project' => $project->id ?? null, 'error' => $e->getMessage()]);
                 }
 
                 try {
                     // Temporary debug: log payload attempted for creation
-                    Log::debug('syncActivities: create payload', array_merge(['project' => $project->Project_ID ?? null], $data));
+                    Log::debug('syncActivities: create payload', array_merge(['project' => $project->id ?? null], $data));
                     $created = Activity::create($data);
-                    $processed[] = $created->Activity_ID;
-                    $processedIds[] = $created->Activity_ID;
+                    $processed[] = $created->id;
+                    $processedIds[] = $created->id;
                     if (!empty($rowKey)) $processedRowKeys[] = $rowKey;
-                    Log::debug('syncActivities: created activity', ['project' => $project->Project_ID ?? null, 'activity_id' => $created->Activity_ID]);
+                    Log::debug('syncActivities: created activity', ['project' => $project->id ?? null, 'activity_id' => $created->id]);
                 } catch (\Exception $e) {
-                    Log::error('syncActivities: failed creating activity', ['project' => $project->Project_ID ?? null, 'error' => $e->getMessage(), 'data' => $data]);
+                    Log::error('syncActivities: failed creating activity', ['project' => $project->id ?? null, 'error' => $e->getMessage(), 'data' => $data]);
                 }
             }
         }
@@ -1221,7 +1221,7 @@ class ProjectController extends Controller
             $toDelete = array_unique($toDelete);
         }
         if (!empty($toDelete)) {
-            Activity::whereIn('Activity_ID', $toDelete)->where('project_id', $project->Project_ID)->delete();
+            Activity::whereIn('id', $toDelete)->where('project_id', $project->id)->delete();
         }
     }
 
@@ -1275,7 +1275,7 @@ class ProjectController extends Controller
         $deletedBudgetRowKeys = is_array($request->input('deleted_budget_row_key', [])) ? $request->input('deleted_budget_row_key', []) : [];
 
         Log::debug('syncBudgets input', [
-            'project' => $project->Project_ID ?? null,
+            'project' => $project->id ?? null,
             'bActivities_count' => count($bActivities),
             'bResources_count' => count($bResources),
             'bPartners_count' => count($bPartners),
@@ -1284,11 +1284,11 @@ class ProjectController extends Controller
         ]);
 
         if (empty($bActivities) && empty($bResources) && empty($bPartners) && empty($bAmounts)) {
-            Log::debug('syncBudgets: nothing to sync (all arrays empty)', ['project' => $project->Project_ID ?? null]);
+            Log::debug('syncBudgets: nothing to sync (all arrays empty)', ['project' => $project->id ?? null]);
             return;
         }
 
-        $existingIds = $project->budgets()->pluck('Budget_ID')->toArray();
+        $existingIds = $project->budgets()->pluck('id')->toArray();
         $processed = [];
         $processedIds = [];
         $processedRowKeys = [];
@@ -1312,7 +1312,7 @@ class ProjectController extends Controller
 
             // Skip duplicate rowKeys submitted by duplicate DOM representations
             if (!empty($rowKey) && in_array($rowKey, $processedRowKeys)) {
-                Log::debug('syncBudgets: skipping duplicate rowKey', ['project' => $project->Project_ID ?? null, 'row_key' => $rowKey]);
+                Log::debug('syncBudgets: skipping duplicate rowKey', ['project' => $project->id ?? null, 'row_key' => $rowKey]);
                 continue;
             }
 
@@ -1339,7 +1339,7 @@ class ProjectController extends Controller
             if ($key !== '') $seen[$key] = true;
 
                 $data = [
-                'project_id' => $project->Project_ID,
+                'project_id' => $project->id,
                 'Specific_Activity' => $act,
                 'Resources_Needed' => $res,
                 'Partner_Agencies' => $par,
@@ -1347,15 +1347,15 @@ class ProjectController extends Controller
             ];
 
             if (!empty($id) && is_numeric($id)) {
-                $existing = Budget::where('Budget_ID', $id)->where('project_id', $project->Project_ID)->first();
+                $existing = Budget::where('id', $id)->where('project_id', $project->id)->first();
                 if ($existing) {
                     // If this row is completely empty and we're in draft mode, skip updating existing
                     if (!$hasAny && $allowPartialRows) {
                         continue;
                     }
                     $existing->update($data);
-                    $processed[] = $existing->Budget_ID;
-                    $processedIds[] = $existing->Budget_ID;
+                    $processed[] = $existing->id;
+                    $processedIds[] = $existing->id;
                     if (!empty($rowKey)) $processedRowKeys[] = $rowKey;
                     continue;
                 }
@@ -1365,7 +1365,7 @@ class ProjectController extends Controller
             // to avoid creating duplicate budget rows when client ids are misaligned.
             if (empty($id) || !is_numeric($id) || empty($existing)) {
                 try {
-                    $lookup = Budget::where('project_id', $project->Project_ID)
+                    $lookup = Budget::where('project_id', $project->id)
                         ->whereRaw('LOWER(COALESCE(Specific_Activity, ?)) = LOWER(COALESCE(?, ?))', ['', $act, ''])
                         ->whereRaw('LOWER(COALESCE(Resources_Needed, ?)) = LOWER(COALESCE(?, ?))', ['', $res, ''])
                         ->whereRaw('LOWER(COALESCE(Partner_Agencies, ?)) = LOWER(COALESCE(?, ?))', ['', $par, ''])
@@ -1374,18 +1374,18 @@ class ProjectController extends Controller
 
                     if ($lookup) {
                         // Avoid re-processing same lookup record
-                        if (in_array($lookup->Budget_ID, $processedIds)) {
-                            Log::debug('syncBudgets: content-lookup matched id already processed; skipping', ['project' => $project->Project_ID ?? null, 'budget_id' => $lookup->Budget_ID]);
+                        if (in_array($lookup->id, $processedIds)) {
+                            Log::debug('syncBudgets: content-lookup matched id already processed; skipping', ['project' => $project->id ?? null, 'budget_id' => $lookup->id]);
                             continue;
                         }
                         $lookup->update($data);
-                        $processed[] = $lookup->Budget_ID;
-                        $processedIds[] = $lookup->Budget_ID;
+                        $processed[] = $lookup->id;
+                        $processedIds[] = $lookup->id;
                         if (!empty($rowKey)) $processedRowKeys[] = $rowKey;
                         continue;
                     }
                 } catch (\Exception $e) {
-                    Log::warning('syncBudgets: content lookup failed', ['project' => $project->Project_ID ?? null, 'error' => $e->getMessage()]);
+                    Log::warning('syncBudgets: content lookup failed', ['project' => $project->id ?? null, 'error' => $e->getMessage()]);
                 }
             }
 
@@ -1398,35 +1398,35 @@ class ProjectController extends Controller
             if ($shouldCreate) {
                 try {
                     // Temporary debug: log payload attempted for creation
-                    Log::debug('syncBudgets: create payload', array_merge(['project' => $project->Project_ID ?? null], $data));
+                    Log::debug('syncBudgets: create payload', array_merge(['project' => $project->id ?? null], $data));
                     // Final fallback: try a looser lookup on Specific_Activity (and amount when provided)
                     try {
                         if (trim($act) !== '') {
-                            $qb = Budget::where('project_id', $project->Project_ID)
+                            $qb = Budget::where('project_id', $project->id)
                                 ->whereRaw('LOWER(TRIM(COALESCE(Specific_Activity, ?))) = LOWER(TRIM(?))', ['', $act]);
                             if ($amtNormalized !== '' && is_numeric($amtNormalized)) {
                                 $qb = $qb->where('Amount', (float)$amtNormalized);
                             }
                             $fallback = $qb->first();
-                            if ($fallback && !in_array($fallback->Budget_ID, $processedIds)) {
+                            if ($fallback && !in_array($fallback->id, $processedIds)) {
                                 $fallback->update($data);
-                                $processed[] = $fallback->Budget_ID;
-                                $processedIds[] = $fallback->Budget_ID;
+                                $processed[] = $fallback->id;
+                                $processedIds[] = $fallback->id;
                                 if (!empty($rowKey)) $processedRowKeys[] = $rowKey;
-                                Log::debug('syncBudgets: applied fallback update instead of create', ['project' => $project->Project_ID ?? null, 'budget_id' => $fallback->Budget_ID]);
+                                Log::debug('syncBudgets: applied fallback update instead of create', ['project' => $project->id ?? null, 'budget_id' => $fallback->id]);
                                 continue;
                             }
                         }
                     } catch (\Exception $e) {
-                        Log::warning('syncBudgets: fallback lookup failed', ['project' => $project->Project_ID ?? null, 'error' => $e->getMessage()]);
+                        Log::warning('syncBudgets: fallback lookup failed', ['project' => $project->id ?? null, 'error' => $e->getMessage()]);
                     }
                     $created = Budget::create($data);
-                    $processed[] = $created->Budget_ID;
-                    $processedIds[] = $created->Budget_ID;
+                    $processed[] = $created->id;
+                    $processedIds[] = $created->id;
                     if (!empty($rowKey)) $processedRowKeys[] = $rowKey;
-                    Log::debug('syncBudgets: created budget', ['project' => $project->Project_ID ?? null, 'budget_id' => $created->Budget_ID]);
+                    Log::debug('syncBudgets: created budget', ['project' => $project->id ?? null, 'budget_id' => $created->id]);
                 } catch (\Exception $e) {
-                    Log::error('syncBudgets: failed creating budget', ['project' => $project->Project_ID ?? null, 'error' => $e->getMessage(), 'data' => $data]);
+                    Log::error('syncBudgets: failed creating budget', ['project' => $project->id ?? null, 'error' => $e->getMessage(), 'data' => $data]);
                 }
             }
         }
@@ -1445,7 +1445,7 @@ class ProjectController extends Controller
             $toDelete = array_unique($toDelete);
         }
         if (!empty($toDelete)) {
-            Budget::whereIn('Budget_ID', $toDelete)->where('project_id', $project->Project_ID)->delete();
+            Budget::whereIn('id', $toDelete)->where('project_id', $project->id)->delete();
         }
     }
 
@@ -1987,7 +1987,7 @@ class ProjectController extends Controller
         if ($user->isCoordinator()) {
             $project->update([
                 'Project_Status' => 'approved',
-                'Project_Approved_By' => $user->user_id
+                'Project_Approved_By' => $user->id
             ]);
             return redirect()->back()->with('success', 'Project approved successfully.');
         }
@@ -1995,7 +1995,7 @@ class ProjectController extends Controller
         elseif ($user->isFormator()) {
             $project->update([
                 'Project_Status' => 'endorsed',
-                'endorsed_by' => $user->user_id
+                'endorsed_by' => $user->id
             ]);
             return redirect()->back()->with('success', 'Project endorsed successfully.');
         }
@@ -2016,7 +2016,7 @@ class ProjectController extends Controller
 
             $project->update([
                 'Project_Status' => 'completed',
-                'mark_as_completed_by' => $user->user_id
+                'mark_as_completed_by' => $user->id
             ]);
             return redirect()->back()->with('success', 'Project marked as completed.');
         }
@@ -2242,7 +2242,7 @@ class ProjectController extends Controller
         $user = Auth::user();
         // Allow staff or students; delegate authorization and member checks to show()
         if (!$user || (! $user->isStudent() && ! $user->isStaff())) abort(403);
-        $project = Project::where('Project_ID', $id)->firstOrFail();
+        $project = Project::where('id', $id)->firstOrFail();
 
         // Delegate to the `show` method which already implements robust
         // ownership, membership and public-status checks and prepares the view data.
@@ -2265,7 +2265,7 @@ class ProjectController extends Controller
 
     public function details($id)
     {
-        $project = Project::where('Project_ID', $id)->with(['activities', 'budgets'])->firstOrFail();
+        $project = Project::where('id', $id)->with(['activities', 'budgets'])->firstOrFail();
         return view('projects.details', compact('project'));
     }
 

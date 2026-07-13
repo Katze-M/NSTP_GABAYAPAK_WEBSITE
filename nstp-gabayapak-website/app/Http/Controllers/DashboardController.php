@@ -76,8 +76,8 @@ class DashboardController extends Controller
             ->through(function ($a) {
                     $projComp = $a->project?->Project_Component ?? '';
                     return [
-                        'project_id' => $a->project?->Project_ID ?? null,
-                        'activity_id' => $a->Activity_ID,
+                        'project_id' => $a->project?->id ?? null,
+                        'activity_id' => $a->id,
                         'title' => $a->Specific_Activity,
                         // store a normalized component key for logic and keep original label for display
                         'component' => strtoupper(trim((string) $projComp)),
@@ -163,8 +163,8 @@ class DashboardController extends Controller
             $filtered_activities = $filteredQuery->orderBy('Implementation_Date')->take(200)->get()->map(function ($a) {
                     $projComp = $a->project?->Project_Component ?? '';
                     return [
-                        'project_id' => $a->project?->Project_ID ?? null,
-                        'activity_id' => $a->Activity_ID,
+                        'project_id' => $a->project?->id ?? null,
+                        'activity_id' => $a->id,
                         'title' => $a->Specific_Activity,
                         'component' => strtoupper(trim((string) $projComp)),
                         'component_label' => $projComp,

@@ -14,8 +14,6 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    protected $primaryKey = 'user_id';
-
     /**
      * The attributes that are mass assignable.
      *
@@ -50,26 +48,6 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'user_Password' => 'hashed',
         ];
-    }
-
-    /**
-     * Get the name of the unique identifier for the user.
-     *
-     * @return string
-     */
-    public function getAuthIdentifierName()
-    {
-        return 'user_id';
-    }
-
-    /**
-     * Get the unique identifier for the user.
-     *
-     * @return mixed
-     */
-    public function getAuthIdentifier()
-    {
-        return $this->user_id;
     }
 
     /**
@@ -127,7 +105,7 @@ class User extends Authenticatable
      */
     public function staff()
     {
-        return $this->hasOne(Staff::class, 'user_id', 'user_id');
+        return $this->hasOne(Staff::class, 'user_id');
     }
 
     /**
@@ -184,7 +162,7 @@ class User extends Authenticatable
 
     public function approvals()
     {
-        return $this->hasMany(Approval::class, 'user_id', 'user_id');
+        return $this->hasMany(Approval::class, 'user_id');
     }
 
     /**

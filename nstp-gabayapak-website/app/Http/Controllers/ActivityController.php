@@ -113,7 +113,7 @@ class ActivityController extends Controller
         // Always create a new ActivityUpdate for this action (no appending to previous updates)
         $statusNormalized = ucfirst(strtolower($validatedData['status']));
         $updateRecord = \App\Models\ActivityUpdate::create([
-            'activity_id' => $activity->Activity_ID,
+            'activity_id' => $activity->id,
             'user_id' => Auth::id(),
             'status' => $statusNormalized,
         ]);

@@ -11,18 +11,6 @@ class Project extends Model
 {
     use HasFactory;
 
-    protected $primaryKey = 'Project_ID';
-    
-    /**
-     * Get the route key for the model.
-     *
-     * @return string
-     */
-    public function getRouteKeyName()
-    {
-        return 'Project_ID';
-    }
-
     /**
      * The attributes that are mass assignable.
      *
@@ -74,7 +62,7 @@ class Project extends Model
      */
     public function activities()
     {
-        return $this->hasMany(Activity::class, 'project_id', 'Project_ID');
+        return $this->hasMany(Activity::class, 'project_id');
     }
 
     /**
@@ -82,7 +70,7 @@ class Project extends Model
      */
     public function rejectedBy()
     {
-        return $this->belongsTo(\App\Models\User::class, 'Project_Rejected_By', 'user_id');
+        return $this->belongsTo(\App\Models\User::class, 'Project_Rejected_By');
     }
 
     /**
@@ -90,7 +78,7 @@ class Project extends Model
      */
     public function approvedBy()
     {
-        return $this->belongsTo(\App\Models\User::class, 'Project_Approved_By', 'user_id');
+        return $this->belongsTo(\App\Models\User::class, 'Project_Approved_By');
     }
 
     /**
@@ -98,7 +86,7 @@ class Project extends Model
      */
     public function budgets()
     {
-        return $this->hasMany(Budget::class, 'project_id', 'Project_ID');
+        return $this->hasMany(Budget::class, 'project_id');
     }
     
     /**
@@ -108,7 +96,7 @@ class Project extends Model
     public function teamMembersRelation()
     {
         if ($this->student_ids && is_array($this->student_ids) && !empty($this->student_ids)) {
-            return $this->hasManyThrough(Student::class, 'students', 'id', 'id', 'Project_ID', 'id')
+            return $this->hasManyThrough(Student::class, 'students', 'id', 'id', 'id', 'id')
                        ->whereIn('students.id', $this->student_ids);
         }
         // If no student_ids are stored, return only the project owner
@@ -256,7 +244,7 @@ class Project extends Model
      */
     public function endorsedBy()
     {
-        return $this->belongsTo(User::class, 'endorsed_by', 'user_id');
+        return $this->belongsTo(User::class, 'endorsed_by');
     }
 
     /**
@@ -264,7 +252,7 @@ class Project extends Model
      */
     public function completedBy()
     {
-        return $this->belongsTo(User::class, 'mark_as_completed_by', 'user_id');
+        return $this->belongsTo(User::class, 'mark_as_completed_by');
     }
 
     /**
@@ -280,7 +268,7 @@ class Project extends Model
                 if (!empty($old) && $old !== $new) {
                     try {
                         Storage::disk(config('filesystems.default', 's3'))->delete($old);
-                        Log::info('Deleted old project logo', ['path' => $old, 'project' => $project->Project_ID ?? null]);
+                        Log::info('Deleted old project logo', ['path' => $old, 'project' => $project->id ?? null]);
                     } catch (\Throwable $e) {
                         Log::warning('Failed deleting old project logo: ' . $e->getMessage(), ['path' => $old]);
                     }
@@ -295,7 +283,7 @@ class Project extends Model
                     Storage::disk(config('filesystems.default', 's3'))->delete($project->Project_Logo);
                 }
             } catch (\Throwable $e) {
-                Log::warning('Failed deleting project logo: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
+                Log::warning('Failed deleting project logo: ' . $e->getMessage(), ['project' => $project->id ?? null]);
             }
 
             try {
@@ -304,7 +292,7 @@ class Project extends Model
                     $activity->delete();
                 }
             } catch (\Throwable $e) {
-                Log::warning('Failed deleting project activities on project delete: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
+                Log::warning('Failed deleting project activities on project delete: ' . $e->getMessage(), ['project' => $project->id ?? null]);
             }
         });
     }

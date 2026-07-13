@@ -147,7 +147,7 @@ class RegisterController extends Controller
         $user = DB::transaction(function () use ($request, $existing) {
             if ($existing) {
                 // If existing user has a rejected approval, allow updating their record and create a new pending approval.
-                $lastApproval = Approval::where('user_id', $existing->user_id)->latest()->first();
+                $lastApproval = Approval::where('user_id', $existing->id)->latest()->first();
                 if ($lastApproval && $lastApproval->status === 'rejected') {
                     // update the existing user
                     $existing->update([
@@ -184,7 +184,7 @@ class RegisterController extends Controller
 
                 // Create or update student profile
                 Student::updateOrCreate(
-                    ['user_id' => $user->user_id],
+                    ['user_id' => $user->id],
                     [
                         'student_contact_number' => $request->student_contact_number,
                         'student_course' => $request->student_course,
@@ -199,7 +199,7 @@ class RegisterController extends Controller
                     'staff_formal_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
-                $existingStaff = Staff::where('user_id', $user->user_id)->first();
+                $existingStaff = Staff::where('user_id', $user->id)->first();
                 $picturePath = null;
                 if ($request->hasFile('staff_formal_picture')) {
                     $picturePath = $request->file('staff_formal_picture')->store('staff_pictures', config('filesystems.default', 's3'));
@@ -213,7 +213,7 @@ class RegisterController extends Controller
 
                 // Create or update staff profile
                 Staff::updateOrCreate(
-                    ['user_id' => $user->user_id],
+                    ['user_id' => $user->id],
                     ['staff_formal_picture' => $picturePath]
                 );
             }
@@ -226,7 +226,7 @@ class RegisterController extends Controller
             } else {
                 // Create an approval entry (pending)
                 Approval::create([
-                    'user_id' => $user->user_id,
+                    'user_id' => $user->id,
                     'type' => $user->isStudent() ? 'student' : 'staff',
                     'status' => 'pending',
                 ]);

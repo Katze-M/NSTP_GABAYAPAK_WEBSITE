@@ -55,7 +55,7 @@ class StaffApprovalController extends Controller
         $legacyApprovals = $legacyUsers->map(function($user) {
             $fake = new Approval();
             $fake->id = 0; // indicator it's synthetic
-            $fake->user_id = $user->user_id;
+            $fake->user_id = $user->id;
             $fake->type = 'staff';
             $fake->status = 'pending';
             $fake->remarks = null;
@@ -116,7 +116,7 @@ class StaffApprovalController extends Controller
 
         $approval = Approval::findOrFail($id);
         $approval->status = 'approved';
-        $approval->approver_id = $user->user_id;
+        $approval->approver_id = $user->id;
         $approval->approver_role = $user->user_role;
         $approval->remarks = $request->remarks;
         $approval->save();
@@ -135,7 +135,7 @@ class StaffApprovalController extends Controller
 
         $approval = Approval::findOrFail($id);
         $approval->status = 'rejected';
-        $approval->approver_id = $user->user_id;
+        $approval->approver_id = $user->id;
         $approval->approver_role = $user->user_role;
         $approval->remarks = $request->remarks;
         $approval->save();

@@ -29,7 +29,7 @@ Route::get('/', function () {
     if (!empty($persisted) && is_array($persisted)) {
         // Only include approved formators (preserve previous approval rules)
         $nstpFormators = User::where('user_Type', 'staff')
-            ->whereIn('user_id', $persisted)
+            ->whereIn('id', $persisted)
             ->where(function($q) {
                 $q->where('approved', true)
                   ->orWhereHas('approvals', function($a) {
@@ -97,7 +97,7 @@ Route::get('/formators/manage', function () {
                       $a->where('status', 'approved');
                   });
             })
-            ->pluck('user_id')
+            ->pluck('id')
             ->toArray();
     }
     
@@ -113,7 +113,7 @@ Route::post('/formators/update', function (\Illuminate\Http\Request $request) {
     // Validate the request
     $request->validate([
         'formators' => 'array',
-        'formators.*' => 'exists:users,user_id'
+        'formators.*' => 'exists:users,id'
     ]);
     
     // Persist the list of selected formator user IDs to storage/app/formators.json
@@ -233,7 +233,7 @@ Route::post('/registration-status', function (\Illuminate\Http\Request $request)
     $message = 'No registration found for that email.';
     $remarks = null;
     if ($user) {
-        $approval = App\Models\Approval::where('user_id', $user->user_id)->latest()->first();
+        $approval = App\Models\Approval::where('user_id', $user->id)->latest()->first();
         if ($user->approved || ($approval && $approval->status === 'approved')) {
             $status = 'approved';
             $message = 'Your account registration has been approved!';

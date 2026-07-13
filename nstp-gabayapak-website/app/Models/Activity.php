@@ -10,8 +10,6 @@ class Activity extends Model
 {
     use HasFactory;
 
-    protected $primaryKey = 'Activity_ID';
-
     /**
      * The attributes that are mass assignable.
      *
@@ -41,7 +39,7 @@ class Activity extends Model
      */
     public function project()
     {
-        return $this->belongsTo(Project::class, 'project_id', 'Project_ID');
+        return $this->belongsTo(Project::class, 'project_id');
     }
 
     /**
@@ -49,7 +47,7 @@ class Activity extends Model
      */
     public function updates()
     {
-        return $this->hasMany(ActivityUpdate::class, 'activity_id', 'Activity_ID');
+        return $this->hasMany(ActivityUpdate::class, 'activity_id');
     }
 
     protected static function booted()
@@ -60,7 +58,7 @@ class Activity extends Model
                     $u->delete();
                 }
             } catch (\Throwable $e) {
-                Log::warning('Failed deleting activity updates for activity: ' . $e->getMessage(), ['activity' => $activity->Activity_ID ?? null]);
+                Log::warning('Failed deleting activity updates for activity: ' . $e->getMessage(), ['activity' => $activity->id ?? null]);
             }
         });
     }

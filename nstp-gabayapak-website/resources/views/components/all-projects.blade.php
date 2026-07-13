@@ -144,12 +144,12 @@
                         if (($toEndorse->isEmpty() || $projects->isEmpty()) && class_exists(\App\Models\Project::class)) {
                             $fallback = \App\Models\Project::whereIn('Project_Status', ['pending', 'submitted'])->get();
                             // merge unique by primary key if necessary
-                            $toEndorse = $toEndorse->merge($fallback)->unique(function($p){ return $p->Project_ID ?? $p->id ?? null; })->values();
+                            $toEndorse = $toEndorse->merge($fallback)->unique(function($p){ return $p->id ?? $p->id ?? null; })->values();
                         }
 
                         if (($toApprove->isEmpty() || $projects->isEmpty()) && class_exists(\App\Models\Project::class)) {
                             $fallbackA = \App\Models\Project::where('Project_Status', 'endorsed')->get();
-                            $toApprove = $toApprove->merge($fallbackA)->unique(function($p){ return $p->Project_ID ?? $p->id ?? null; })->values();
+                            $toApprove = $toApprove->merge($fallbackA)->unique(function($p){ return $p->id ?? $p->id ?? null; })->values();
                         }
                     } catch (\Exception $e) {
                         // If querying fails (e.g., running in a context where DB isn't available), keep empty collections
@@ -188,7 +188,7 @@
                                         <p class="text-gray-600">{{ $project->Project_Team_Name }}</p>
                                         <div class="flex justify-center mt-4">
                                             <div class="relative group">
-                                                <a href="{{ route('projects.show', $project->Project_ID) }}" class="view-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors duration-200 flex items-center justify-center" style="background-color:#2563eb;color:#ffffff;">
+                                                <a href="{{ route('projects.show', $project->id) }}" class="view-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors duration-200 flex items-center justify-center" style="background-color:#2563eb;color:#ffffff;">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -237,7 +237,7 @@
                                         <p class="text-gray-600">{{ $project->Project_Team_Name }}</p>
                                         <div class="flex justify-center mt-4">
                                             <div class="relative group">
-                                                <a href="{{ route('projects.show', $project->Project_ID) }}" class="view-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors duration-200 flex items-center justify-center" style="background-color:#2563eb;color:#ffffff;">
+                                                <a href="{{ route('projects.show', $project->id) }}" class="view-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors duration-200 flex items-center justify-center" style="background-color:#2563eb;color:#ffffff;">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -343,7 +343,7 @@
                     <div class="flex flex-wrap justify-center gap-2 mt-4">
                         <!-- View Button with Eye Icon and Custom Tooltip -->
                             <div class="relative group">
-                                <a href="@if((($section ?? '') === 'My Projects') && (Auth::check() && Auth::user()->isStudent() && Auth::user()->student && Auth::user()->student->id === ($project->student_id ?? null))) {{ route('my-projects.details', $project->Project_ID) }} @else {{ route('projects.show', $project->Project_ID) }} @endif" 
+                                <a href="@if((($section ?? '') === 'My Projects') && (Auth::check() && Auth::user()->isStudent() && Auth::user()->student && Auth::user()->student->id === ($project->student_id ?? null))) {{ route('my-projects.details', $project->id) }} @else {{ route('projects.show', $project->id) }} @endif" 
                                    class="view-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors duration-200 flex items-center justify-center"
                                    style="background-color:#2563eb;color:#ffffff;">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

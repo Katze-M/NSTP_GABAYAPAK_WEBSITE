@@ -6,11 +6,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
         Schema::create('approvals', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->unsignedBigInteger('approver_id')->nullable();
             $table->string('approver_role')->nullable();
             $table->enum('type', ['staff', 'student']);
@@ -18,12 +18,11 @@ return new class extends Migration
             $table->text('remarks')->nullable();
             $table->timestamps();
 
-            $table->foreign('user_id')->references('user_id')->on('users')->onDelete('cascade');
-            $table->foreign('approver_id')->references('user_id')->on('users')->onDelete('set null');
+            $table->foreign('approver_id')->references('id')->on('users')->onDelete('set null');
         });
     }
 
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('approvals');
     }

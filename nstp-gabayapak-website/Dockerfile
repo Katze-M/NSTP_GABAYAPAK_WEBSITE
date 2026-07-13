@@ -16,11 +16,13 @@ RUN npm install && npm run build
 FROM php:8.3-apache
 
 # Install essential core utilities and database drivers for PostgreSQL
+# ADDED libicu-dev and intl right here to stop the Number.php crash
 RUN apt-get update && apt-get install -y \
     unzip \
     libpq-dev \
+    libicu-dev \
     git \
-    && docker-php-ext-install pdo pdo_pgsql \
+    && docker-php-ext-install pdo pdo_pgsql intl \
     && rm -rf /var/lib/apt/lists/*
 
 # Enable Apache's mod_rewrite routing configurations

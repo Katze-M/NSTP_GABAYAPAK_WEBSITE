@@ -147,20 +147,20 @@ class ProjectController extends Controller
                     'resubmission_count' => 0,
                 ]);
 
-            // Ensure student_ids and member_roles are persisted (force update to avoid any casting/mass-assignment edge cases)
-            try {
-                $project->update([
-                    'student_ids' => $validated['student_ids'],
-                    'member_roles' => $validated['member_roles'],
-                ]);
-                Log::debug('storeDraft persisted project members', [
-                    'project' => $project->Project_ID ?? null,
-                    'student_ids_saved' => $project->student_ids,
-                    'member_roles_saved' => $project->member_roles,
-                ]);
-            } catch (\Throwable $e) {
-                Log::error('storeDraft failed persisting project members: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
-            }
+                // Ensure student_ids and member_roles are persisted (force update to avoid any casting/mass-assignment edge cases)
+                try {
+                    $project->update([
+                        'student_ids' => $validated['student_ids'],
+                        'member_roles' => $validated['member_roles'],
+                    ]);
+                    Log::debug('storeDraft persisted project members', [
+                        'project' => $project->Project_ID ?? null,
+                        'student_ids_saved' => $project->student_ids,
+                        'member_roles_saved' => $project->member_roles,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::error('storeDraft failed persisting project members: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
+                }
 
                 // sync activities/budgets for a draft: allow incomplete but skip fully blank rows
                 $this->syncActivities($project, $request, true);
@@ -311,20 +311,20 @@ class ProjectController extends Controller
                     'resubmission_count' => 0,
                 ]);
 
-            // Ensure student_ids and member_roles are persisted (force update to avoid any casting/mass-assignment edge cases)
-            try {
-                $project->update([
-                    'student_ids' => $validated['student_ids'],
-                    'member_roles' => $validated['member_roles'],
-                ]);
-                Log::debug('storeSubmit persisted project members', [
-                    'project' => $project->Project_ID ?? null,
-                    'student_ids_saved' => $project->student_ids,
-                    'member_roles_saved' => $project->member_roles,
-                ]);
-            } catch (\Throwable $e) {
-                Log::error('storeSubmit failed persisting project members: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
-            }
+                // Ensure student_ids and member_roles are persisted (force update to avoid any casting/mass-assignment edge cases)
+                try {
+                    $project->update([
+                        'student_ids' => $validated['student_ids'],
+                        'member_roles' => $validated['member_roles'],
+                    ]);
+                    Log::debug('storeSubmit persisted project members', [
+                        'project' => $project->Project_ID ?? null,
+                        'student_ids_saved' => $project->student_ids,
+                        'member_roles_saved' => $project->member_roles,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::error('storeSubmit failed persisting project members: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
+                }
 
                 // sync activities and budgets - strict because this is a submission
                 $this->syncActivities($project, $request, false);

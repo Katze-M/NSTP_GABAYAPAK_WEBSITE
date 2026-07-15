@@ -59,6 +59,8 @@ class Project extends Model
     protected $casts = [
         'student_ids' => 'array',
         'member_roles' => 'array',
+        'is_resubmission' => 'boolean',
+        'resubmission_count' => 'integer',
     ];
 
     /**

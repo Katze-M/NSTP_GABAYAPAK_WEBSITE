@@ -98,64 +98,7 @@ class ProjectController extends Controller
         $rules = $this->validateDraftRules();
         $messages = $this->validationMessages();
 
-        /* If the request did not include the full form payload (e.g. submit-from-show button
-         posts only Project_Status), build a validation payload from the existing project
-         data so we validate the current stored values rather than the empty request. */
-        if (!$request->has('Project_Name')) {
-            $data = $request->all();
-            // Basic project fields
-            $data['Project_Name'] = $project->Project_Name;
-            $data['Project_Team_Name'] = $project->Project_Team_Name;
-            $data['Project_Component'] = $project->Project_Component;
-            $data['nstp_section'] = $project->Project_Section;
-            $data['Project_Solution'] = $project->Project_Solution;
-            $data['Project_Goals'] = $project->Project_Goals;
-            $data['Project_Target_Community'] = $project->Project_Target_Community;
-            $data['Project_Expected_Outcomes'] = $project->Project_Expected_Outcomes;
-            $data['Project_Problems'] = $project->Project_Problems;
-
-            // Members
-            $members = is_callable([$project, 'members']) ? $project->members() : [];
-            $data['member_student_id'] = [];
-            $data['member_role'] = [];
-            foreach ($members as $m) {
-                $data['member_student_id'][] = $m['student_id'] ?? null;
-                $data['member_role'][] = $m['role'] ?? null;
-            }
-
-            // Activities
-            $data['stage'] = [];
-            $data['activities'] = [];
-            $data['timeframe'] = [];
-            $data['implementation_date'] = [];
-            $data['point_person'] = [];
-            $data['status'] = [];
-            foreach ($project->activities as $act) {
-                $data['stage'][] = $act->Stage ?? '';
-                $data['activities'][] = $act->Specific_Activity ?? '';
-                $data['timeframe'][] = $act->Time_Frame ?? '';
-                $data['implementation_date'][] = $act->Implementation_Date ?? '';
-                $data['point_person'][] = $act->Point_Persons ?? '';
-                $data['status'][] = $act->status ?? 'Planned';
-            }
-
-            // Budgets
-            $data['budget_activity'] = [];
-            $data['budget_resources'] = [];
-            $data['budget_partners'] = [];
-            $data['budget_amount'] = [];
-            foreach ($project->budgets as $b) {
-                $data['budget_activity'][] = $b->Specific_Activity ?? '';
-                $data['budget_resources'][] = $b->Resources_Needed ?? '';
-                $data['budget_partners'][] = $b->Partner_Agencies ?? '';
-                $data['budget_amount'][] = $b->Amount ?? '';
-            }
-
-            $validator = Validator::make($data, $rules, $messages);
-            $validated = $validator->validate();
-        } else {
-            $validated = $request->validate($rules, $messages);
-        }
+        $validated = $request->validate($rules, $messages);
 
         // file upload if provided (optional for draft)
         if ($request->hasFile('Project_Logo')) {
@@ -163,12 +106,7 @@ class ProjectController extends Controller
         }
 
         $validated['student_id'] = $user->student->id;
-        // For staff saving via staff edit, preserve the existing project status; students saving drafts set 'draft'
-        if ($user->isStaff()) {
-            $validated['Project_Status'] = $project->Project_Status;
-        } else {
-            $validated['Project_Status'] = 'draft';
-        }
+        $validated['Project_Status'] = 'draft';
         // Build members arrays (minimal handling for draft)
         $memberResult = $this->buildMemberArraysForCreate($request, $validated);
         $validated['student_ids'] = $memberResult['student_ids'];
@@ -188,23 +126,26 @@ class ProjectController extends Controller
             Log::warning('Failed logging storeDraft member inputs: ' . $e->getMessage());
         }
 
-        DB::transaction(function() use ($validated, $request, &$project) {
-            $project = Project::create([
-                'Project_Name' => $validated['Project_Name'],
-                'Project_Team_Name' => $validated['Project_Team_Name'],
-                'Project_Logo' => $validated['Project_Logo'] ?? null,
-                'Project_Component' => $validated['Project_Component'] ?? '',
-                'Project_Solution' => $validated['Project_Solution'] ?? '',
-                'Project_Goals' => $validated['Project_Goals'] ?? '',
-                'Project_Target_Community' => $validated['Project_Target_Community'] ?? '',
-                'Project_Expected_Outcomes' => $validated['Project_Expected_Outcomes'] ?? '',
-                'Project_Problems' => $validated['Project_Problems'] ?? '',
-                'Project_Status' => 'draft',
-                'student_id' => $validated['student_id'],
-                'student_ids' => $validated['student_ids'],
-                'member_roles' => $validated['member_roles'],
-                'Project_Section' => $validated['nstp_section'] ?? '',
-            ]);
+        try {
+            DB::transaction(function() use ($validated, $request, &$project) {
+                $project = Project::create([
+                    'Project_Name' => $validated['Project_Name'],
+                    'Project_Team_Name' => $validated['Project_Team_Name'],
+                    'Project_Logo' => $validated['Project_Logo'] ?? null,
+                    'Project_Component' => $validated['Project_Component'] ?? '',
+                    'Project_Solution' => $validated['Project_Solution'] ?? '',
+                    'Project_Goals' => $validated['Project_Goals'] ?? '',
+                    'Project_Target_Community' => $validated['Project_Target_Community'] ?? '',
+                    'Project_Expected_Outcomes' => $validated['Project_Expected_Outcomes'] ?? '',
+                    'Project_Problems' => $validated['Project_Problems'] ?? '',
+                    'Project_Status' => 'draft',
+                    'student_id' => $validated['student_id'],
+                    'student_ids' => $validated['student_ids'],
+                    'member_roles' => $validated['member_roles'],
+                    'Project_Section' => $validated['nstp_section'] ?? '',
+                    'is_resubmission' => false,
+                    'resubmission_count' => 0,
+                ]);
 
             // Ensure student_ids and member_roles are persisted (force update to avoid any casting/mass-assignment edge cases)
             try {
@@ -213,20 +154,27 @@ class ProjectController extends Controller
                     'member_roles' => $validated['member_roles'],
                 ]);
                 Log::debug('storeDraft persisted project members', [
-                    'project' => $project->id ?? null,
+                    'project' => $project->Project_ID ?? null,
                     'student_ids_saved' => $project->student_ids,
                     'member_roles_saved' => $project->member_roles,
                 ]);
             } catch (\Throwable $e) {
-                Log::error('storeDraft failed persisting project members: ' . $e->getMessage(), ['project' => $project->id ?? null]);
+                Log::error('storeDraft failed persisting project members: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
             }
 
-            // sync activities/budgets for a draft: allow incomplete but skip fully blank rows
-            $this->syncActivities($project, $request, true);
-            $this->syncBudgets($project, $request, true);
-            // Persist computed completed state if all activities are completed
-            $this->maybePersistCompleted($project);
-        });
+                // sync activities/budgets for a draft: allow incomplete but skip fully blank rows
+                $this->syncActivities($project, $request, true);
+                $this->syncBudgets($project, $request, true);
+                // Persist computed completed state if all activities are completed
+                $this->maybePersistCompleted($project);
+            });
+        } catch (\Throwable $e) {
+            Log::error('storeDraft transaction failed: ' . $e->getMessage(), [
+                'user' => $user->user_id ?? null,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return redirect()->back()->with('error', 'Failed to save project: ' . $e->getMessage())->withInput();
+        }
 
         return redirect()->route('projects.my')->with('success', 'Project saved as draft!');
     }
@@ -342,23 +290,26 @@ class ProjectController extends Controller
         }
 
         $project = null;
-        DB::transaction(function() use ($validated, $request, &$project) {
-            $project = Project::create([
-                'Project_Name' => $validated['Project_Name'],
-                'Project_Team_Name' => $validated['Project_Team_Name'],
-                'Project_Logo' => $validated['Project_Logo'] ?? null,
-                'Project_Component' => $validated['Project_Component'] ?? '',
-                'Project_Solution' => $validated['Project_Solution'] ?? '',
-                'Project_Goals' => $validated['Project_Goals'] ?? '',
-                'Project_Target_Community' => $validated['Project_Target_Community'] ?? '',
-                'Project_Expected_Outcomes' => $validated['Project_Expected_Outcomes'] ?? '',
-                'Project_Problems' => $validated['Project_Problems'] ?? '',
-                'Project_Status' => 'pending',
-                'student_id' => $validated['student_id'],
-                'student_ids' => $validated['student_ids'],
-                'member_roles' => $validated['member_roles'],
-                'Project_Section' => $validated['nstp_section'] ?? '',
-            ]);
+        try {
+            DB::transaction(function() use ($validated, $request, &$project) {
+                $project = Project::create([
+                    'Project_Name' => $validated['Project_Name'],
+                    'Project_Team_Name' => $validated['Project_Team_Name'],
+                    'Project_Logo' => $validated['Project_Logo'] ?? null,
+                    'Project_Component' => $validated['Project_Component'] ?? '',
+                    'Project_Solution' => $validated['Project_Solution'] ?? '',
+                    'Project_Goals' => $validated['Project_Goals'] ?? '',
+                    'Project_Target_Community' => $validated['Project_Target_Community'] ?? '',
+                    'Project_Expected_Outcomes' => $validated['Project_Expected_Outcomes'] ?? '',
+                    'Project_Problems' => $validated['Project_Problems'] ?? '',
+                    'Project_Status' => 'pending',
+                    'student_id' => $validated['student_id'],
+                    'student_ids' => $validated['student_ids'],
+                    'member_roles' => $validated['member_roles'],
+                    'Project_Section' => $validated['nstp_section'] ?? '',
+                    'is_resubmission' => false,
+                    'resubmission_count' => 0,
+                ]);
 
             // Ensure student_ids and member_roles are persisted (force update to avoid any casting/mass-assignment edge cases)
             try {
@@ -367,20 +318,27 @@ class ProjectController extends Controller
                     'member_roles' => $validated['member_roles'],
                 ]);
                 Log::debug('storeSubmit persisted project members', [
-                    'project' => $project->id ?? null,
+                    'project' => $project->Project_ID ?? null,
                     'student_ids_saved' => $project->student_ids,
                     'member_roles_saved' => $project->member_roles,
                 ]);
             } catch (\Throwable $e) {
-                Log::error('storeSubmit failed persisting project members: ' . $e->getMessage(), ['project' => $project->id ?? null]);
+                Log::error('storeSubmit failed persisting project members: ' . $e->getMessage(), ['project' => $project->Project_ID ?? null]);
             }
 
-            // sync activities and budgets - strict because this is a submission
-            $this->syncActivities($project, $request, false);
-            $this->syncBudgets($project, $request, false);
-            // Persist computed completed state if all activities are completed
-            $this->maybePersistCompleted($project);
-        });
+                // sync activities and budgets - strict because this is a submission
+                $this->syncActivities($project, $request, false);
+                $this->syncBudgets($project, $request, false);
+                // Persist computed completed state if all activities are completed
+                $this->maybePersistCompleted($project);
+            });
+        } catch (\Throwable $e) {
+            Log::error('storeSubmit transaction failed: ' . $e->getMessage(), [
+                'user' => $user->user_id ?? null,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return redirect()->back()->with('error', 'Failed to submit project: ' . $e->getMessage())->withInput();
+        }
 
         if (!$project) {
             return redirect()->route('projects.index')->with('error', 'Failed to create project.');

@@ -10,6 +10,9 @@
 <style>
   .landing-display { font-family: 'Fraunces', serif; font-optical-sizing: auto; }
   .landing-copy { font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif; }
+  .hero-bg-slide { transition: opacity 1.8s ease-in-out; }
+  .component-card { box-shadow: 0 0 0 0 transparent; transition: box-shadow 300ms ease-out; }
+  .component-card:hover { box-shadow: 0 16px 32px -12px rgba(27, 21, 18, 0.35); }
 </style>
 @endsection
 @endguest
@@ -66,7 +69,12 @@
 
   <!-- Hero -->
   <header class="relative isolate overflow-hidden">
-    <img src="{{ asset('assets/NSTP_IMAGE_4.jpg') }}" alt="" class="absolute inset-0 w-full h-full object-cover" aria-hidden="true">
+    <div id="heroBg" class="absolute inset-0">
+      <img src="{{ asset('assets/NSTP_IMAGE_4.jpg') }}" alt="" class="hero-bg-slide absolute inset-0 w-full h-full object-cover opacity-100" aria-hidden="true">
+      <img src="{{ asset('assets/NSTP_ROTC_IMAGE_4.jpg') }}" alt="" class="hero-bg-slide absolute inset-0 w-full h-full object-cover opacity-0" aria-hidden="true">
+      <img src="{{ asset('assets/NSTP_IMAGE_2.jpg') }}" alt="" class="hero-bg-slide absolute inset-0 w-full h-full object-cover opacity-0" aria-hidden="true">
+      <img src="{{ asset('assets/NSTP_LTS_IMAGE_3.jpg') }}" alt="" class="hero-bg-slide absolute inset-0 w-full h-full object-cover opacity-0" style="object-position: center 30%;" aria-hidden="true">
+    </div>
     <div class="absolute inset-0 bg-gradient-to-t from-[#1B1512] via-[#1B1512]/75 to-[#1B1512]/25"></div>
 
     <div class="relative px-5 py-4 md:px-10 md:py-6 flex items-center justify-between">
@@ -100,20 +108,32 @@
 
   <!-- The three components -->
   <div class="grid md:grid-cols-3">
-    <div class="p-8 md:p-10" style="background-color:#3F4A22;">
-      <p class="text-white/70 text-sm font-semibold mb-2">ROTC</p>
-      <h3 class="landing-display text-white text-xl md:text-2xl mb-3">Reserve Officers' Training Corps</h3>
-      <p class="text-white/80 text-sm leading-relaxed">Military training and national defense preparedness, run in partnership with the Philippine Air Force.</p>
+    <div class="component-card group relative overflow-hidden p-8 md:p-10 motion-safe:transition-transform motion-safe:duration-300 motion-safe:hover:-translate-y-1">
+      <img src="{{ asset('assets/NSTP_ROTC_IMAGE_3.jpg') }}" alt="" class="absolute inset-0 w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out motion-safe:group-hover:scale-110" aria-hidden="true">
+      <div class="absolute inset-0" style="background:linear-gradient(195deg, rgba(63,74,34,.92) 0%, rgba(63,74,34,.80) 55%, rgba(63,74,34,.65) 100%);"></div>
+      <div class="relative">
+        <p class="text-white/70 text-sm font-semibold mb-2">ROTC</p>
+        <h3 class="landing-display text-white text-xl md:text-2xl mb-3">Reserve Officers' Training Corps</h3>
+        <p class="text-white/80 text-sm leading-relaxed">Military training and national defense preparedness, run in partnership with the Philippine Air Force.</p>
+      </div>
     </div>
-    <div class="p-8 md:p-10" style="background-color:#1D4E89;">
-      <p class="text-white/70 text-sm font-semibold mb-2">LTS</p>
-      <h3 class="landing-display text-white text-xl md:text-2xl mb-3">Literacy Training Service</h3>
-      <p class="text-white/80 text-sm leading-relaxed">Students teach literacy and numeracy to children, out-of-school youth, and underserved communities.</p>
+    <div class="component-card group relative overflow-hidden p-8 md:p-10 motion-safe:transition-transform motion-safe:duration-300 motion-safe:hover:-translate-y-1">
+      <img src="{{ asset('assets/NSTP_LTS_IMAGE_2.jpg') }}" alt="" class="absolute inset-0 w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out motion-safe:group-hover:scale-110" aria-hidden="true">
+      <div class="absolute inset-0" style="background:linear-gradient(195deg, rgba(29,78,137,.92) 0%, rgba(29,78,137,.80) 55%, rgba(29,78,137,.65) 100%);"></div>
+      <div class="relative">
+        <p class="text-white/70 text-sm font-semibold mb-2">LTS</p>
+        <h3 class="landing-display text-white text-xl md:text-2xl mb-3">Literacy Training Service</h3>
+        <p class="text-white/80 text-sm leading-relaxed">Students teach literacy and numeracy to children, out-of-school youth, and underserved communities.</p>
+      </div>
     </div>
-    <div class="p-8 md:p-10" style="background-color:#B65B1C;">
-      <p class="text-white/70 text-sm font-semibold mb-2">CWTS</p>
-      <h3 class="landing-display text-white text-xl md:text-2xl mb-3">Civic Welfare Training Service</h3>
-      <p class="text-white/80 text-sm leading-relaxed">Projects that build civic consciousness, social responsibility, and direct community involvement.</p>
+    <div class="component-card group relative overflow-hidden p-8 md:p-10 motion-safe:transition-transform motion-safe:duration-300 motion-safe:hover:-translate-y-1">
+      <img src="{{ asset('assets/NSTP_CWTS_IMAGE_1.jpg') }}" alt="" class="absolute inset-0 w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out motion-safe:group-hover:scale-110" aria-hidden="true">
+      <div class="absolute inset-0" style="background:linear-gradient(195deg, rgba(182,91,28,.92) 0%, rgba(182,91,28,.80) 55%, rgba(182,91,28,.65) 100%);"></div>
+      <div class="relative">
+        <p class="text-white/70 text-sm font-semibold mb-2">CWTS</p>
+        <h3 class="landing-display text-white text-xl md:text-2xl mb-3">Civic Welfare Training Service</h3>
+        <p class="text-white/80 text-sm leading-relaxed">Projects that build civic consciousness, social responsibility, and direct community involvement.</p>
+      </div>
     </div>
   </div>
 
@@ -139,6 +159,19 @@
     </div>
   </div>
 </section>
+
+<script>
+  (function () {
+    const slides = document.querySelectorAll('#heroBg .hero-bg-slide');
+    if (slides.length < 2) return;
+    let index = 0;
+    setInterval(() => {
+      slides[index].style.opacity = '0';
+      index = (index + 1) % slides.length;
+      slides[index].style.opacity = '1';
+    }, 5000);
+  })();
+</script>
 
 @else
 <!-- HOME (About + Moderators) -->

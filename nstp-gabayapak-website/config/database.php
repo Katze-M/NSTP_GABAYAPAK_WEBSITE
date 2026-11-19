@@ -100,6 +100,14 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'require'),
+            // Neon's pooled endpoint runs PgBouncer in transaction mode, which
+            // doesn't support PDO's native (server-side) prepared statements —
+            // the second statement in any explicit transaction fails with
+            // "current transaction is aborted" even though the first one
+            // appeared to succeed. Emulated (client-side) prepares avoid that.
+            'options' => [
+                \PDO::ATTR_EMULATE_PREPARES => true,
+            ],
         ],
 
         // Direct (non-pooled) connection — used only for schema migrations.

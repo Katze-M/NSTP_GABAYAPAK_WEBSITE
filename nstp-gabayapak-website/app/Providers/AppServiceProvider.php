@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Gate;
 use App\Models\Project;
 use App\Policies\ProjectPolicy;
 use App\Database\NeonPostgresConnector;
+use App\Database\NeonPostgresConnection;
+use Illuminate\Database\Connection;
+use Illuminate\Database\PostgresConnection;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,6 +20,16 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind('db.connector.pgsql', NeonPostgresConnector::class);
+
+        // Only the pooled 'pgsql' connection runs with emulated prepares (see
+        // NeonPostgresConnector); 'pgsql_direct' uses the stock PostgresConnection.
+        Connection::resolverFor('pgsql', function ($pdo, $database, $prefix, $config) {
+            $class = ($config['name'] ?? null) === 'pgsql'
+                ? NeonPostgresConnection::class
+                : PostgresConnection::class;
+
+            return new $class($pdo, $database, $prefix, $config);
+        });
     }
 
     /**

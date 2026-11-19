@@ -1,57 +1,44 @@
-# NSTP GabaYapak Website
+# NSTP GabaYapak
 
-This is a Laravel-based website for the NSTP GabaYapak project management and monitoring system.
+A project management and monitoring system for SACSI's NSTP program (ROTC, LTS, and CWTS components). Students submit community service project proposals for review; staff (Formators, Coordinators, the Program Officer, and the SACSI Director) endorse, approve, reject, or archive them through a staged approval workflow.
 
-## Features Implemented
+## What It Does
 
-1. Account creation - SACSI staff needs to create their accounts to access the website. Registration approvals will be implemented, SACSi Director is auto-approved but only 1 SACSI Director account is allowed (thus, the account will be passed down if new staff assumes the position). The student accounts will be created through the bulk registration feature.
-2. Dashboard - Display an overview about the projects, quick actions were added for increased accessibility, and the upcoming activities were listed in chronological order so that Staff will be guided with the next activities to be implemented per project (STAFF SIDE ONLY)
-3. Current Projects Page - Display all approved projects (including projects with status "completed"). Organized per component and section. Contains All Approved Projects list
-4. Pending Projects Page - Display pending projects that were submitted by the students. Only NSTP Formators are allowed to "endorse" projects and only the NSTP Coordinators are allowed to "approve" projects, but the SACSI Director and NSTP Program Officer can still view pending projects, organized by which stage they are in (to be endorsed/to be approved). Also included here is the list of rejected projects. Rejected projects by NSTP Formators will appear again in their Pending Projects Page when project leader resubmits. Projects rejected by NSTP Coordinators will appear on their end as well. Meaning, resubmitted projects will be displayed on the staff (NSTP Formator/NSTP Coordinator) until they endorse/approve those 9that is the time they can move on to the next stage of project approval. (STAFF SIDE ONLY)
-5. Archived Projects Page - Only completed projects can be archived and will be displayed here. Staff can unarchive projects again and unarchived projects will reappear in the Current Projects Page in their respective component and section. (STAFF SIDE ONLY)
-6. Upload Project Page - Each project leaders and members can only be tied to one project EXCEPT for students who are under the ROTC Component. This page is where the students will upload their project proposals and a project proposal can be saved as draft (requires Project Name and Team Name fields) or be submitted directly from the upload project page (STUDENT SIDE ONLY)
-7. My Projects Page - Displays all relevant projects with all statuses belonging to that student (student who is logged in) or that a student is part/a member of (STUDENT SIDE ONLY)
-8. Reports - Detailed summaries about the projects which includes counts, breakdown of total projects per component (only approved projects, regardless if the project has been completed/archived), and also includes a progress bar for each project. Progress bar relies on the division of activities and how many activities were outlines by the students. This is further divided into portions: Planned gets 1/3 of the entire activity's percentage, Ongoing gets 2/3, and Completed gets 3/3 or simply 1 (this means that for that specific activity item, it is 100% complete) (STAFF SIDE ONLY)
-9. About Page - Displays relevant pictures in the form of sliders and info about the SACSI Office, the NSTP Program, and also includes a list of NSTP Formators (only the staff can manage the list)
-10. Profile Page - Displays relevant information of the users, which depends on the information gathered from the account registration. All users can change their password, but only the SACSI Director, NSTP Program Officer, and the NSTP Coordinators can edit their information (name and formal picture only)
-11. Logout - Logs user out of the website, redirected to login after logout.
+- **Account registration & approval** — students and staff register, staff accounts go through an approval flow, and only one SACSI Director account is allowed at a time.
+- **Project proposals** — students submit a project (team info, goals, target community, planned activities, and budget), save it as a draft, and resubmit if rejected.
+- **Staged staff review** — NSTP Formators endorse, NSTP Coordinators approve, and the Program Officer/SACSI Director can oversee the whole pipeline. Rejected projects route back to the student with feedback and can be resubmitted.
+- **Project lifecycle views** — Current, Pending, Rejected, and Archived project listings, organized by NSTP component and section.
+- **Dashboard & reports** — an overview of projects and upcoming activities for staff, plus a reports page with per-component breakdowns and activity-completion progress bars.
+- **Public landing page** — visitors can read about SACSI/NSTP and see the list of NSTP Formators without logging in first.
+- **File uploads** — project logos are stored in S3-compatible object storage rather than on the app server.
 
-## Installation
+## Tech Stack
+
+- **Backend**: PHP 8.2+ / Laravel 12
+- **Frontend**: Blade templates, Tailwind CSS 4, Vite, vanilla JS (SweetAlert2 for alerts)
+- **Database**: PostgreSQL, hosted on [Neon](https://neon.tech)
+- **File storage**: Neon Object Storage (S3-compatible)
+- **Hosting**: Docker container (Apache + PHP) on [Render](https://render.com)
+- **AI-assisted coding**: GitHub Copilot, Gemini, and Claude were used throughout for debugging, refactoring, and implementing features — hehe
+
+## How to Run It
 
 1. Clone the repository
-2. Run `composer install`
-3. Copy `.env.example` to `.env` and configure your database settings
+2. Run `composer install` and `npm install`
+3. Copy `.env.example` to `.env` and fill in:
+   - A PostgreSQL connection (`DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) — e.g. a [Neon](https://neon.tech) project. If you're on Neon, use the pooled host for `DB_HOST` and set `DB_HOST_DIRECT` to the non-pooled host (used only for migrations).
+   - S3-compatible storage credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_BUCKET`, `AWS_ENDPOINT`, `AWS_DEFAULT_REGION`)
 4. Run `php artisan key:generate`
-5. Run `php artisan migrate:fresh` to create tables. (Seeding is optional. It is recommended to not use the seeder as this has not been setup fully.)
+5. Run `php artisan migrate` to create the tables (use `--database=pgsql_direct` if you're on Neon)
+6. Run `npm run build` (or `npm run dev` while developing)
+7. Run `php artisan serve` to start the development server
 
-If you want to seed sample data, run:
+Seeding is optional and not fully set up — `php artisan migrate:fresh --seed` works but isn't required.
 
-```
-php artisan migrate:fresh --seed
-```
-6. Run `php artisan serve` to start the development server
+## Notes for Future Developers
 
-## Sample Users
-
-After seeding the database, you can log in with the following credentials:
-
-- **Admin User**: admin@example.com / password
-- **Formator User**: formator@example.com / password
-- **Student User**: student@example.com / password
-
-## Features
-- Responsive design with mobile-friendly sidebar
-- Password change functionality in the account section
-- Role-based access control
-- Edit information feature in profile page for SACSI Director/NSTP Program Officer/NSTP Coordinators only
-
-## Files
-In the migrations, there are premade migrations (like jobs) and removed migration (like old users table which is premade). A new users migration was added and curated based on the needs of the website. other migrations are just removal of columns and addition of columns. 
-
-For Auth Controllers, the AccountController is primarily involved in the Profile page. LoginController is for logging in. Staff logins will be redirected to Dashboard while Student logins will be redirected to the Upload Project page.
-
-In Middleware, "CheckRole.php" is the old middleware used to check roles of users. New "CheckRoles.php" accepts and checks multiple roles
-
-In app/Console\Commands, CleanupOrphanedMedia.php is a file that allows admins (who manage the system's technicalities) clean/delete photos that are no longer used in the system (like delete projects logos whose projects were also deleted previously, so that is will not hang around the storage folders)
-
-Files in scripts folder were mostly used for debugging in the past and was not removed because it might be useful again sometime in the future
+- `AccountController` handles the Profile page; `LoginController` handles login and redirects staff to the Dashboard and students to the Upload Project page.
+- `CheckRoles` (not the older `CheckRole`) is the active role-checking middleware and supports multiple roles.
+- `app/Console/Commands/CleanupOrphanedMedia.php` deletes project logos left behind by deleted projects.
+- `scripts/` contains old one-off debugging scripts kept around in case they're useful again — some predate the current Postgres schema and shouldn't be trusted as-is.
+- The `pgsql_direct` database connection (`config/database.php`) is only for migrations — Neon's pooled connection doesn't reliably hold session state (like `search_path`) across a migration run. The app's normal runtime traffic uses the default pooled `pgsql` connection.

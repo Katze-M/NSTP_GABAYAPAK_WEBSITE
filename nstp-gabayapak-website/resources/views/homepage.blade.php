@@ -45,6 +45,19 @@
 <!-- HOME (About + Moderators) -->
 <section id="home" class="bg-white rounded-2xl shadow-subtle overflow-hidden">
 
+  @guest
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 md:p-5 bg-[#EF3333] text-white">
+      <div>
+        <p class="font-bold text-lg md:text-xl">NSTP GabaYapak</p>
+        <p class="text-sm text-white/90">Project Management and Monitoring System</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="{{ route('login') }}" class="px-4 py-2 rounded-lg bg-white text-[#EF3333] font-semibold text-sm hover:bg-gray-100">Log In</a>
+        <a href="{{ route('register') }}" class="px-4 py-2 rounded-lg border border-white text-white font-semibold text-sm hover:bg-white/10">Register</a>
+      </div>
+    </div>
+  @endguest
+
   @if(session('registration_status') === 'pending')
     <div class="p-4 max-w-4xl mx-auto mt-4 bg-yellow-100 text-yellow-800 rounded">Your registration is under review.</div>
   @endif

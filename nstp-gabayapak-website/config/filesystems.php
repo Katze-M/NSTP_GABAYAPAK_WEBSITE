@@ -48,15 +48,15 @@ return [
         ],
 
         's3' => [
-    'driver'                  => 's3',
-    'key'                     => env('AWS_ACCESS_KEY_ID'),
-    'secret'                  => env('AWS_SECRET_ACCESS_KEY'),
-    'region'                  => env('AWS_DEFAULT_REGION', 'us-east-1'),
-    'bucket'                  => env('AWS_BUCKET'),
-    'endpoint'                => env('AWS_ENDPOINT'),
-    'use_path_style_endpoint' => true,
-    'url' => str_replace('/storage/v1/s3', '/storage/v1/object/public', env('AWS_ENDPOINT')) . '/' . env('AWS_BUCKET'),
-],
+            'driver'                  => 's3',
+            'key'                     => env('AWS_ACCESS_KEY_ID'),
+            'secret'                  => env('AWS_SECRET_ACCESS_KEY'),
+            'region'                  => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'bucket'                  => env('AWS_BUCKET'),
+            'endpoint'                => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'url'                     => env('AWS_URL') ?: null,
+        ],
 
     ],
 

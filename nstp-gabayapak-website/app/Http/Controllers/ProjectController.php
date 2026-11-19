@@ -176,6 +176,21 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Failed to save project: ' . $e->getMessage())->withInput();
         }
 
+        // Verify the row actually persisted. A transaction that commits without
+        // throwing guarantees this in normal operation; if it's missing, something
+        // swallowed an error upstream (or the app is pointed at a different DB than
+        // expected) — surface that loudly instead of claiming success.
+        if (!$project || !Project::where('id', $project->id)->exists()) {
+            Log::critical('storeDraft: project missing after commit', [
+                'user' => $user->id ?? null,
+                'project_id' => $project->id ?? null,
+                'db_connection' => config('database.default'),
+                'db_host' => config('database.connections.' . config('database.default') . '.host'),
+                'db_database' => config('database.connections.' . config('database.default') . '.database'),
+            ]);
+            return redirect()->back()->with('error', 'Project was not saved. Please try again or contact support.')->withInput();
+        }
+
         return redirect()->route('projects.my')->with('success', 'Project saved as draft!');
     }
 
@@ -340,8 +355,15 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Failed to submit project: ' . $e->getMessage())->withInput();
         }
 
-        if (!$project) {
-            return redirect()->route('projects.index')->with('error', 'Failed to create project.');
+        if (!$project || !Project::where('id', $project->id)->exists()) {
+            Log::critical('storeSubmit: project missing after commit', [
+                'user' => $user->id ?? null,
+                'project_id' => $project->id ?? null,
+                'db_connection' => config('database.default'),
+                'db_host' => config('database.connections.' . config('database.default') . '.host'),
+                'db_database' => config('database.connections.' . config('database.default') . '.database'),
+            ]);
+            return redirect()->route('projects.index')->with('error', 'Project was not saved. Please try again or contact support.');
         }
 
         return redirect()->route('projects.show', $project)->with('success', 'Project submitted successfully for review!');

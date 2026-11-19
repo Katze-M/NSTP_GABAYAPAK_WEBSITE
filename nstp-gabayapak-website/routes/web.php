@@ -13,11 +13,6 @@ use App\Models\Staff;
 
 // Public routes
 Route::get('/', function () {
-    // Check if user is authenticated
-    if (!auth()->check()) {
-        return redirect()->route('login');
-    }
-    
     // Fetch persisted formators list (stored in storage/app/formators.json).
     // If no persisted list exists, fall back to users whose `user_role` is 'NSTP Formator'.
     $persistedPath = storage_path('app/formators.json');

@@ -2,6 +2,18 @@
 
 @section('title', 'NSTP Project Management and Monitoring System')
 
+@guest
+@section('styles')
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  .landing-display { font-family: 'Fraunces', serif; font-optical-sizing: auto; }
+  .landing-copy { font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif; }
+</style>
+@endsection
+@endguest
+
 @section('content')
 <style>
   /* Mobile optimizations for NSTP Formators section on small screens (360x600) */
@@ -42,21 +54,95 @@
     }
   }
 </style>
-<!-- HOME (About + Moderators) -->
-<section id="home" class="bg-white rounded-2xl shadow-subtle overflow-hidden">
+@guest
+<!-- PUBLIC LANDING -->
+<section id="home" class="bg-white rounded-2xl shadow-subtle overflow-hidden landing-copy">
 
-  @guest
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 md:p-5 bg-[#EF3333] text-white">
-      <div>
-        <p class="font-bold text-lg md:text-xl">NSTP GabaYapak</p>
-        <p class="text-sm text-white/90">Project Management and Monitoring System</p>
-      </div>
+  @if(session('registration_status') === 'pending')
+    <div class="px-5 pt-5 md:px-10 md:pt-8">
+      <div class="max-w-3xl p-4 bg-yellow-100 text-yellow-800 rounded-lg">Your registration is under review.</div>
+    </div>
+  @endif
+
+  <!-- Hero -->
+  <header class="relative isolate overflow-hidden">
+    <img src="{{ asset('assets/NSTP_IMAGE_4.jpg') }}" alt="" class="absolute inset-0 w-full h-full object-cover" aria-hidden="true">
+    <div class="absolute inset-0 bg-gradient-to-t from-[#1B1512] via-[#1B1512]/75 to-[#1B1512]/25"></div>
+
+    <div class="relative px-5 py-4 md:px-10 md:py-6 flex items-center justify-between">
+      <span class="landing-display text-white text-lg md:text-xl tracking-tight">GabaYapak</span>
       <div class="flex gap-2">
-        <a href="{{ route('login') }}" class="px-4 py-2 rounded-lg bg-white text-[#EF3333] font-semibold text-sm hover:bg-gray-100">Log In</a>
-        <a href="{{ route('register') }}" class="px-4 py-2 rounded-lg border border-white text-white font-semibold text-sm hover:bg-white/10">Register</a>
+        <a href="{{ route('login') }}" class="px-4 py-2 rounded-full text-sm font-semibold text-white border border-white/40 hover:bg-white/10 transition-colors focus-visible:outline-2 focus-visible:outline-white">Log in</a>
+        <a href="{{ route('register') }}" class="px-4 py-2 rounded-full text-sm font-semibold text-[#1B1512] bg-white hover:bg-[#F3EEE6] transition-colors focus-visible:outline-2 focus-visible:outline-white">Register</a>
       </div>
     </div>
-  @endguest
+
+    <div class="relative px-5 pb-10 pt-14 md:px-10 md:pb-20 md:pt-28 max-w-3xl">
+      <h1 class="landing-display text-white text-[2rem] leading-[1.1] md:text-5xl lg:text-[3.3rem] md:leading-[1.08]">
+        Plan, review, and track every NSTP project in one place.
+      </h1>
+      <p class="mt-5 text-white/85 text-base md:text-lg max-w-xl leading-relaxed">
+        GabaYapak is how SACSI's ROTC, LTS, and CWTS teams submit project proposals, move them through endorsement and approval, and follow them through to completion.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="{{ route('register') }}" class="px-6 py-3 rounded-full bg-[#EF3333] text-white font-semibold hover:bg-[#d62b2b] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Register</a>
+        <a href="{{ route('login') }}" class="px-6 py-3 rounded-full border border-white/50 text-white font-semibold hover:bg-white/10 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Log in</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mission -->
+  <div class="bg-[#1B1512] text-[#F3EEE6] px-5 py-10 md:px-10 md:py-14">
+    <p class="landing-display text-xl md:text-2xl max-w-3xl leading-snug">
+      SACSI links students to communities through outreach and formation — NSTP is where that work gets organized, start to finish.
+    </p>
+  </div>
+
+  <!-- The three components -->
+  <div class="grid md:grid-cols-3">
+    <div class="p-8 md:p-10" style="background-color:#3F4A22;">
+      <p class="text-white/70 text-sm font-semibold mb-2">ROTC</p>
+      <h3 class="landing-display text-white text-xl md:text-2xl mb-3">Reserve Officers' Training Corps</h3>
+      <p class="text-white/80 text-sm leading-relaxed">Military training and national defense preparedness, run in partnership with the Philippine Air Force.</p>
+    </div>
+    <div class="p-8 md:p-10" style="background-color:#1D4E89;">
+      <p class="text-white/70 text-sm font-semibold mb-2">LTS</p>
+      <h3 class="landing-display text-white text-xl md:text-2xl mb-3">Literacy Training Service</h3>
+      <p class="text-white/80 text-sm leading-relaxed">Students teach literacy and numeracy to children, out-of-school youth, and underserved communities.</p>
+    </div>
+    <div class="p-8 md:p-10" style="background-color:#B65B1C;">
+      <p class="text-white/70 text-sm font-semibold mb-2">CWTS</p>
+      <h3 class="landing-display text-white text-xl md:text-2xl mb-3">Civic Welfare Training Service</h3>
+      <p class="text-white/80 text-sm leading-relaxed">Projects that build civic consciousness, social responsibility, and direct community involvement.</p>
+    </div>
+  </div>
+
+  <!-- About SACSI -->
+  <div class="px-5 py-12 md:px-10 md:py-16 bg-[#FAF6EF]">
+    <div class="max-w-3xl">
+      <h2 class="landing-display text-2xl md:text-3xl text-[#1B1512] mb-4">About SACSI</h2>
+      <p class="text-[#4A433C] leading-relaxed">
+        The Social Awareness and Community Service Involvement (SACSI) Office is the university's social involvement arm. It complements classroom learning with real-world experience, guided by a vision of forming socially aware, morally grounded, and service-oriented individuals — anchored in faith, justice, compassion, and inclusivity.
+      </p>
+    </div>
+  </div>
+
+  <!-- Closing CTA -->
+  <div class="px-5 py-12 md:px-10 md:py-16 border-t border-[#EDE6D8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+    <div>
+      <h2 class="landing-display text-2xl md:text-3xl text-[#1B1512]">Already part of a project team?</h2>
+      <p class="text-[#4A433C] mt-2">Log in to pick up where you left off, or register to get started.</p>
+    </div>
+    <div class="flex gap-3 shrink-0">
+      <a href="{{ route('login') }}" class="px-6 py-3 rounded-full border border-[#1B1512]/20 text-[#1B1512] font-semibold hover:bg-[#1B1512]/5 transition-colors">Log in</a>
+      <a href="{{ route('register') }}" class="px-6 py-3 rounded-full bg-[#EF3333] text-white font-semibold hover:bg-[#d62b2b] transition-colors">Register</a>
+    </div>
+  </div>
+</section>
+
+@else
+<!-- HOME (About + Moderators) -->
+<section id="home" class="bg-white rounded-2xl shadow-subtle overflow-hidden">
 
   @if(session('registration_status') === 'pending')
     <div class="p-4 max-w-4xl mx-auto mt-4 bg-yellow-100 text-yellow-800 rounded">Your registration is under review.</div>
@@ -201,4 +287,5 @@
     updateSlider();
   }, 5000);
 </script>
+@endguest
 @endsection
